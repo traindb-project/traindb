@@ -1,0 +1,22 @@
+# mac
+.DS_Store
+
+# IntelliJ
+/.idea
+*.iml
+
+# build
+/out
+target/
+jars/
+*.class
+site/
+dependency-reduced-pom.xml
+
+# eclipse
+.classpath
+.project
+.settings
+
+# log
+*.log
