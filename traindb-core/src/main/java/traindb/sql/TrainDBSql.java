@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.List;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
+import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.verdictdb.VerdictSingleResult;
@@ -33,8 +34,13 @@ public final class TrainDBSql {
     TrainDBSqlLexer lexer = new TrainDBSqlLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     TrainDBSqlParser parser = new TrainDBSqlParser(tokens);
-    ParserRuleContext tree = parser.ddl();
 
+    // remove default console output printing error listener
+    // to suppress syntax error messages for TrainDB (such input query is passed to VerdictDB)
+    lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+
+    ParserRuleContext tree = parser.ddl();
     ParseTreeWalker walker = new ParseTreeWalker();
     Listener lsnr = new Listener();
     walker.walk(lsnr, tree);
