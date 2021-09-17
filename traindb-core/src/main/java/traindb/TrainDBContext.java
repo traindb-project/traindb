@@ -23,7 +23,6 @@ import java.util.Properties;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.commons.VerdictOption;
 import org.verdictdb.connection.CachedDbmsConnection;
 import org.verdictdb.connection.ConcurrentJdbcConnection;
 import org.verdictdb.connection.DbmsConnection;
@@ -38,6 +37,7 @@ import org.verdictdb.metastore.VerdictMetaStore;
 import org.verdictdb.sqlsyntax.MysqlSyntax;
 import org.verdictdb.sqlsyntax.SqlSyntax;
 import org.verdictdb.sqlsyntax.SqlSyntaxList;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBExecContext;
@@ -51,7 +51,7 @@ public class TrainDBContext {
   private boolean isClosed = false;
   private VerdictMetaStore metaStore;
   private long executionSerialNumber = 0;
-  private VerdictOption options;
+  private TrainDBConfiguration conf;
   /**
    * Maintains the list of open executions. Each query is processed on a separate execution context.
    */
@@ -60,17 +60,17 @@ public class TrainDBContext {
   public TrainDBContext(DbmsConnection conn) throws TrainDBException {
     this.conn = new CachedDbmsConnection(conn);
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
-    this.options = new VerdictOption();
-    this.metaStore = getCachedMetaStore(conn, options);
-    initialize(options);
+    this.conf = new TrainDBConfiguration();
+    this.metaStore = getCachedMetaStore(conn, conf);
+    initialize(conf);
   }
 
-  public TrainDBContext(DbmsConnection conn, VerdictOption options) throws TrainDBException {
+  public TrainDBContext(DbmsConnection conn, TrainDBConfiguration conf) throws TrainDBException {
     this.conn = new CachedDbmsConnection(conn);
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
-    this.options = options;
-    this.metaStore = getCachedMetaStore(conn, options);
-    initialize(options);
+    this.conf = conf;
+    this.metaStore = getCachedMetaStore(conn, conf);
+    initialize(conf);
   }
 
   /**
@@ -105,14 +105,14 @@ public class TrainDBContext {
       throw new TrainDBException(
           String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
     }
-    VerdictOption options = new VerdictOption();
-    options.parseConnectionString(jdbcConnStr);
+    TrainDBConfiguration conf = new TrainDBConfiguration();
+    conf.parseConnectionString(jdbcConnStr);
 
     try {
       if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr), options);
+        return new TrainDBContext(JdbcConnection.create(jdbcConnStr), conf);
       } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr), options);
+        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr), conf);
       }
     } catch (VerdictDBException e) {
       throw new TrainDBException(e.getMessage());
@@ -136,17 +136,15 @@ public class TrainDBContext {
           String.format(
               "JDBC driver not found for the connection string: %s", jdbcConnStr));
     }
-    VerdictOption options = new VerdictOption();
-    options.parseConnectionString(jdbcConnStr);
-    options.parseProperties(info);
-    options.parseConnectionString(jdbcConnStr);
+    TrainDBConfiguration conf = new TrainDBConfiguration();
+    conf.parseConnectionString(jdbcConnStr);
+    conf.parseProperties(info);
 
     try {
       if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), options);
+        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), conf);
       } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info),
-            options);
+        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info), conf);
       }
     } catch (VerdictDBException e) {
       throw new TrainDBException(e.getMessage());
@@ -172,32 +170,14 @@ public class TrainDBContext {
     Properties info = new Properties();
     info.setProperty("user", user);
     info.setProperty("password", password);
-    VerdictOption options = new VerdictOption();
-    options.parseConnectionString(jdbcConnStr);
+    TrainDBConfiguration conf = new TrainDBConfiguration();
+    conf.parseConnectionString(jdbcConnStr);
 
     try {
       if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), options);
+        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), conf);
       } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info),
-            options);
-      }
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
-  }
-
-  public static TrainDBContext fromConnectionString(
-      String jdbcConnectionString, VerdictOption options) throws TrainDBException {
-    String jdbcConnStr = removeTrainDBKeywordIfExists(jdbcConnectionString);
-    attemptLoadDriverClass(jdbcConnStr);
-    options.parseConnectionString(jdbcConnStr);
-
-    try {
-      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr), options);
-      } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr), options);
+        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info), conf);
       }
     } catch (VerdictDBException e) {
       throw new TrainDBException(e.getMessage());
@@ -220,31 +200,6 @@ public class TrainDBContext {
     return connectionString;
   }
 
-  public static TrainDBContext fromConnectionString(
-      String jdbcConnectionString, String user, String password, VerdictOption options)
-      throws TrainDBException {
-    String jdbcConnStr = removeTrainDBKeywordIfExists(jdbcConnectionString);
-    if (!attemptLoadDriverClass(jdbcConnStr)) {
-      throw new TrainDBException(
-          String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
-    }
-    Properties info = new Properties();
-    info.setProperty("user", user);
-    info.setProperty("password", password);
-    options.parseConnectionString(jdbcConnStr);
-
-    try {
-      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), options);
-      } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info),
-            options);
-      }
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
-  }
-
   private static boolean attemptLoadDriverClass(String jdbcConnectionString) {
     SqlSyntax syntax = SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnectionString);
     if (syntax == null) {
@@ -262,9 +217,9 @@ public class TrainDBContext {
     return true;
   }
 
-  private VerdictMetaStore getCachedMetaStore(DbmsConnection conn, VerdictOption option) {
+  private VerdictMetaStore getCachedMetaStore(DbmsConnection conn, TrainDBConfiguration conf) {
     CachedScrambleMetaStore metaStore =
-        new CachedScrambleMetaStore(new ScrambleMetaStore(conn, options));
+        new CachedScrambleMetaStore(new ScrambleMetaStore(conn, conf));
     metaStore.refreshCache();
     return metaStore;
   }
@@ -274,8 +229,8 @@ public class TrainDBContext {
    *
    * @throws TrainDBException
    */
-  private void initialize(VerdictOption option) throws TrainDBException {
-    String schema = option.getVerdictTempSchemaName();
+  private void initialize(TrainDBConfiguration conf) throws TrainDBException {
+    String schema = conf.getVerdictTempSchemaName();
     CreateSchemaQuery query = new CreateSchemaQuery(schema);
     query.setIfNotExists(true);
     try {
@@ -283,6 +238,7 @@ public class TrainDBContext {
     } catch (VerdictDBException e) {
       throw new TrainDBException(e.getMessage());
     }
+    conf.loadConfiguration();
   }
 
   public DbmsConnection getConnection() {
@@ -298,7 +254,7 @@ public class TrainDBContext {
   }
 
   public void setLoglevel(String level) {
-    options.setVerdictConsoleLogLevel(level);
+    conf.setVerdictConsoleLogLevel(level);
   }
 
   public void close() {
@@ -333,14 +289,14 @@ public class TrainDBContext {
     return contextId;
   }
 
-  public VerdictOption getOptions() {
-    return options;
+  public TrainDBConfiguration getConfiguration() {
+    return conf;
   }
 
   public TrainDBExecContext createTrainDBExecContext() {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
-    exCtx = new TrainDBExecContext(conn, metaStore, contextId, execSerialNumber, options.copy());
+    exCtx = new TrainDBExecContext(conn, metaStore, contextId, execSerialNumber, conf.copy());
     exCtxs.add(exCtx);
     return exCtx;
   }

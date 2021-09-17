@@ -30,7 +30,6 @@ import java.sql.Struct;
 import java.util.Map;
 import java.util.Properties;
 import java.util.concurrent.Executor;
-import org.verdictdb.commons.VerdictOption;
 import org.verdictdb.connection.CachedDbmsConnection;
 import org.verdictdb.connection.ConcurrentJdbcConnection;
 import org.verdictdb.connection.DbmsConnection;
@@ -59,12 +58,6 @@ public class TrainDBConnection implements java.sql.Connection {
   public TrainDBConnection(String url, String user, String password)
       throws SQLException, TrainDBException {
     vc = TrainDBContext.fromConnectionString(url, user, password);
-    isOpen = true;
-  }
-
-  public TrainDBConnection(String url, String user, String password, VerdictOption options)
-      throws SQLException, TrainDBException {
-    vc = TrainDBContext.fromConnectionString(url, user, password, options);
     isOpen = true;
   }
 

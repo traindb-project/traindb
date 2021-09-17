@@ -18,11 +18,11 @@ import java.util.List;
 import org.antlr.v4.runtime.RecognitionException;
 import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.commons.VerdictOption;
 import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.coordinator.ExecutionContext;
 import org.verdictdb.exception.VerdictDBException;
 import org.verdictdb.metastore.VerdictMetaStore;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSql;
@@ -38,13 +38,10 @@ public class TrainDBExecContext {
   ExecutionContext executionContext;
 
   public TrainDBExecContext(
-      DbmsConnection conn,
-      VerdictMetaStore metaStore,
-      String contextId,
-      long serialNumber,
-      VerdictOption options) {
+      DbmsConnection conn, VerdictMetaStore metaStore, String contextId, long serialNumber,
+      TrainDBConfiguration conf) {
     engine = new TrainDBQueryEngine();
-    executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, options);
+    executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
   }
 
   public VerdictSingleResult sql(String query) throws TrainDBException {

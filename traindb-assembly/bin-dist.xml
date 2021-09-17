@@ -82,13 +82,11 @@ limitations under the License.
             <outputDirectory>conf</outputDirectory>
             <destName>traindb-env.sh.template</destName>
         </file>
-<!--
         <file>
-            <source>../traindb-common/src/main/resources/logback.xml</source>
+            <source>../traindb-common/src/main/config/traindb.properties</source>
             <outputDirectory>conf</outputDirectory>
-            <destName>traindb-logback.xml.template</destName>
+            <destName>traindb.properties</destName>
         </file>
--->
     </files>
 
     <dependencySets>
