@@ -14,6 +14,8 @@
 
 package traindb.engine;
 
+import traindb.catalog.CatalogContext;
+import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSqlRunner;
 
@@ -21,10 +23,15 @@ import traindb.sql.TrainDBSqlRunner;
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
+  private CatalogContext catalogContext;
+
+  public TrainDBQueryEngine(CatalogStore catalogStore) {
+    catalogContext = catalogStore.getCatalogContext();
+  }
+
 
   @Override
   public void dropModel(String modelName) throws Exception {
-    LOG.debug("dropModel called");
-    // TODO: drop model from metastore
+    catalogContext.dropModel(modelName);
   }
 }

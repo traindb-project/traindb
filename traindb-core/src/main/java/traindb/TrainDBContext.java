@@ -37,6 +37,9 @@ import org.verdictdb.metastore.VerdictMetaStore;
 import org.verdictdb.sqlsyntax.MysqlSyntax;
 import org.verdictdb.sqlsyntax.SqlSyntax;
 import org.verdictdb.sqlsyntax.SqlSyntaxList;
+import traindb.catalog.CatalogException;
+import traindb.catalog.CatalogStore;
+import traindb.catalog.JDOCatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
@@ -50,6 +53,7 @@ public class TrainDBContext {
   private DbmsConnection conn;
   private boolean isClosed = false;
   private VerdictMetaStore metaStore;
+  private CatalogStore catalogStore;
   private long executionSerialNumber = 0;
   private TrainDBConfiguration conf;
   /**
@@ -62,7 +66,8 @@ public class TrainDBContext {
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
     this.conf = new TrainDBConfiguration();
     this.metaStore = getCachedMetaStore(conn, conf);
-    initialize(conf);
+    this.catalogStore = new JDOCatalogStore();
+    initialize(conf, catalogStore);
   }
 
   public TrainDBContext(DbmsConnection conn, TrainDBConfiguration conf) throws TrainDBException {
@@ -70,7 +75,8 @@ public class TrainDBContext {
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
     this.conf = conf;
     this.metaStore = getCachedMetaStore(conn, conf);
-    initialize(conf);
+    this.catalogStore = new JDOCatalogStore();
+    initialize(conf, catalogStore);
   }
 
   /**
@@ -229,7 +235,8 @@ public class TrainDBContext {
    *
    * @throws TrainDBException
    */
-  private void initialize(TrainDBConfiguration conf) throws TrainDBException {
+  private void initialize(TrainDBConfiguration conf, CatalogStore catalogStore)
+      throws TrainDBException {
     String schema = conf.getVerdictTempSchemaName();
     CreateSchemaQuery query = new CreateSchemaQuery(schema);
     query.setIfNotExists(true);
@@ -239,6 +246,11 @@ public class TrainDBContext {
       throw new TrainDBException(e.getMessage());
     }
     conf.loadConfiguration();
+    try {
+      catalogStore.start(conf.getProps());
+    } catch (CatalogException e) {
+      throw new TrainDBException(e.getMessage());
+    }
   }
 
   public DbmsConnection getConnection() {
@@ -296,7 +308,8 @@ public class TrainDBContext {
   public TrainDBExecContext createTrainDBExecContext() {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
-    exCtx = new TrainDBExecContext(conn, metaStore, contextId, execSerialNumber, conf.copy());
+    exCtx = new TrainDBExecContext(
+        conn, catalogStore, metaStore, contextId, execSerialNumber, conf.copy());
     exCtxs.add(exCtx);
     return exCtx;
   }

@@ -22,6 +22,7 @@ import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.coordinator.ExecutionContext;
 import org.verdictdb.exception.VerdictDBException;
 import org.verdictdb.metastore.VerdictMetaStore;
+import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
@@ -38,9 +39,9 @@ public class TrainDBExecContext {
   ExecutionContext executionContext;
 
   public TrainDBExecContext(
-      DbmsConnection conn, VerdictMetaStore metaStore, String contextId, long serialNumber,
-      TrainDBConfiguration conf) {
-    engine = new TrainDBQueryEngine();
+      DbmsConnection conn, CatalogStore catalogStore, VerdictMetaStore metaStore,
+      String contextId, long serialNumber, TrainDBConfiguration conf) {
+    engine = new TrainDBQueryEngine(catalogStore);
     executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
   }
 

@@ -47,6 +47,7 @@ limitations under the License.
     <modules>
         <module>traindb-project</module>
         <module>traindb-common</module>
+        <module>traindb-catalog</module>
         <module>traindb-core</module>
         <module>traindb-assembly</module>
     </modules>

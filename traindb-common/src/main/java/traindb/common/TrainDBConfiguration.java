@@ -50,6 +50,10 @@ public class TrainDBConfiguration extends VerdictOption {
     props.load(inputStream);
   }
 
+  public Properties getProps() {
+    return props;
+  }
+
   @Override
   public TrainDBConfiguration copy() {
     // FIXME Cloner is not working in Java 9+

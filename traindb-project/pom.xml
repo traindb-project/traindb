@@ -46,6 +46,11 @@ limitations under the License.
                 <artifactId>traindb-core</artifactId>
                 <version>${project.version}</version>
             </dependency>
+            <dependency>
+                <groupId>${project.groupId}</groupId>
+                <artifactId>traindb-catalog</artifactId>
+                <version>${project.version}</version>
+            </dependency>
 
             <dependency>
                 <groupId>commons-logging</groupId>
@@ -86,9 +91,9 @@ limitations under the License.
             </dependency>
 
             <dependency>
-                <groupId>javax.jdo</groupId>
-                <artifactId>jdo-api</artifactId>
-                <version>3.1</version>
+                <groupId>org.datanucleus</groupId>
+                <artifactId>javax.jdo</artifactId>
+                <version>3.2.0-release</version>
             </dependency>
             <dependency>
                 <groupId>org.datanucleus</groupId>
@@ -98,9 +103,13 @@ limitations under the License.
             </dependency>
             <dependency>
                 <groupId>org.datanucleus</groupId>
-                <artifactId>datanucleus-accessplatform-jdo-rdbms</artifactId>
+                <artifactId>datanucleus-api-jdo</artifactId>
                 <version>${datanucleus.version}</version>
-                <type>pom</type>
+            </dependency>
+            <dependency>
+                <groupId>org.datanucleus</groupId>
+                <artifactId>datanucleus-rdbms</artifactId>
+                <version>${datanucleus.version}</version>
             </dependency>
 
             <dependency>
@@ -193,7 +202,12 @@ limitations under the License.
                 <groupId>org.xerial</groupId>
                 <artifactId>sqlite-jdbc</artifactId>
                 <version>3.36.0.3</version>
-                <scope>test</scope>
+            </dependency>
+
+            <dependency>
+                <groupId>javax.jdo</groupId>
+                <artifactId>jdo-api</artifactId>
+                <version>3.1</version>
             </dependency>
 
             <!--  Test Support -->

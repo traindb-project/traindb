@@ -25,6 +25,7 @@ limitations under the License.
         <relativePath>../traindb-project</relativePath>
     </parent>
 
+    <groupId>traindb</groupId>
     <artifactId>traindb-common</artifactId>
 
     <name>TrainDB Common</name>
