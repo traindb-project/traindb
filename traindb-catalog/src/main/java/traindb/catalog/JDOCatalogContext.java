@@ -36,11 +36,11 @@ public final class JDOCatalogContext implements CatalogContext {
       query.declareParameters("String modelName");
       query.setUnique(true);
 
-      MModel cModel = (MModel) query.execute(name);
-      if (cModel == null) {
+      MModel mModel = (MModel) query.execute(name);
+      if (mModel == null) {
         throw new CatalogException("model '" + name + "' does not exist");
       }
-      return cModel;
+      return mModel;
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get model '" + name + "'", e);
     }
@@ -54,6 +54,19 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MModel getModel(String name) throws CatalogException {
     return getMModel(name);
+  }
+
+  @Override
+  public MModel createModel(String name, String type, String location, String uri)
+      throws CatalogException {
+    try {
+      MModel mModel = new MModel(name, type, location, uri);
+      pm.makePersistent(mModel);
+      return mModel;
+    } catch (RuntimeException e) {
+      e.printStackTrace();
+      throw new CatalogException("failed to create model '" + name + "'", e);
+    }
   }
 
   @Override

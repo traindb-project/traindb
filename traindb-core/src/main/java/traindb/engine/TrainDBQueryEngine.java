@@ -29,6 +29,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext = catalogStore.getCatalogContext();
   }
 
+  @Override
+  public void createModel(String modelName, String modelType, String modelLocation, String modelUri)
+      throws Exception {
+    catalogContext.createModel(modelName, modelType, modelLocation, modelUri);
+  }
 
   @Override
   public void dropModel(String modelName) throws Exception {

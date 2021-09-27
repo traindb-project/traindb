@@ -16,6 +16,9 @@ package traindb.sql;
 
 public interface TrainDBSqlRunner {
 
+  void createModel(String modelName, String modelType, String modelLocation, String modelUri)
+      throws Exception;
+
   void dropModel(String modelName) throws Exception;
 
 }

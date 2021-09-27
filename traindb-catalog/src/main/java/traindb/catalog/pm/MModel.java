@@ -19,6 +19,7 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
@@ -28,30 +29,43 @@ public final class MModel {
   private long id;
 
   @Persistent
+  @Unique(name = "NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String name;
 
-  private int type;
+  @Persistent
+  @Column(length = 10) // "synopsis" or "inference"
+  private String type;
 
-  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String table;
+  @Persistent
+  @Column(length = 7) // "local" or "remote"
+  private String location;
 
-  public MModel(String name, int type, String table) {
+  @Persistent
+  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
+  private String uri;
+
+  public MModel(String name, String type, String location, String uri) {
     this.name = name;
     this.type = type;
-    this.table = table;
+    this.location = location;
+    this.uri = uri;
   }
 
   public String getName() {
     return name;
   }
 
-  public int getType() {
+  public String getType() {
     return type;
   }
 
-  public String getTable() {
-    return table;
+  public String getLocation() {
+    return location;
+  }
+
+  public String getUri() {
+    return uri;
   }
 
 }

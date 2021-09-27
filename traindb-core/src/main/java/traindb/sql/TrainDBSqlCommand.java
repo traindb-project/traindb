@@ -18,6 +18,7 @@ public abstract class TrainDBSqlCommand {
   public abstract Type getType();
 
   public enum Type {
+    CREATE_MODEL,
     DROP_MODEL,
     OTHER
   }

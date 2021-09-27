@@ -16,6 +16,7 @@ package traindb.catalog;
 
 public final class CatalogConstants {
   public static final int IDENTIFIER_MAX_LENGTH = 128;
+  public static final int CONNECTION_STRING_MAX_LENGTH = 256;
 
   private CatalogConstants() {
   }

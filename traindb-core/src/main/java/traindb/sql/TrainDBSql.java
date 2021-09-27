@@ -40,7 +40,7 @@ public final class TrainDBSql {
     lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
 
-    ParserRuleContext tree = parser.ddl();
+    ParserRuleContext tree = parser.traindbStmts();
     ParseTreeWalker walker = new ParseTreeWalker();
     Listener lsnr = new Listener();
     walker.walk(lsnr, tree);
@@ -51,6 +51,11 @@ public final class TrainDBSql {
   public static VerdictSingleResult run(TrainDBSqlCommand command, TrainDBSqlRunner runner)
       throws Exception {
     switch (command.getType()) {
+      case CREATE_MODEL:
+        TrainDBSqlCreateModel createModel = (TrainDBSqlCreateModel) command;
+        runner.createModel(createModel.getModelName(), createModel.getModelType(),
+            createModel.getModelLocation(), createModel.getModelUri());
+        break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
         runner.dropModel(dropModel.getModelName());
@@ -73,16 +78,27 @@ public final class TrainDBSql {
     }
 
     @Override
-    public void exitDdl(TrainDBSqlParser.DdlContext ctx) {
+    public void exitTraindbStmts(TrainDBSqlParser.TraindbStmtsContext ctx) {
       if (ctx.exception != null) {
         throw ctx.exception;
       }
     }
 
     @Override
+    public void exitCreateModel(TrainDBSqlParser.CreateModelContext ctx) {
+      String modelName = ctx.modelName().getText();
+      String modelType = ctx.modelType().getText();
+      String modelLocation = ctx.modelLocation().getText();
+      String modelUri = ctx.modelUri().getText();
+      LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType +
+          " location=" + modelLocation + " uri=" + modelUri);
+      commands.add(new TrainDBSqlCreateModel(modelName, modelType, modelLocation, modelUri));
+    }
+
+    @Override
     public void exitDropModel(TrainDBSqlParser.DropModelContext ctx) {
       String modelName = ctx.modelName().getText();
-      LOG.info("modelName=" + modelName);
+      LOG.debug("DROP MODEL: name=" + modelName);
       commands.add(new TrainDBSqlDropModel(modelName));
     }
 

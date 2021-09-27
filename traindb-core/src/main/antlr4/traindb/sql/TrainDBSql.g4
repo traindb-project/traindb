@@ -14,7 +14,7 @@
 
 grammar TrainDBSql;
 
-ddl
+traindbStmts
     : ( ddlStmts | error ) EOF
     ;
 
@@ -23,7 +23,12 @@ ddlStmts
     ;
 
 ddlStmt
-    : dropModel
+    : createModel
+    | dropModel
+    ;
+
+createModel
+    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation modelUri
     ;
 
 dropModel
@@ -32,6 +37,20 @@ dropModel
 
 modelName
     : IDENTIFIER
+    ;
+
+modelType
+    : K_INFERENCE
+    | K_SYNOPSIS
+    ;
+
+modelLocation
+    : K_LOCAL
+    | K_REMOTE
+    ;
+
+modelUri
+    : STRING_LITERAL
     ;
 
 error
@@ -43,7 +62,12 @@ error
 
 K_CREATE : C R E A T E ;
 K_DROP : D R O P ;
+K_INFERENCE : I N F E R E N C E ;
+K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
+K_REMOTE : R E M O T E ;
+K_SYNOPSIS : S Y N O P S I S ;
+K_TYPE : T Y P E ;
 
 IDENTIFIER
     : '"' ( ~["\r\n] | '""' )* '"'

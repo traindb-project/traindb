@@ -21,6 +21,7 @@ public interface CatalogContext {
   /* Model */
   boolean modelExists(String name) throws CatalogException;
   MModel getModel(String name) throws CatalogException;
+  MModel createModel(String name, String type, String location, String uri) throws CatalogException;
   void dropModel(String name) throws CatalogException;
 
   void close();
