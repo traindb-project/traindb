@@ -14,8 +14,14 @@
 
 package traindb.engine;
 
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
+import org.verdictdb.VerdictSingleResult;
+import org.verdictdb.coordinator.VerdictSingleResultFromListData;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
+import traindb.catalog.pm.MModel;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSqlRunner;
 
@@ -38,5 +44,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void dropModel(String modelName) throws Exception {
     catalogContext.dropModel(modelName);
+  }
+
+  @Override
+  public VerdictSingleResult showModels() throws Exception {
+    List<String> header = Arrays.asList("model name", "model type", "model location", "model uri");
+    List<List<String>> modelInfo = new ArrayList<>();
+
+    for (MModel mModel : catalogContext.getModels()) {
+      modelInfo.add(Arrays.asList(mModel.getName(), mModel.getType(), mModel.getLocation(),
+          mModel.getUri()));
+    }
+
+    VerdictSingleResultFromListData result =
+        new VerdictSingleResultFromListData(header, (List) modelInfo);
+    return result;
   }
 }

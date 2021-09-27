@@ -12,19 +12,28 @@
  * limitations under the License.
  */
 
-package traindb.catalog;
+package traindb.sql;
 
-import java.util.Collection;
-import traindb.catalog.pm.MModel;
+abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
+  private String modelName;
 
-public interface CatalogContext {
+  protected TrainDBSqlShowCommand(String modelName) {
+    this.modelName = modelName;
+  }
 
-  /* Model */
-  boolean modelExists(String name) throws CatalogException;
-  MModel getModel(String name) throws CatalogException;
-  Collection<MModel> getModels() throws CatalogException;
-  MModel createModel(String name, String type, String location, String uri) throws CatalogException;
-  void dropModel(String name) throws CatalogException;
+  String getModelName() {
+    return modelName;
+  }
 
-  void close();
+  static class Models extends TrainDBSqlShowCommand {
+    Models() {
+      super(null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_MODELS;
+    }
+  }
+
 }

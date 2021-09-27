@@ -25,6 +25,7 @@ ddlStmts
 ddlStmt
     : createModel
     | dropModel
+    | showStmt
     ;
 
 createModel
@@ -53,6 +54,14 @@ modelUri
     : STRING_LITERAL
     ;
 
+showStmt
+    : K_SHOW showTargets
+    ;
+
+showTargets
+    : K_MODELS  # ShowModels
+    ;
+
 error
     : UNEXPECTED_CHAR
         {
@@ -65,7 +74,9 @@ K_DROP : D R O P ;
 K_INFERENCE : I N F E R E N C E ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
+K_MODELS : M O D E L S ;
 K_REMOTE : R E M O T E ;
+K_SHOW : S H O W ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TYPE : T Y P E ;
 

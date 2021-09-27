@@ -14,6 +14,8 @@
 
 package traindb.sql;
 
+import org.verdictdb.VerdictSingleResult;
+
 public interface TrainDBSqlRunner {
 
   void createModel(String modelName, String modelType, String modelLocation, String modelUri)
@@ -21,5 +23,6 @@ public interface TrainDBSqlRunner {
 
   void dropModel(String modelName) throws Exception;
 
+  VerdictSingleResult showModels() throws Exception;
 }
 

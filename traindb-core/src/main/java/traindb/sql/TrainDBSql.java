@@ -60,6 +60,9 @@ public final class TrainDBSql {
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
         runner.dropModel(dropModel.getModelName());
         break;
+      case SHOW_MODELS:
+        TrainDBSqlShowCommand showCmd = (TrainDBSqlShowCommand) command;
+        return runner.showModels();
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -100,6 +103,11 @@ public final class TrainDBSql {
       String modelName = ctx.modelName().getText();
       LOG.debug("DROP MODEL: name=" + modelName);
       commands.add(new TrainDBSqlDropModel(modelName));
+    }
+
+    @Override
+    public void exitShowModels(TrainDBSqlParser.ShowModelsContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Models());
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {
