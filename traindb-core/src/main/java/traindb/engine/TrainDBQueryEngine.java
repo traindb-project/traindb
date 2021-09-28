@@ -49,15 +49,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public VerdictSingleResult showModels() throws Exception {
     List<String> header = Arrays.asList("model name", "model type", "model location", "model uri");
-    List<List<String>> modelInfo = new ArrayList<>();
+    List<List<Object>> modelInfo = new ArrayList<>();
 
     for (MModel mModel : catalogContext.getModels()) {
       modelInfo.add(Arrays.asList(mModel.getName(), mModel.getType(), mModel.getLocation(),
           mModel.getUri()));
     }
 
-    VerdictSingleResultFromListData result =
-        new VerdictSingleResultFromListData(header, (List) modelInfo);
+    VerdictSingleResultFromListData result = new VerdictSingleResultFromListData(header, modelInfo);
     return result;
   }
 }
