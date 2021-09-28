@@ -20,6 +20,7 @@ import java.util.List;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.coordinator.VerdictSingleResultFromListData;
 import traindb.catalog.CatalogContext;
+import traindb.catalog.CatalogException;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
 import traindb.common.TrainDBLogger;
@@ -38,11 +39,17 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void createModel(String modelName, String modelType, String modelLocation, String modelUri)
       throws Exception {
+    if (catalogContext.modelExists(modelName)) {
+      throw new CatalogException("model '" + modelName + "' already exists");
+    }
     catalogContext.createModel(modelName, modelType, modelLocation, modelUri);
   }
 
   @Override
   public void dropModel(String modelName) throws Exception {
+    if (!catalogContext.modelExists(modelName)) {
+      throw new CatalogException("model '" + modelName + "' does not exist");
+    }
     catalogContext.dropModel(modelName);
   }
 
@@ -56,7 +63,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModel.getUri()));
     }
 
-    VerdictSingleResultFromListData result = new VerdictSingleResultFromListData(header, modelInfo);
+    VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInfo);
     return result;
   }
 }
