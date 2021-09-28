@@ -34,11 +34,14 @@ public final class TrainDBSql {
     TrainDBSqlLexer lexer = new TrainDBSqlLexer(input);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     TrainDBSqlParser parser = new TrainDBSqlParser(tokens);
+    TrainDBErrorListener trainDBErrorListener = new TrainDBErrorListener();
 
     // remove default console output printing error listener
     // to suppress syntax error messages for TrainDB (such input query is passed to VerdictDB)
     lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    lexer.addErrorListener(trainDBErrorListener);
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
+    parser.addErrorListener(trainDBErrorListener);
 
     ParserRuleContext tree = parser.traindbStmts();
     ParseTreeWalker walker = new ParseTreeWalker();

@@ -56,7 +56,10 @@ public class TrainDBExecContext {
     List<TrainDBSqlCommand> commands = null;
     try {
       commands = TrainDBSql.parse(query);
-    } catch (RecognitionException e) {
+    } catch (Exception e) {
+      if (commands != null) {
+        commands.clear();
+      }
       LOG.debug("not a TrainDB statement -> bypass");
     }
 
@@ -72,7 +75,7 @@ public class TrainDBExecContext {
     // Pass input query to VerdictDB
     try {
       return executionContext.sql(query, getResult);
-    } catch (VerdictDBException e) {
+    } catch (Exception e) {
       throw new TrainDBException(e.getMessage());
     }
   }

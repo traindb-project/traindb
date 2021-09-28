@@ -15,14 +15,6 @@
 grammar TrainDBSql;
 
 traindbStmts
-    : ( ddlStmts | error ) EOF
-    ;
-
-ddlStmts
-    : ';'* ddlStmt ( ';'+ ddlStmt )* ';'*
-    ;
-
-ddlStmt
     : createModel
     | dropModel
     | showStmt
