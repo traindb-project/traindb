@@ -31,31 +31,23 @@ public final class JDOCatalogContext implements CatalogContext {
     pm = persistenceManager;
   }
 
-  private MModel getMModel(String name) throws CatalogException {
+  @Override
+  public boolean modelExists(String name) throws CatalogException {
+    return getModel(name) != null;
+  }
+
+  @Override
+  public MModel getModel(String name) throws CatalogException {
     try {
       Query query = pm.newQuery(MModel.class);
       query.setFilter("name == modelName");
       query.declareParameters("String modelName");
       query.setUnique(true);
 
-      MModel mModel = (MModel) query.execute(name);
-      if (mModel == null) {
-        throw new CatalogException("model '" + name + "' does not exist");
-      }
-      return mModel;
+      return (MModel) query.execute(name);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get model '" + name + "'", e);
     }
-  }
-
-  @Override
-  public boolean modelExists(String name) throws CatalogException {
-    return getMModel(name) != null;
-  }
-
-  @Override
-  public MModel getModel(String name) throws CatalogException {
-    return getMModel(name);
   }
 
   @Override
@@ -71,14 +63,18 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MModel createModel(String name, String type, String location, String uri)
       throws CatalogException {
+    MModel mModel = new MModel(name, type, location, uri);
+    Transaction tx = pm.currentTransaction();
     try {
-      MModel mModel = new MModel(name, type, location, uri);
+      tx.begin();
       pm.makePersistent(mModel);
-      return mModel;
+      tx.commit();
     } catch (RuntimeException e) {
       e.printStackTrace();
       throw new CatalogException("failed to create model '" + name + "'", e);
     }
+
+    return mModel;
   }
 
   @Override
@@ -86,9 +82,7 @@ public final class JDOCatalogContext implements CatalogContext {
     Transaction tx = pm.currentTransaction();
     try {
       tx.begin();
-
       pm.deletePersistent(getModel(name));
-
       tx.commit();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to drop model '" + name + "'", e);
