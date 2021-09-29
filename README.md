@@ -9,6 +9,7 @@ Currently, we are implementing a prototype for proof of concept.
 
 * Java 8
 * Maven 3.x
+* SQLite3
 
 ## Install
 
@@ -31,3 +32,18 @@ Then, you can find traindb-x.y.z-SNAPSHOT.tar.gz in traindb-assembly/target dire
 $ tar xvfz traindb-assembly/target/traindb-0.1.0-SNAPSHOT.tar.gz
 ```
 
+## Run
+
+### Example
+
+```console
+$ cd traindb-assembly/target/traindb-0.1.0-SNAPSHOT
+$ bin/trsql
+sqlline> !connect jdbc:traindb:<dbms>://<host>
+Enter username for jdbc:traindb:<dbms>://localhost: <username> 
+Enter password for jdbc:traindb:<dbms>://localhost: <password>
+0: jdbc:traindb:<dbms>://<host>>
+```
+
+Now, you can execute SQL statements using the command line interface.
+You need to put JDBC driver for your DBMS into the directory included in CLASSPATH.
