@@ -64,8 +64,18 @@ public final class TrainDBSql {
         runner.dropModel(dropModel.getModelName());
         break;
       case SHOW_MODELS:
-        TrainDBSqlShowCommand showCmd = (TrainDBSqlShowCommand) command;
+        TrainDBSqlShowCommand showModels = (TrainDBSqlShowCommand) command;
         return runner.showModels();
+      case SHOW_MODEL_INSTANCES:
+        TrainDBSqlShowCommand showModelInstances = (TrainDBSqlShowCommand) command;
+        return runner.showModelInstances(showModelInstances.getModelName());
+      case TRAIN_MODEL_INSTANCE:
+        TrainDBSqlTrainModelInstance trainModelInstance = (TrainDBSqlTrainModelInstance) command;
+        runner.trainModelInstance(
+            trainModelInstance.getModelName(), trainModelInstance.getModelInstanceName(),
+            trainModelInstance.getSchemaName(), trainModelInstance.getTableName(),
+            trainModelInstance.getColumnNames());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -111,6 +121,27 @@ public final class TrainDBSql {
     @Override
     public void exitShowModels(TrainDBSqlParser.ShowModelsContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Models());
+    }
+
+    @Override
+    public void exitShowModelInstances(TrainDBSqlParser.ShowModelInstancesContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.ModelInstances(ctx.modelName().getText()));
+    }
+
+    @Override
+    public void exitTrainModelInstance(TrainDBSqlParser.TrainModelInstanceContext ctx) {
+      String modelName = ctx.modelName().getText();
+      String modelInstanceName = ctx.modelInstanceName().getText();
+      String schemaName = ctx.qualifiedTableName().schemaName().getText();
+      String tableName = ctx.qualifiedTableName().tableName().getText();
+
+      List<String> columnNames = new ArrayList<>();
+      for (TrainDBSqlParser.ColumnNameContext columnName : ctx.columnNameList().columnName()) {
+        columnNames.add(columnName.getText());
+      }
+
+      commands.add(new TrainDBSqlTrainModelInstance(
+          modelName, modelInstanceName, schemaName, tableName, columnNames));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

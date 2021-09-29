@@ -15,7 +15,6 @@
 package traindb.engine;
 
 import java.util.List;
-import org.antlr.v4.runtime.RecognitionException;
 import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.DbmsConnection;

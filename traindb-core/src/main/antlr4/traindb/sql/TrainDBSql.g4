@@ -17,6 +17,7 @@ grammar TrainDBSql;
 traindbStmts
     : createModel
     | dropModel
+    | trainModelInstance
     | showStmt
     ;
 
@@ -26,6 +27,10 @@ createModel
 
 dropModel
     : K_DROP K_MODEL modelName
+    ;
+
+trainModelInstance
+    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON qualifiedTableName '(' columnNameList ')'
     ;
 
 modelName
@@ -52,6 +57,31 @@ showStmt
 
 showTargets
     : K_MODELS  # ShowModels
+    | K_MODEL modelName K_INSTANCES  # ShowModelInstances
+    ;
+
+modelInstanceName
+    : IDENTIFIER
+    ;
+
+qualifiedTableName
+    : schemaName '.' tableName
+    ;
+
+schemaName
+    : IDENTIFIER
+    ;
+
+tableName
+    : IDENTIFIER
+    ;
+
+columnNameList
+    : columnName ( ',' columnName )*
+    ;
+
+columnName
+    : IDENTIFIER
     ;
 
 error
@@ -61,15 +91,20 @@ error
         }
     ;
 
+K_AS : A S ;
 K_CREATE : C R E A T E ;
 K_DROP : D R O P ;
 K_INFERENCE : I N F E R E N C E ;
+K_INSTANCE : I N S T A N C E ;
+K_INSTANCES : I N S T A N C E S ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
+K_ON : O N ;
 K_REMOTE : R E M O T E ;
 K_SHOW : S H O W ;
 K_SYNOPSIS : S Y N O P S I S ;
+K_TRAIN : T R A I N ;
 K_TYPE : T Y P E ;
 
 IDENTIFIER

@@ -23,6 +23,7 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModelInstance;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSqlRunner;
 
@@ -54,8 +55,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public void trainModelInstance(
+      String modelName, String modelInstanceName, String schemaName, String tableName,
+      List<String> columnNames) throws Exception {
+    if (!catalogContext.modelExists(modelName)) {
+      throw new CatalogException("model '" + modelName + "' does not exist");
+    }
+
+    // TODO train ML model
+
+    catalogContext.trainModelInstance(
+        modelName, modelInstanceName, schemaName, tableName, columnNames);
+  }
+
+  @Override
   public VerdictSingleResult showModels() throws Exception {
-    List<String> header = Arrays.asList("model name", "model type", "model location", "model uri");
+    List<String> header = Arrays.asList("model", "type", "location", "uri");
     List<List<Object>> modelInfo = new ArrayList<>();
 
     for (MModel mModel : catalogContext.getModels()) {
@@ -64,6 +79,21 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
 
     VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInfo);
+    return result;
+  }
+
+  @Override
+  public VerdictSingleResult showModelInstances(String modelName) throws Exception {
+    List<String> header = Arrays.asList("model", "model_instance", "schema", "table", "columns");
+    List<List<Object>> modelInstanceInfo = new ArrayList<>();
+
+    for (MModelInstance mModelInstance : catalogContext.getModelInstances(modelName)) {
+      modelInstanceInfo.add(Arrays.asList(modelName, mModelInstance.getName(),
+          mModelInstance.getSchemaName(), mModelInstance.getTableName(),
+          mModelInstance.getColumnNames().toString()));
+    }
+
+    VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInstanceInfo);
     return result;
   }
 }

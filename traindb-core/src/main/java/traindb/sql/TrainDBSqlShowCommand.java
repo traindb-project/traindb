@@ -36,4 +36,15 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
+  static class ModelInstances extends TrainDBSqlShowCommand {
+    ModelInstances(String modelName) {
+      super(modelName);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_MODEL_INSTANCES;
+    }
+  }
+
 }

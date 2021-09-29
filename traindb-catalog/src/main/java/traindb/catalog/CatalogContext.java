@@ -15,7 +15,9 @@
 package traindb.catalog;
 
 import java.util.Collection;
+import java.util.List;
 import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModelInstance;
 
 public interface CatalogContext {
 
@@ -25,6 +27,10 @@ public interface CatalogContext {
   Collection<MModel> getModels() throws CatalogException;
   MModel createModel(String name, String type, String location, String uri) throws CatalogException;
   void dropModel(String name) throws CatalogException;
+  MModelInstance trainModelInstance(
+      String modelName, String modelInstanceName, String schemaName, String tableName,
+      List<String> columnNames) throws CatalogException;
+  Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException;
 
   void close();
 }
