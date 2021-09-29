@@ -126,7 +126,7 @@ public class TrainDBConnection implements java.sql.Connection {
 
   @Override
   public void setAutoCommit(boolean autoCommit) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
+    return; /* do nothing */
   }
 
   @Override
@@ -185,7 +185,7 @@ public class TrainDBConnection implements java.sql.Connection {
 
   @Override
   public void setTransactionIsolation(int level) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
+    return; /* do nothing */
   }
 
   @Override
