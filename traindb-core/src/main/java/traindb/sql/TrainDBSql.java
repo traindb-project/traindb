@@ -76,6 +76,10 @@ public final class TrainDBSql {
             trainModelInstance.getSchemaName(), trainModelInstance.getTableName(),
             trainModelInstance.getColumnNames());
         break;
+      case DROP_MODEL_INSTANCE:
+        TrainDBSqlDropModelInstance dropModelInstance = (TrainDBSqlDropModelInstance) command;
+        runner.dropModelInstance(dropModelInstance.getModelInstanceName());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -142,6 +146,13 @@ public final class TrainDBSql {
 
       commands.add(new TrainDBSqlTrainModelInstance(
           modelName, modelInstanceName, schemaName, tableName, columnNames));
+    }
+
+    @Override
+    public void exitDropModelInstance(TrainDBSqlParser.DropModelInstanceContext ctx) {
+      String modelInstanceName = ctx.modelInstanceName().getText();
+      LOG.debug("DROP MODEL INSTANCE: name=" + modelInstanceName);
+      commands.add(new TrainDBSqlDropModelInstance(modelInstanceName));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

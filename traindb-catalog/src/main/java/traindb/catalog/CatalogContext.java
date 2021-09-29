@@ -30,7 +30,10 @@ public interface CatalogContext {
   MModelInstance trainModelInstance(
       String modelName, String modelInstanceName, String schemaName, String tableName,
       List<String> columnNames) throws CatalogException;
+  void dropModelInstance(String name) throws CatalogException;
   Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException;
+  boolean modelInstanceExists(String name) throws CatalogException;
+  MModelInstance getModelInstance(String name) throws CatalogException;
 
   void close();
 }

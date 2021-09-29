@@ -109,6 +109,24 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void dropModelInstance(String name) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+
+      pm.deletePersistent(getModelInstance(name));
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to drop model instance '" + name + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
   public Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException {
     try {
       Query query = pm.newQuery(MModelInstance.class);
@@ -118,6 +136,25 @@ public final class JDOCatalogContext implements CatalogContext {
       return (List<MModelInstance>) query.execute(modelName);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get model '" + modelName + "' instances", e);
+    }
+  }
+
+  @Override
+  public boolean modelInstanceExists(String name) throws CatalogException {
+    return getModelInstance(name) != null;
+  }
+
+  @Override
+  public MModelInstance getModelInstance(String name) throws CatalogException {
+    try {
+      Query query = pm.newQuery(MModelInstance.class);
+      query.setFilter("name == name");
+      query.declareParameters("String name");
+      query.setUnique(true);
+
+      return (MModelInstance) query.execute(name);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get model instance '" + name + "'", e);
     }
   }
 

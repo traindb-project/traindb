@@ -27,6 +27,8 @@ public interface TrainDBSqlRunner {
   void trainModelInstance(String modelName, String modelInstanceName, String schemaName,
                           String tableName, List<String> columnNames) throws Exception;
 
+  void dropModelInstance(String modelInstanceName) throws Exception;
+
   VerdictSingleResult showModels() throws Exception;
 
   VerdictSingleResult showModelInstances(String modelName) throws Exception;

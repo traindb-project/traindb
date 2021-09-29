@@ -58,14 +58,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public void trainModelInstance(
       String modelName, String modelInstanceName, String schemaName, String tableName,
       List<String> columnNames) throws Exception {
-    if (!catalogContext.modelExists(modelName)) {
-      throw new CatalogException("model '" + modelName + "' does not exist");
+    if (catalogContext.modelInstanceExists(modelInstanceName)) {
+      throw new CatalogException("model instance '" + modelInstanceName + "' already exist");
     }
 
     // TODO train ML model
 
     catalogContext.trainModelInstance(
         modelName, modelInstanceName, schemaName, tableName, columnNames);
+  }
+
+  @Override
+  public void dropModelInstance(String modelInstanceName) throws Exception {
+    if (!catalogContext.modelInstanceExists(modelInstanceName)) {
+      throw new CatalogException("model instance '" + modelInstanceName + "' does not exist");
+    }
+    catalogContext.dropModelInstance(modelInstanceName);
   }
 
   @Override

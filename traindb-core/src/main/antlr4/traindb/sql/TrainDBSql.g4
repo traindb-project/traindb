@@ -18,6 +18,7 @@ traindbStmts
     : createModel
     | dropModel
     | trainModelInstance
+    | dropModelInstance
     | showStmt
     ;
 
@@ -31,6 +32,10 @@ dropModel
 
 trainModelInstance
     : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON qualifiedTableName '(' columnNameList ')'
+    ;
+
+dropModelInstance
+    : K_DROP K_MODEL K_INSTANCE modelInstanceName
     ;
 
 modelName
