@@ -55,6 +55,8 @@ if [ -n "$TRAINDB_HEAPSIZE" ]; then
     JAVA_HEAP_MAX=-Xmx${TRAINDB_HEAPSIZE}m
 fi
 
+TRAINDB_OPTS="$JAVA_HEAP_MAX --add-opens java.base/java.util=ALL-UNNAMED"
+
 # classpath
 TRAINDB_BASE_CLASSPATH=$TRAINDB_CONF_DIR
 
