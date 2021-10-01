@@ -32,11 +32,13 @@ public class TrainDBStatement implements java.sql.Statement {
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   Connection conn;
+  TrainDBContext tc;
   TrainDBExecContext exCtx;
   VerdictSingleResult result;
 
   public TrainDBStatement(Connection conn, TrainDBContext context) {
     this.conn = conn;
+    this.tc = context;
     this.exCtx = context.createTrainDBExecContext();
   }
 
@@ -91,7 +93,7 @@ public class TrainDBStatement implements java.sql.Statement {
 
   @Override
   public void close() throws SQLException {
-    exCtx.terminate();
+    tc.removeTrainDBExecContext(exCtx);
   }
 
   @Override

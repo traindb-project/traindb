@@ -288,15 +288,6 @@ public class TrainDBContext {
     return (testConn instanceof JdbcConnection) ? (JdbcConnection) testConn : null;
   }
 
-  public DbmsConnection getCopiedConnection() {
-    try {
-      return conn.copy();
-    } catch (VerdictDBDbmsException e) {
-      e.printStackTrace();
-    }
-    return null;
-  }
-
   public String getContextId() {
     return contextId;
   }
@@ -308,8 +299,7 @@ public class TrainDBContext {
   public TrainDBExecContext createTrainDBExecContext() {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
-    exCtx = new TrainDBExecContext(
-        conn, catalogStore, metaStore, contextId, execSerialNumber, conf.copy());
+    exCtx = new TrainDBExecContext(conn, catalogStore, metaStore, contextId, execSerialNumber, conf);
     exCtxs.add(exCtx);
     return exCtx;
   }
@@ -327,7 +317,7 @@ public class TrainDBContext {
     return metaStore;
   }
 
-  private void removeTrainDBExecContext(TrainDBExecContext exCtx) {
+  public void removeTrainDBExecContext(TrainDBExecContext exCtx) {
     exCtx.terminate();
     exCtxs.remove(exCtx);
   }
