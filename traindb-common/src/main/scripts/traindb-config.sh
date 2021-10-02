@@ -55,7 +55,19 @@ if [ -n "$TRAINDB_HEAPSIZE" ]; then
     JAVA_HEAP_MAX=-Xmx${TRAINDB_HEAPSIZE}m
 fi
 
-TRAINDB_OPTS="$JAVA_HEAP_MAX --add-opens java.base/java.util=ALL-UNNAMED"
+TRAINDB_OPTS="$JAVA_HEAP_MAX"
+
+lines=$("$JAVA" -version 2>&1 | tr '\r' '\n')
+ver=$(echo $lines | sed -e 's/.*version "\(.*\)"\(.*\)/\1/; 1q')
+if [[ $ver = "1."* ]]; then
+    JAVA_VERSION=$(echo $ver | sed -e 's/1\.\([0-9]*\)\(.*\)/\1/; 1q')
+else
+    JAVA_VERSION=$(echo $ver | sed -e 's/\([0-9]*\)\(.*\)/\1/; 1q')
+fi
+
+if [[ $JAVA_VERSION -gt 8 ]]; then
+    TRAINDB_OPTS="$TRAINDB_OPTS --add-opens java.base/java.util=ALL-UNNAMED"
+fi
 
 # classpath
 TRAINDB_BASE_CLASSPATH=$TRAINDB_CONF_DIR
