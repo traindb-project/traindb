@@ -40,7 +40,7 @@ public class TrainDBExecContext {
   public TrainDBExecContext(
       DbmsConnection conn, CatalogStore catalogStore, VerdictMetaStore metaStore,
       String contextId, long serialNumber, TrainDBConfiguration conf) {
-    engine = new TrainDBQueryEngine(catalogStore);
+    engine = new TrainDBQueryEngine(conn, catalogStore, conf);
     executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
   }
 

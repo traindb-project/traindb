@@ -14,6 +14,8 @@
 
 package traindb.catalog;
 
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import javax.jdo.PersistenceManager;
@@ -156,6 +158,12 @@ public final class JDOCatalogContext implements CatalogContext {
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get model instance '" + name + "'", e);
     }
+  }
+
+  @Override
+  public Path getModelInstancePath(String modelName, String modelInstanceName) {
+    return Paths.get(System.getenv("TRAINDB_PREFIX").trim(), "models",
+                     modelName, modelInstanceName);
   }
 
   @Override

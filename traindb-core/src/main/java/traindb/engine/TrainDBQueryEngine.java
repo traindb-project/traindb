@@ -14,16 +14,26 @@
 
 package traindb.engine;
 
+import java.io.FileWriter;
+import java.nio.file.Files;
+import java.nio.file.Path;
+import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
+import org.verdictdb.connection.DbmsConnection;
+import org.verdictdb.connection.DbmsQueryResult;
+import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import org.verdictdb.coordinator.VerdictSingleResultFromListData;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSqlRunner;
 
@@ -31,10 +41,15 @@ import traindb.sql.TrainDBSqlRunner;
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
+  private DbmsConnection conn;
   private CatalogContext catalogContext;
+  private TrainDBConfiguration conf;
 
-  public TrainDBQueryEngine(CatalogStore catalogStore) {
-    catalogContext = catalogStore.getCatalogContext();
+  public TrainDBQueryEngine(DbmsConnection conn, CatalogStore catalogStore,
+                            TrainDBConfiguration conf) {
+    this.conn = conn;
+    this.catalogContext = catalogStore.getCatalogContext();
+    this.conf = conf;
   }
 
   @Override
@@ -54,6 +69,104 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.dropModel(modelName);
   }
 
+  private JSONObject getTableMetadata(String schemaName, String tableName,
+                                      List<String> columnNames) throws Exception {
+    // query to get table metadata
+    StringBuilder sb = new StringBuilder();
+    sb.append("SELECT ");
+    for (String columnName : columnNames) {
+      sb.append(columnName);
+      sb.append(",");
+    }
+    sb.deleteCharAt(sb.lastIndexOf(","));
+    sb.append(" FROM ");
+    sb.append(schemaName);
+    sb.append(".");
+    sb.append(tableName);
+    sb.append(" WHERE 1<0");
+
+    String sql = sb.toString();
+    DbmsQueryResult res = conn.execute(sql);
+
+    JSONObject root = new JSONObject();
+    JSONArray fields = new JSONArray();
+    for (int i = 0; i < res.getColumnCount(); i++) {
+      JSONObject column = new JSONObject();
+      JSONObject typeInfo = new JSONObject();
+
+      /* datatype (type, subtype)
+        ('categorical', None): 'object',
+        ('boolean', None): 'bool',
+        ('numerical', None): 'float',
+        ('numerical', 'float'): 'float',
+        ('numerical', 'integer'): 'int',
+        ('datetime', None): 'datetime64',
+        ('id', None): 'int',
+        ('id', 'integer'): 'int',
+        ('id', 'string'): 'str'
+       */
+      switch (res.getColumnType(i)) {
+        case Types.CHAR:
+        case Types.VARCHAR:
+          typeInfo.put("type", "categorical");
+          break;
+        case Types.NUMERIC:
+        case Types.DECIMAL:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.TINYINT:
+        case Types.SMALLINT:
+          typeInfo.put("type", "numerical");
+          typeInfo.put("subtype", "integer");
+          break;
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          typeInfo.put("type", "numerical");
+          typeInfo.put("subtype", "float");
+          break;
+        case Types.BOOLEAN:
+          typeInfo.put("type", "boolean");
+          break;
+        case Types.DATE:
+        case Types.TIME:
+        case Types.TIMESTAMP:
+        case Types.TIMESTAMP_WITH_TIMEZONE:
+          typeInfo.put("type", "datetime");
+          break;
+      }
+
+      column.put(res.getColumnName(i), typeInfo);
+      fields.add(column);
+    }
+    root.put("fields", fields);
+    root.put("schema", schemaName);
+    root.put("table", tableName);
+
+    LOG.info(root.toJSONString());
+    return root;
+  }
+
+  // FIXME temporary
+  private DbmsQueryResult getTrainingData(String schemaName, String tableName,
+                                              List<String> columnNames) throws Exception {
+    // query to get table metadata
+    StringBuilder sb = new StringBuilder();
+    sb.append("SELECT ");
+    for (String columnName : columnNames) {
+      sb.append(columnName);
+      sb.append(",");
+    }
+    sb.deleteCharAt(sb.lastIndexOf(","));
+    sb.append(" FROM ");
+    sb.append(schemaName);
+    sb.append(".");
+    sb.append(tableName);
+
+    String sql = sb.toString();
+    DbmsQueryResult res = conn.execute(sql);
+    return res;
+  }
+
   @Override
   public void trainModelInstance(
       String modelName, String modelInstanceName, String schemaName, String tableName,
@@ -61,6 +174,25 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (catalogContext.modelInstanceExists(modelInstanceName)) {
       throw new CatalogException("model instance '" + modelInstanceName + "' already exist");
     }
+
+    JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames);
+    MModel mModel = catalogContext.getModel(modelName);
+    Path instancePath = catalogContext.getModelInstancePath(modelName, modelInstanceName);
+    Files.createDirectories(instancePath);
+    String outputPath = instancePath.toString();
+
+    // write metadata for model training scripts in python
+    FileWriter fileWriter = new FileWriter(outputPath + "/metadata.json");
+    fileWriter.write(tableMetadata.toJSONString());
+    fileWriter.flush();
+    fileWriter.close();
+
+    // FIXME securely pass training data for ML model training
+    DbmsQueryResult trainingData = getTrainingData(schemaName, tableName, columnNames);
+    FileWriter datafileWriter = new FileWriter(outputPath + "/data.csv");
+    datafileWriter.write(new VerdictSingleResultFromDbmsQueryResult(trainingData).toCsv());
+    datafileWriter.flush();
+    datafileWriter.close();
 
     // TODO train ML model
 

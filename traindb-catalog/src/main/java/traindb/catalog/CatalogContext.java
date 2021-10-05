@@ -14,6 +14,7 @@
 
 package traindb.catalog;
 
+import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import traindb.catalog.pm.MModel;
@@ -34,6 +35,7 @@ public interface CatalogContext {
   Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException;
   boolean modelInstanceExists(String name) throws CatalogException;
   MModelInstance getModelInstance(String name) throws CatalogException;
+  Path getModelInstancePath(String modelName, String modelInstanceName);
 
   void close();
 }
