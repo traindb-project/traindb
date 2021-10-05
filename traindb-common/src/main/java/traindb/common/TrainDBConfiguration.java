@@ -14,7 +14,6 @@
 
 package traindb.common;
 
-import com.rits.cloning.Cloner;
 import java.io.InputStream;
 import java.util.Properties;
 import org.verdictdb.commons.VerdictOption;
