@@ -272,6 +272,7 @@ public class TrainDBContext {
   public void close() {
     this.abort(); // terminates all ExecutionContexts first.
     conn.close();
+    catalogStore.stop();
     isClosed = true;
   }
 
