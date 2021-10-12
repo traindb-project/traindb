@@ -21,7 +21,6 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
-import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.DbmsConnection;
@@ -89,7 +88,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     DbmsQueryResult res = conn.execute(sql);
 
     JSONObject root = new JSONObject();
-    JSONArray fields = new JSONArray();
+    JSONObject fields = new JSONObject();
     for (int i = 0; i < res.getColumnCount(); i++) {
       JSONObject column = new JSONObject();
       JSONObject typeInfo = new JSONObject();
@@ -135,8 +134,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           break;
       }
 
-      column.put(res.getColumnName(i), typeInfo);
-      fields.add(column);
+      fields.put(res.getColumnName(i), typeInfo);
     }
     root.put("fields", fields);
     root.put("schema", schemaName);
