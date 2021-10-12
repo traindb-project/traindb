@@ -64,10 +64,10 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MModel createModel(String name, String type, String location, String uri)
+  public MModel createModel(String name, String type, String location, String className, String uri)
       throws CatalogException {
     try {
-      MModel mModel = new MModel(name, type, location, uri);
+      MModel mModel = new MModel(name, type, location, className, uri);
       pm.makePersistent(mModel);
       return mModel;
     } catch (RuntimeException e) {

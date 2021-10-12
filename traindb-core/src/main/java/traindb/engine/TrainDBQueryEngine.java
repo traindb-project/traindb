@@ -53,12 +53,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void createModel(String modelName, String modelType, String modelLocation, String modelUri)
-      throws Exception {
+  public void createModel(String modelName, String modelType, String modelLocation,
+                          String modelClassName, String modelUri) throws Exception {
     if (catalogContext.modelExists(modelName)) {
       throw new CatalogException("model '" + modelName + "' already exists");
     }
-    catalogContext.createModel(modelName, modelType, modelLocation, modelUri);
+    catalogContext.createModel(modelName, modelType, modelLocation, modelClassName, modelUri);
   }
 
   @Override
@@ -210,12 +210,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public VerdictSingleResult showModels() throws Exception {
-    List<String> header = Arrays.asList("model", "type", "location", "uri");
+    List<String> header = Arrays.asList("model", "type", "location", "class", "uri");
     List<List<Object>> modelInfo = new ArrayList<>();
 
     for (MModel mModel : catalogContext.getModels()) {
       modelInfo.add(Arrays.asList(mModel.getName(), mModel.getType(), mModel.getLocation(),
-          mModel.getUri()));
+          mModel.getClassName(), mModel.getUri()));
     }
 
     VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInfo);

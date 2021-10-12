@@ -57,7 +57,8 @@ public final class TrainDBSql {
       case CREATE_MODEL:
         TrainDBSqlCreateModel createModel = (TrainDBSqlCreateModel) command;
         runner.createModel(createModel.getModelName(), createModel.getModelType(),
-            createModel.getModelLocation(), createModel.getModelUri());
+            createModel.getModelLocation(), createModel.getModelClassName(),
+            createModel.getModelUri());
         break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
@@ -109,10 +110,12 @@ public final class TrainDBSql {
       String modelName = ctx.modelName().getText();
       String modelType = ctx.modelType().getText();
       String modelLocation = ctx.modelLocation().getText();
+      String modelClassName = ctx.modelClassName().getText();
       String modelUri = ctx.modelUri().getText();
       LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType +
-          " location=" + modelLocation + " uri=" + modelUri);
-      commands.add(new TrainDBSqlCreateModel(modelName, modelType, modelLocation, modelUri));
+          " location=" + modelLocation + " class=" + modelClassName + " uri=" + modelUri);
+      commands.add(new TrainDBSqlCreateModel(
+          modelName, modelType, modelLocation, modelClassName, modelUri));
     }
 
     @Override

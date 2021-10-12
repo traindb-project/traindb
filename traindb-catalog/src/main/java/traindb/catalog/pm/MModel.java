@@ -45,15 +45,20 @@ public final class MModel {
 
   @Persistent
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
+  private String className;
+
+  @Persistent
+  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
   private String uri;
 
   @Persistent(mappedBy = "model", dependentElement = "true")
   private Collection<MModelInstance> modelInstances;
 
-  public MModel(String name, String type, String location, String uri) {
+  public MModel(String name, String type, String location, String className, String uri) {
     this.name = name;
     this.type = type;
     this.location = location;
+    this.className = className;
     this.uri = uri;
   }
 
@@ -67,6 +72,10 @@ public final class MModel {
 
   public String getLocation() {
     return location;
+  }
+
+  public String getClassName() {
+    return className;
   }
 
   public String getUri() {

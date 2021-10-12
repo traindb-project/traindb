@@ -23,7 +23,7 @@ traindbStmts
     ;
 
 createModel
-    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation modelUri
+    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation K_AS modelClassName K_IN modelUri
     ;
 
 dropModel
@@ -50,6 +50,10 @@ modelType
 modelLocation
     : K_LOCAL
     | K_REMOTE
+    ;
+
+modelClassName
+    : STRING_LITERAL
     ;
 
 modelUri
@@ -99,6 +103,7 @@ error
 K_AS : A S ;
 K_CREATE : C R E A T E ;
 K_DROP : D R O P ;
+K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
 K_INSTANCE : I N S T A N C E ;
 K_INSTANCES : I N S T A N C E S ;
