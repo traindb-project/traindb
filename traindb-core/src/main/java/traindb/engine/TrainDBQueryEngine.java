@@ -33,6 +33,7 @@ import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
 import traindb.common.TrainDBConfiguration;
+import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.sql.TrainDBSqlRunner;
 
@@ -140,7 +141,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     root.put("schema", schemaName);
     root.put("table", tableName);
 
-    LOG.info(root.toJSONString());
     return root;
   }
 
@@ -180,19 +180,26 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String outputPath = instancePath.toString();
 
     // write metadata for model training scripts in python
-    FileWriter fileWriter = new FileWriter(outputPath + "/metadata.json");
+    String metadataFilename = outputPath + "/metadata.json";
+    FileWriter fileWriter = new FileWriter(metadataFilename);
     fileWriter.write(tableMetadata.toJSONString());
     fileWriter.flush();
     fileWriter.close();
 
     // FIXME securely pass training data for ML model training
     DbmsQueryResult trainingData = getTrainingData(schemaName, tableName, columnNames);
-    FileWriter datafileWriter = new FileWriter(outputPath + "/data.csv");
+    String dataFilename = outputPath + "/data.csv";
+    FileWriter datafileWriter = new FileWriter(dataFilename);
     datafileWriter.write(new VerdictSingleResultFromDbmsQueryResult(trainingData).toCsv());
     datafileWriter.flush();
     datafileWriter.close();
 
-    // TODO train ML model
+    // train ML model
+    ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "train",
+        mModel.getClassName(), mModel.getUri(), dataFilename, metadataFilename, outputPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
 
     catalogContext.trainModelInstance(
         modelName, modelInstanceName, schemaName, tableName, columnNames);

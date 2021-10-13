@@ -53,4 +53,8 @@ public class TrainDBConfiguration extends VerdictOption {
     return props;
   }
 
+  public String getModelRunnerPath() {
+    return System.getenv("TRAINDB_PREFIX").trim() + "/models/TrainDBModelRunner.py";
+  }
+
 }
