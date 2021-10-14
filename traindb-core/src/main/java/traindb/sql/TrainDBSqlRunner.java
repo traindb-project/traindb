@@ -29,6 +29,9 @@ public interface TrainDBSqlRunner {
 
   void dropModelInstance(String modelInstanceName) throws Exception;
 
+  void createSynopsis(String synopsisName, String modelInstanceName, int limitNumber)
+      throws Exception;
+
   VerdictSingleResult showModels() throws Exception;
 
   VerdictSingleResult showModelInstances(String modelName) throws Exception;

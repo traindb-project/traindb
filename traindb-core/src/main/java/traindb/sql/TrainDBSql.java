@@ -81,6 +81,11 @@ public final class TrainDBSql {
         TrainDBSqlDropModelInstance dropModelInstance = (TrainDBSqlDropModelInstance) command;
         runner.dropModelInstance(dropModelInstance.getModelInstanceName());
         break;
+      case CREATE_SYNOPSIS:
+        TrainDBSqlCreateSynopsis createSynopsis = (TrainDBSqlCreateSynopsis) command;
+        runner.createSynopsis(createSynopsis.getSynopsisName(),
+            createSynopsis.getModelInstanceName(), createSynopsis.getLimitNumber());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -156,6 +161,16 @@ public final class TrainDBSql {
       String modelInstanceName = ctx.modelInstanceName().getText();
       LOG.debug("DROP MODEL INSTANCE: name=" + modelInstanceName);
       commands.add(new TrainDBSqlDropModelInstance(modelInstanceName));
+    }
+
+    @Override
+    public void exitCreateSynopsis(TrainDBSqlParser.CreateSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      String modelInstanceName = ctx.modelInstanceName().getText();
+      int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
+      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName +
+          " limit=" + limitNumber);
+      commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelInstanceName, limitNumber));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

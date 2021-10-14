@@ -23,6 +23,7 @@ import javax.jdo.Query;
 import javax.jdo.Transaction;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
+import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -164,6 +165,19 @@ public final class JDOCatalogContext implements CatalogContext {
   public Path getModelInstancePath(String modelName, String modelInstanceName) {
     return Paths.get(System.getenv("TRAINDB_PREFIX").trim(), "models",
                      modelName, modelInstanceName);
+  }
+
+  @Override
+  public MSynopsis createSynopsis(String synopsisName, String modelInstanceName)
+      throws CatalogException {
+    try {
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, getModelInstance(modelInstanceName));
+      pm.makePersistent(mSynopsis);
+      return mSynopsis;
+    } catch (RuntimeException e) {
+      e.printStackTrace();
+      throw new CatalogException("failed to create synopsis '" + synopsisName + "'", e);
+    }
   }
 
   @Override

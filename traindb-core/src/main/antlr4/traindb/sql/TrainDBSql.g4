@@ -19,6 +19,7 @@ traindbStmts
     | dropModel
     | trainModelInstance
     | dropModelInstance
+    | createSynopsis
     | showStmt
     ;
 
@@ -73,6 +74,10 @@ modelInstanceName
     : IDENTIFIER
     ;
 
+createSynopsis
+    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL K_INSTANCE modelInstanceName K_LIMIT limitNumber
+    ;
+
 qualifiedTableName
     : schemaName '.' tableName
     ;
@@ -93,6 +98,14 @@ columnName
     : IDENTIFIER
     ;
 
+synopsisName
+    : IDENTIFIER
+    ;
+
+limitNumber
+    : NUMERIC_LITERAL
+    ;
+
 error
     : UNEXPECTED_CHAR
         {
@@ -103,10 +116,12 @@ error
 K_AS : A S ;
 K_CREATE : C R E A T E ;
 K_DROP : D R O P ;
+K_FROM : F R O M ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
 K_INSTANCE : I N S T A N C E ;
 K_INSTANCES : I N S T A N C E S ;
+K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;

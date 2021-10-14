@@ -24,6 +24,7 @@ public abstract class TrainDBSqlCommand {
     SHOW_MODEL_INSTANCES,
     TRAIN_MODEL_INSTANCE,
     DROP_MODEL_INSTANCE,
+    CREATE_SYNOPSIS,
     OTHER
   }
 }

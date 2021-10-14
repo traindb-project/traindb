@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.List;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
+import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {
 
@@ -37,6 +38,7 @@ public interface CatalogContext {
   boolean modelInstanceExists(String name) throws CatalogException;
   MModelInstance getModelInstance(String name) throws CatalogException;
   Path getModelInstancePath(String modelName, String modelInstanceName);
+  MSynopsis createSynopsis(String synopsisName, String modeInstanceName) throws CatalogException;
 
   void close();
 }

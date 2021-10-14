@@ -14,17 +14,24 @@
 
 package traindb.engine;
 
+import com.opencsv.CSVReader;
+import com.opencsv.CSVReaderBuilder;
+import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
+import org.verdictdb.connection.CachedDbmsConnection;
 import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.connection.DbmsQueryResult;
+import org.verdictdb.connection.JdbcConnection;
 import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import org.verdictdb.coordinator.VerdictSingleResultFromListData;
 import traindb.catalog.CatalogContext;
@@ -92,7 +99,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     JSONObject root = new JSONObject();
     JSONObject fields = new JSONObject();
     for (int i = 0; i < res.getColumnCount(); i++) {
-      JSONObject column = new JSONObject();
       JSONObject typeInfo = new JSONObject();
 
       /* datatype (type, subtype)
@@ -136,10 +142,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           break;
       }
       for (String pk : primaryKeys) {
-	if (res.getColumnName(i).equals(pk)) {
+        if (res.getColumnName(i).equals(pk)) {
           typeInfo.put("type", "id");
-	  break;
-	}
+          break;
+        }
       }
 
       fields.put(res.getColumnName(i), typeInfo);
@@ -218,6 +224,110 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new CatalogException("model instance '" + modelInstanceName + "' does not exist");
     }
     catalogContext.dropModelInstance(modelInstanceName);
+  }
+
+  private void createSynopsisTable(String synopsisName, MModelInstance mModelInstance)
+      throws Exception {
+    StringBuilder sb = new StringBuilder();
+    sb.append("CREATE TABLE ");
+    sb.append(mModelInstance.getSchemaName());
+    sb.append(".");
+    sb.append(synopsisName);
+    sb.append(" AS SELECT ");
+    for (String columnName : mModelInstance.getColumnNames()) {
+      sb.append(columnName);
+      sb.append(",");
+    }
+    sb.deleteCharAt(sb.lastIndexOf(","));
+    sb.append(" FROM ");
+    sb.append(mModelInstance.getSchemaName());
+    sb.append(".");
+    sb.append(mModelInstance.getTableName());
+    sb.append(" WHERE 1<0");
+
+    String sql = sb.toString();
+    conn.execute(sql);
+  }
+
+  private void loadSynopsisIntoTable(DbmsConnection dbmsConn, String synopsisName,
+                                     MModelInstance mModelInstance, String synopsisFile)
+      throws Exception {
+    Connection origConn = null;
+    if (dbmsConn instanceof CachedDbmsConnection) {
+      loadSynopsisIntoTable(((CachedDbmsConnection) dbmsConn).getOriginalConnection(),
+          synopsisName, mModelInstance, synopsisFile);
+      return;
+    } else if (dbmsConn instanceof JdbcConnection) {
+      origConn = ((JdbcConnection) dbmsConn).getConnection();
+    } else {
+      throw new TrainDBException("cannot load synopsis data into table");
+    }
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("INSERT INTO ");
+    sb.append(mModelInstance.getSchemaName());
+    sb.append(".");
+    sb.append(synopsisName);
+    sb.append(" VALUES (");
+    for (String columnName : mModelInstance.getColumnNames()) {
+      sb.append("?,");
+    }
+    sb.deleteCharAt(sb.lastIndexOf(","));
+    sb.append(")");
+
+    CSVReader csvReader = new CSVReaderBuilder(new FileReader(synopsisFile))
+        .withSkipLines(1).build();
+    String sql = sb.toString();
+
+    PreparedStatement pstmt = origConn.prepareStatement(sql);
+    int collen = mModelInstance.getColumnNames().size();
+    String[] row;
+    try {
+      while ((row = csvReader.readNext()) != null) {
+        for (int i = 1; i <= collen; i++) {
+          pstmt.setObject(i, row[i - 1]);
+        }
+        pstmt.addBatch();
+      }
+      pstmt.executeBatch();
+    } catch (Exception e) {
+      throw e;
+    } finally {
+      if (pstmt != null) {
+        pstmt.close();
+      }
+    }
+  }
+
+  @Override
+  public void createSynopsis(String synopsisName, String modelInstanceName, int limitNumber)
+      throws Exception {
+    if (!catalogContext.modelInstanceExists(modelInstanceName)) {
+      throw new CatalogException("model instance '" + modelInstanceName + "' does not exist");
+    }
+    MModelInstance mModelInstance = catalogContext.getModelInstance(modelInstanceName);
+    MModel mModel = mModelInstance.getModel();
+    String instancePath =
+        catalogContext.getModelInstancePath(mModel.getName(), mModelInstance.getName()).toString();
+    String outputPath = instancePath + '/' + synopsisName + ".csv";
+
+    // generate synopsis from ML model
+    ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "synopsis",
+        mModel.getClassName(), mModel.getUri(), instancePath, String.valueOf(limitNumber),
+        outputPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
+
+    // create synopsis table from generated synopsis file
+    if (conn.getTables(mModelInstance.getSchemaName()).contains(synopsisName)) {
+      throw new CatalogException("table '" + mModelInstance.getSchemaName() + "." + synopsisName
+          + "' already exists in source DBMS");
+    }
+    createSynopsisTable(synopsisName, mModelInstance);
+    loadSynopsisIntoTable(conn, synopsisName, mModelInstance, outputPath);
+
+    catalogContext.createSynopsis(synopsisName, modelInstanceName);
   }
 
   @Override
