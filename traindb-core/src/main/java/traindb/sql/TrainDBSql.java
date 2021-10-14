@@ -86,6 +86,10 @@ public final class TrainDBSql {
         runner.createSynopsis(createSynopsis.getSynopsisName(),
             createSynopsis.getModelInstanceName(), createSynopsis.getLimitNumber());
         break;
+      case DROP_SYNOPSIS:
+        TrainDBSqlDropSynopsis dropSynopsis = (TrainDBSqlDropSynopsis) command;
+        runner.dropSynopsis(dropSynopsis.getSynopsisName());
+        break;
       case SHOW_SYNOPSES:
         TrainDBSqlShowCommand showSynopses = (TrainDBSqlShowCommand) command;
         return runner.showSynopses();
@@ -174,6 +178,13 @@ public final class TrainDBSql {
       LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName +
           " limit=" + limitNumber);
       commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelInstanceName, limitNumber));
+    }
+
+    @Override
+    public void exitDropSynopsis(TrainDBSqlParser.DropSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      LOG.debug("DROP SYNOPSIS: name=" + synopsisName);
+      commands.add(new TrainDBSqlDropSynopsis(synopsisName));
     }
 
     @Override

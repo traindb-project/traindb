@@ -191,6 +191,43 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public boolean synopsisExists(String name) throws CatalogException {
+    return getSynopsis(name) != null;
+  }
+
+  @Override
+  public MSynopsis getSynopsis(String name) throws CatalogException {
+    try {
+      Query query = pm.newQuery(MSynopsis.class);
+      query.setFilter("name == synopsisName");
+      query.declareParameters("String synopsisName");
+      query.setUnique(true);
+
+      return (MSynopsis) query.execute(name);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopsis '" + name + "'", e);
+    }
+  }
+
+  @Override
+  public void dropSynopsis(String name) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+
+      pm.deletePersistent(getSynopsis(name));
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to drop synopsis '" + name + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
   public void close() {
     pm.close();
   }

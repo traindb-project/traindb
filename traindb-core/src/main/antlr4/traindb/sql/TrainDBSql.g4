@@ -20,6 +20,7 @@ traindbStmts
     | trainModelInstance
     | dropModelInstance
     | createSynopsis
+    | dropSynopsis
     | showStmt
     ;
 
@@ -77,6 +78,10 @@ modelInstanceName
 
 createSynopsis
     : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL K_INSTANCE modelInstanceName K_LIMIT limitNumber
+    ;
+
+dropSynopsis
+    : K_DROP K_SYNOPSIS synopsisName
     ;
 
 qualifiedTableName

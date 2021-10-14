@@ -40,6 +40,9 @@ public interface CatalogContext {
   Path getModelInstancePath(String modelName, String modelInstanceName);
   MSynopsis createSynopsis(String synopsisName, String modeInstanceName) throws CatalogException;
   Collection<MSynopsis> getSynopses() throws CatalogException;
+  boolean synopsisExists(String name) throws CatalogException;
+  MSynopsis getSynopsis(String name) throws CatalogException;
+  void dropSynopsis(String name) throws CatalogException;
 
   void close();
 }

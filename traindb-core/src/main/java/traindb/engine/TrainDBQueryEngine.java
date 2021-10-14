@@ -331,6 +331,27 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.createSynopsis(synopsisName, modelInstanceName);
   }
 
+  private void dropSynopsisTable(String synopsisName) throws Exception {
+    MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
+    StringBuilder sb = new StringBuilder();
+    sb.append("DROP TABLE ");
+    sb.append(mSynopsis.getModelInstance().getSchemaName());
+    sb.append(".");
+    sb.append(synopsisName);
+
+    String sql = sb.toString();
+    conn.execute(sql);
+  }
+
+  @Override
+  public void dropSynopsis(String synopsisName) throws Exception {
+    if (!catalogContext.synopsisExists(synopsisName)) {
+      throw new CatalogException("synopsis '" + synopsisName + "' does not exist");
+    }
+    dropSynopsisTable(synopsisName);
+    catalogContext.dropSynopsis(synopsisName);
+  }
+
   @Override
   public VerdictSingleResult showModels() throws Exception {
     List<String> header = Arrays.asList("model", "type", "location", "class", "uri");
