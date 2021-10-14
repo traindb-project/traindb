@@ -47,4 +47,14 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
+  static class Synopses extends TrainDBSqlShowCommand {
+    Synopses() {
+      super(null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_SYNOPSES;
+    }
+  }
 }

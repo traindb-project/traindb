@@ -86,6 +86,9 @@ public final class TrainDBSql {
         runner.createSynopsis(createSynopsis.getSynopsisName(),
             createSynopsis.getModelInstanceName(), createSynopsis.getLimitNumber());
         break;
+      case SHOW_SYNOPSES:
+        TrainDBSqlShowCommand showSynopses = (TrainDBSqlShowCommand) command;
+        return runner.showSynopses();
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -171,6 +174,11 @@ public final class TrainDBSql {
       LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName +
           " limit=" + limitNumber);
       commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelInstanceName, limitNumber));
+    }
+
+    @Override
+    public void exitShowSynopses(TrainDBSqlParser.ShowSynopsesContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Synopses());
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

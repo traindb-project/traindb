@@ -181,6 +181,16 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public Collection<MSynopsis> getSynopses() throws CatalogException {
+    try {
+      Query query = pm.newQuery(MSynopsis.class);
+      return (List<MSynopsis>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopses", e);
+    }
+  }
+
+  @Override
   public void close() {
     pm.close();
   }

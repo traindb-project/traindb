@@ -39,6 +39,7 @@ import traindb.catalog.CatalogException;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
+import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
@@ -356,6 +357,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
 
     VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInstanceInfo);
+    return result;
+  }
+
+  @Override
+  public VerdictSingleResult showSynopses() throws Exception {
+    List<String> header = Arrays.asList("synopsis", "model_instance", "schema", "table", "columns");
+    List<List<Object>> synopsisInfo = new ArrayList<>();
+
+    for (MSynopsis mSynopsis : catalogContext.getSynopses()) {
+      MModelInstance mModelInstance = mSynopsis.getModelInstance();
+      synopsisInfo.add(Arrays.asList(mSynopsis.getName(), mModelInstance.getName(),
+          mModelInstance.getSchemaName(), mModelInstance.getTableName(),
+          mModelInstance.getColumnNames()));
+    }
+
+    VerdictSingleResult result = new VerdictSingleResultFromListData(header, synopsisInfo);
     return result;
   }
 }
