@@ -66,6 +66,6 @@ if args.cmd == 'train':
   runner.train_model(args.model_class, args.model_uri, data_file, table_metadata, args.instance_path)
 elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.model_class, args.model_uri, args.instance_path, args.row_count)
-  syn_data.to_csv(args.output_file)
+  syn_data.to_csv(args.output_file, index=False)
 else:
   root_parser.print_help()
