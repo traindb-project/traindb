@@ -68,4 +68,4 @@ elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.model_class, args.model_uri, args.instance_path, args.row_count)
   syn_data.to_csv(args.output_file)
 else:
-  print('command error')
+  root_parser.print_help()
