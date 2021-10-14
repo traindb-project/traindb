@@ -14,8 +14,12 @@
 
 package traindb.catalog;
 
+import java.nio.file.Path;
 import java.util.Collection;
+import java.util.List;
 import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModelInstance;
+import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {
 
@@ -23,8 +27,22 @@ public interface CatalogContext {
   boolean modelExists(String name) throws CatalogException;
   MModel getModel(String name) throws CatalogException;
   Collection<MModel> getModels() throws CatalogException;
-  MModel createModel(String name, String type, String location, String uri) throws CatalogException;
+  MModel createModel(String name, String type, String location, String className, String uri)
+      throws CatalogException;
   void dropModel(String name) throws CatalogException;
+  MModelInstance trainModelInstance(
+      String modelName, String modelInstanceName, String schemaName, String tableName,
+      List<String> columnNames) throws CatalogException;
+  void dropModelInstance(String name) throws CatalogException;
+  Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException;
+  boolean modelInstanceExists(String name) throws CatalogException;
+  MModelInstance getModelInstance(String name) throws CatalogException;
+  Path getModelInstancePath(String modelName, String modelInstanceName);
+  MSynopsis createSynopsis(String synopsisName, String modeInstanceName) throws CatalogException;
+  Collection<MSynopsis> getSynopses() throws CatalogException;
+  boolean synopsisExists(String name) throws CatalogException;
+  MSynopsis getSynopsis(String name) throws CatalogException;
+  void dropSynopsis(String name) throws CatalogException;
 
   void close();
 }

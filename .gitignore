@@ -20,3 +20,7 @@ dependency-reduced-pom.xml
 
 # log
 *.log
+
+# python, pyenv
+__pycache__
+.python-version

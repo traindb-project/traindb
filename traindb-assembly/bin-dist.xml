@@ -75,6 +75,10 @@ limitations under the License.
                 <exclude>**/*</exclude>
             </excludes>
         </fileSet>
+        <fileSet>
+            <directory>../traindb-model/src/main/python</directory>
+            <outputDirectory>models</outputDirectory>
+        </fileSet>
     </fileSets>
 
     <files>

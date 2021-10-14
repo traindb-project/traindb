@@ -14,15 +14,30 @@
 
 package traindb.sql;
 
+import java.util.List;
 import org.verdictdb.VerdictSingleResult;
 
 public interface TrainDBSqlRunner {
 
-  void createModel(String modelName, String modelType, String modelLocation, String modelUri)
-      throws Exception;
+  void createModel(String modelName, String modelType, String modelLocation, String modelClassName,
+                   String modelUri) throws Exception;
 
   void dropModel(String modelName) throws Exception;
 
+  void trainModelInstance(String modelName, String modelInstanceName, String schemaName,
+                          String tableName, List<String> columnNames) throws Exception;
+
+  void dropModelInstance(String modelInstanceName) throws Exception;
+
+  void createSynopsis(String synopsisName, String modelInstanceName, int limitNumber)
+      throws Exception;
+
+  void dropSynopsis(String synopsisName) throws Exception;
+
   VerdictSingleResult showModels() throws Exception;
+
+  VerdictSingleResult showModelInstances(String modelName) throws Exception;
+
+  VerdictSingleResult showSynopses() throws Exception;
 }
 

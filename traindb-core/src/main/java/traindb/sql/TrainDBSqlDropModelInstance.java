@@ -14,19 +14,19 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlDropModelInstance extends TrainDBSqlCommand {
+  private final String modelInstanceName;
 
-  public enum Type {
-    CREATE_MODEL,
-    DROP_MODEL,
-    SHOW_MODELS,
-    SHOW_MODEL_INSTANCES,
-    TRAIN_MODEL_INSTANCE,
-    DROP_MODEL_INSTANCE,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    OTHER
+  TrainDBSqlDropModelInstance(String modelInstanceName) {
+    this.modelInstanceName = modelInstanceName;
+  }
+
+  String getModelInstanceName() {
+    return modelInstanceName;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.DROP_MODEL_INSTANCE;
   }
 }

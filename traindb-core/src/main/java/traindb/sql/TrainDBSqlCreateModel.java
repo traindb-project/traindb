@@ -18,12 +18,15 @@ class TrainDBSqlCreateModel extends TrainDBSqlCommand {
   private final String modelName;
   private final String modelType;
   private final String modelLocation;
+  private final String modelClassName;
   private final String modelUri;
 
-  TrainDBSqlCreateModel(String modelName, String modelType, String modelLocation, String modelUri) {
+  TrainDBSqlCreateModel(String modelName, String modelType, String modelLocation,
+                        String modelClassName, String modelUri) {
     this.modelName = modelName;
     this.modelType = modelType;
     this.modelLocation = modelLocation;
+    this.modelClassName = modelClassName;
     this.modelUri = modelUri;
   }
 
@@ -37,6 +40,10 @@ class TrainDBSqlCreateModel extends TrainDBSqlCommand {
 
   String getModelLocation() {
     return modelLocation;
+  }
+
+  String getModelClassName() {
+    return modelClassName;
   }
 
   String getModelUri() {

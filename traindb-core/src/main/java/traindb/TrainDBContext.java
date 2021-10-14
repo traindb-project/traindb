@@ -62,12 +62,7 @@ public class TrainDBContext {
   private List<TrainDBExecContext> exCtxs = new LinkedList<>();
 
   public TrainDBContext(DbmsConnection conn) throws TrainDBException {
-    this.conn = new CachedDbmsConnection(conn);
-    this.contextId = RandomStringUtils.randomAlphanumeric(5);
-    this.conf = new TrainDBConfiguration();
-    this.metaStore = getCachedMetaStore(conn, conf);
-    this.catalogStore = new JDOCatalogStore();
-    initialize(conf, catalogStore);
+    this(conn, new TrainDBConfiguration());
   }
 
   public TrainDBContext(DbmsConnection conn, TrainDBConfiguration conf) throws TrainDBException {

@@ -14,7 +14,6 @@
 
 package traindb.common;
 
-import com.rits.cloning.Cloner;
 import java.io.InputStream;
 import java.util.Properties;
 import org.verdictdb.commons.VerdictOption;
@@ -54,4 +53,7 @@ public class TrainDBConfiguration extends VerdictOption {
     return props;
   }
 
+  public String getModelRunnerPath() {
+    return System.getenv("TRAINDB_PREFIX").trim() + "/models/TrainDBModelRunner.py";
+  }
 }

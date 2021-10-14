@@ -14,8 +14,7 @@
 
 package traindb.catalog.pm;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -25,7 +24,7 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MModel {
+public final class MSynopsis {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
@@ -35,54 +34,19 @@ public final class MModel {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String name;
 
-  @Persistent
-  @Column(length = 10) // "synopsis" or "inference"
-  private String type;
+  @Persistent(dependent = "false")
+  private MModelInstance modelInstance;
 
-  @Persistent
-  @Column(length = 7) // "local" or "remote"
-  private String location;
-
-  @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String className;
-
-  @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String uri;
-
-  @Persistent(mappedBy = "model", dependentElement = "true")
-  private Collection<MModelInstance> modelInstances;
-
-  public MModel(String name, String type, String location, String className, String uri) {
+  public MSynopsis(String name, MModelInstance modelInstance) {
     this.name = name;
-    this.type = type;
-    this.location = location;
-    this.className = className;
-    this.uri = uri;
+    this.modelInstance = modelInstance;
   }
 
   public String getName() {
     return name;
   }
 
-  public String getType() {
-    return type;
-  }
-
-  public String getLocation() {
-    return location;
-  }
-
-  public String getClassName() {
-    return className;
-  }
-
-  public String getUri() {
-    return uri;
-  }
-
-  public Collection<MModelInstance> getModelInstances() {
-    return new ArrayList<MModelInstance>(modelInstances);
+  public MModelInstance getModelInstance() {
+    return modelInstance;
   }
 }

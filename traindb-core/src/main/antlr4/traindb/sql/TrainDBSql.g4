@@ -17,15 +17,27 @@ grammar TrainDBSql;
 traindbStmts
     : createModel
     | dropModel
+    | trainModelInstance
+    | dropModelInstance
+    | createSynopsis
+    | dropSynopsis
     | showStmt
     ;
 
 createModel
-    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation modelUri
+    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation K_AS modelClassName K_IN modelUri
     ;
 
 dropModel
     : K_DROP K_MODEL modelName
+    ;
+
+trainModelInstance
+    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON qualifiedTableName '(' columnNameList ')'
+    ;
+
+dropModelInstance
+    : K_DROP K_MODEL K_INSTANCE modelInstanceName
     ;
 
 modelName
@@ -42,6 +54,10 @@ modelLocation
     | K_REMOTE
     ;
 
+modelClassName
+    : STRING_LITERAL
+    ;
+
 modelUri
     : STRING_LITERAL
     ;
@@ -52,6 +68,48 @@ showStmt
 
 showTargets
     : K_MODELS  # ShowModels
+    | K_MODEL modelName K_INSTANCES  # ShowModelInstances
+    | K_SYNOPSES  # ShowSynopses
+    ;
+
+modelInstanceName
+    : IDENTIFIER
+    ;
+
+createSynopsis
+    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL K_INSTANCE modelInstanceName K_LIMIT limitNumber
+    ;
+
+dropSynopsis
+    : K_DROP K_SYNOPSIS synopsisName
+    ;
+
+qualifiedTableName
+    : schemaName '.' tableName
+    ;
+
+schemaName
+    : IDENTIFIER
+    ;
+
+tableName
+    : IDENTIFIER
+    ;
+
+columnNameList
+    : columnName ( ',' columnName )*
+    ;
+
+columnName
+    : IDENTIFIER
+    ;
+
+synopsisName
+    : IDENTIFIER
+    ;
+
+limitNumber
+    : NUMERIC_LITERAL
     ;
 
 error
@@ -61,15 +119,24 @@ error
         }
     ;
 
+K_AS : A S ;
 K_CREATE : C R E A T E ;
 K_DROP : D R O P ;
+K_FROM : F R O M ;
+K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
+K_INSTANCE : I N S T A N C E ;
+K_INSTANCES : I N S T A N C E S ;
+K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
+K_ON : O N ;
 K_REMOTE : R E M O T E ;
 K_SHOW : S H O W ;
+K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
+K_TRAIN : T R A I N ;
 K_TYPE : T Y P E ;
 
 IDENTIFIER

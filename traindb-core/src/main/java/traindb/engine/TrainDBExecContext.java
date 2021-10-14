@@ -15,7 +15,6 @@
 package traindb.engine;
 
 import java.util.List;
-import org.antlr.v4.runtime.RecognitionException;
 import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.DbmsConnection;
@@ -41,7 +40,7 @@ public class TrainDBExecContext {
   public TrainDBExecContext(
       DbmsConnection conn, CatalogStore catalogStore, VerdictMetaStore metaStore,
       String contextId, long serialNumber, TrainDBConfiguration conf) {
-    engine = new TrainDBQueryEngine(catalogStore);
+    engine = new TrainDBQueryEngine(conn, catalogStore, conf);
     executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
   }
 

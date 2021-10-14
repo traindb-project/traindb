@@ -14,8 +14,7 @@
 
 package traindb.catalog.pm;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -25,7 +24,7 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MModel {
+public final class MModelInstance {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
@@ -35,54 +34,46 @@ public final class MModel {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String name;
 
-  @Persistent
-  @Column(length = 10) // "synopsis" or "inference"
-  private String type;
+  @Persistent(dependent = "false")
+  private MModel model;
 
   @Persistent
-  @Column(length = 7) // "local" or "remote"
-  private String location;
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String schemaName;
 
   @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String className;
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String tableName;
 
   @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String uri;
+  private List<String> columns;
 
-  @Persistent(mappedBy = "model", dependentElement = "true")
-  private Collection<MModelInstance> modelInstances;
-
-  public MModel(String name, String type, String location, String className, String uri) {
-    this.name = name;
-    this.type = type;
-    this.location = location;
-    this.className = className;
-    this.uri = uri;
+  public MModelInstance(MModel model, String modelInstanceName, String schemaName,
+                        String tableName, List<String> columns) {
+    this.model = model;
+    this.name = modelInstanceName;
+    this.schemaName = schemaName;
+    this.tableName = tableName;
+    this.columns = columns;
   }
 
   public String getName() {
     return name;
   }
 
-  public String getType() {
-    return type;
+  public MModel getModel() {
+    return model;
   }
 
-  public String getLocation() {
-    return location;
+  public String getSchemaName() {
+    return schemaName;
   }
 
-  public String getClassName() {
-    return className;
+  public String getTableName() {
+    return tableName;
   }
 
-  public String getUri() {
-    return uri;
-  }
-
-  public Collection<MModelInstance> getModelInstances() {
-    return new ArrayList<MModelInstance>(modelInstances);
+  public List<String> getColumnNames() {
+    return columns;
   }
 }
