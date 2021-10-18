@@ -95,7 +95,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     String sql = sb.toString();
     DbmsQueryResult res = conn.execute(sql);
-    List<String> primaryKeys = conn.getPrimaryKey(schemaName, tableName);
 
     JSONObject root = new JSONObject();
     JSONObject fields = new JSONObject();
@@ -141,12 +140,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         case Types.TIMESTAMP_WITH_TIMEZONE:
           typeInfo.put("type", "datetime");
           break;
-      }
-      for (String pk : primaryKeys) {
-        if (res.getColumnName(i).equals(pk)) {
-          typeInfo.put("type", "id");
-          break;
-        }
       }
 
       fields.put(res.getColumnName(i), typeInfo);
