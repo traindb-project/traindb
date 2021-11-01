@@ -124,8 +124,8 @@ public final class TrainDBSql {
       String modelLocation = ctx.modelLocation().getText();
       String modelClassName = ctx.modelClassName().getText();
       String modelUri = ctx.modelUri().getText();
-      LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType +
-          " location=" + modelLocation + " class=" + modelClassName + " uri=" + modelUri);
+      LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType
+          + " location=" + modelLocation + " class=" + modelClassName + " uri=" + modelUri);
       commands.add(new TrainDBSqlCreateModel(
           modelName, modelType, modelLocation, modelClassName, modelUri));
     }
@@ -175,8 +175,8 @@ public final class TrainDBSql {
       String synopsisName = ctx.synopsisName().getText();
       String modelInstanceName = ctx.modelInstanceName().getText();
       int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
-      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName +
-          " limit=" + limitNumber);
+      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName
+          + " limit=" + limitNumber);
       commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelInstanceName, limitNumber));
     }
 

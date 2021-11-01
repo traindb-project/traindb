@@ -140,6 +140,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         case Types.TIMESTAMP_WITH_TIMEZONE:
           typeInfo.put("type", "datetime");
           break;
+        default:
+          typeInfo.put("type", "unknown");
+          break;
       }
 
       fields.put(res.getColumnName(i), typeInfo);
@@ -181,7 +184,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
 
     JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames);
-    MModel mModel = catalogContext.getModel(modelName);
     Path instancePath = catalogContext.getModelInstancePath(modelName, modelInstanceName);
     Files.createDirectories(instancePath);
     String outputPath = instancePath.toString();
@@ -200,6 +202,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     datafileWriter.write(new VerdictSingleResultFromDbmsQueryResult(trainingData).toCsv());
     datafileWriter.flush();
     datafileWriter.close();
+
+    MModel mModel = catalogContext.getModel(modelName);
 
     // train ML model
     ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "train",

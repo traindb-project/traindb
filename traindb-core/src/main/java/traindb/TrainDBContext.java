@@ -295,7 +295,8 @@ public class TrainDBContext {
   public TrainDBExecContext createTrainDBExecContext() {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
-    exCtx = new TrainDBExecContext(conn, catalogStore, metaStore, contextId, execSerialNumber, conf);
+    exCtx = new TrainDBExecContext(
+        conn, catalogStore, metaStore, contextId, execSerialNumber, conf);
     exCtxs.add(exCtx);
     return exCtx;
   }

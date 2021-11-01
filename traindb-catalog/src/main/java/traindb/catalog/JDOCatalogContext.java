@@ -90,9 +90,9 @@ public final class JDOCatalogContext implements CatalogContext {
     } catch (RuntimeException e) {
       throw new CatalogException("failed to drop model '" + name + "'", e);
     } finally {
-        if (tx.isActive()) {
-            tx.rollback();
-        }
+      if (tx.isActive()) {
+        tx.rollback();
+      }
     }
   }
 

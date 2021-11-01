@@ -32,8 +32,8 @@ public final class JDOCatalogStore implements CatalogStore {
     props.setProperty("datanucleus.ConnectionDriverName",
         conf.getProperty("traindb.metastore.driver", "org.sqlite.JDBC"));
     props.setProperty("datanucleus.ConnectionURL",
-        conf.getProperty("traindb.metastore.uri", "jdbc:sqlite://" +
-            System.getenv("TRAINDB_PREFIX").trim() + "/traindb_metastore.db"));
+        conf.getProperty("traindb.metastore.uri", "jdbc:sqlite://"
+            + System.getenv("TRAINDB_PREFIX").trim() + "/traindb_metastore.db"));
     props.setProperty(
         "datanucleus.ConnectionUserName", conf.getProperty("traindb.metastore.username", ""));
     props.setProperty(
