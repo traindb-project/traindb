@@ -49,7 +49,7 @@ if [ -z "$JAVA_HOME" ]; then
 fi
 
 JAVA=$JAVA_HOME/bin/java
-JAVA_HEAP_MAX=-Xmx1000m
+JAVA_HEAP_MAX=-Xmx16G
 
 if [ -n "$TRAINDB_HEAPSIZE" ]; then
     JAVA_HEAP_MAX=-Xmx${TRAINDB_HEAPSIZE}m
