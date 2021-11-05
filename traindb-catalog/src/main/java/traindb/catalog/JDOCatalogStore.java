@@ -17,6 +17,7 @@ package traindb.catalog;
 import java.util.Properties;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogStore implements CatalogStore {
@@ -33,7 +34,7 @@ public final class JDOCatalogStore implements CatalogStore {
         conf.getProperty("traindb.metastore.driver", "org.sqlite.JDBC"));
     props.setProperty("datanucleus.ConnectionURL",
         conf.getProperty("traindb.metastore.uri", "jdbc:sqlite://"
-            + System.getenv("TRAINDB_PREFIX").trim() + "/traindb_metastore.db"));
+            + TrainDBConfiguration.getTrainDBPrefixPath() + "/traindb_metastore.db"));
     props.setProperty(
         "datanucleus.ConnectionUserName", conf.getProperty("traindb.metastore.username", ""));
     props.setProperty(

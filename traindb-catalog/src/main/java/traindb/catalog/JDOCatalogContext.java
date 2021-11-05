@@ -24,6 +24,7 @@ import javax.jdo.Transaction;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -163,7 +164,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public Path getModelInstancePath(String modelName, String modelInstanceName) {
-    return Paths.get(System.getenv("TRAINDB_PREFIX").trim(), "models",
+    return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
                      modelName, modelInstanceName);
   }
 
