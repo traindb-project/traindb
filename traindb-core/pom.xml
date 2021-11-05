@@ -95,6 +95,14 @@ limitations under the License.
             <artifactId>commons-dbcp2</artifactId>
         </dependency>
         <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
+        </dependency>
+        <dependency>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-testkit</artifactId>
+        </dependency>
+        <dependency>
             <groupId>sqlline</groupId>
             <artifactId>sqlline</artifactId>
         </dependency>
@@ -116,6 +124,11 @@ limitations under the License.
         <dependency>
             <groupId>commons-io</groupId>
             <artifactId>commons-io</artifactId>
+            <scope>test</scope>
+        </dependency>
+        <dependency>
+            <groupId>net.hydromatic</groupId>
+            <artifactId>quidem</artifactId>
             <scope>test</scope>
         </dependency>
     </dependencies>
@@ -168,6 +181,19 @@ limitations under the License.
                         </goals>
                     </execution>
                 </executions>
+            </plugin>
+            <plugin>
+                <groupId>org.apache.maven.plugins</groupId>
+                <artifactId>maven-surefire-plugin</artifactId>
+                <configuration>
+                    <skipTests>${skipTests}</skipTests>
+                    <argLine>-Xmx16G</argLine>
+                    <useFile>false</useFile>
+                    <useManifestOnlyJar>false</useManifestOnlyJar>
+                    <systemPropertyVariables>
+                        <TRAINDB_PREFIX>${project.build.directory}/test-classes</TRAINDB_PREFIX>
+                    </systemPropertyVariables>
+                </configuration>
             </plugin>
         </plugins>
     </build>

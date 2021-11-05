@@ -1,0 +1,101 @@
+# simple.iq
+!use instacart
+!set outputformat mysql
+
+CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
+(0 rows modified)
+
+!update
+
+SHOW MODELS;
++----------+----------+----------+----------+--------------------+
+| model    | type     | location | class    | uri                |
++----------+----------+----------+----------+--------------------+
+| tablegan | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
++----------+----------+----------+----------+--------------------+
+(1 row)
+
+!ok
+
+TRAIN MODEL tablegan INSTANCE tgan ON instacart.order_products(product_id, add_to_cart_order);
+(0 rows modified)
+
+!update
+
+SHOW MODEL tablegan INSTANCES;
++----------+----------------+-----------+----------------+---------------------------------+
+| model    | model_instance | schema    | table          | columns                         |
++----------+----------------+-----------+----------------+---------------------------------+
+| tablegan | tgan           | instacart | order_products | [product_id, add_to_cart_order] |
++----------+----------------+-----------+----------------+---------------------------------+
+(1 row)
+
+!ok
+
+CREATE SYNOPSIS order_products_syn FROM MODEL INSTANCE tgan LIMIT 1000;
+(0 rows modified)
+
+!update
+
+SHOW SYNOPSES;
++--------------------+----------------+-----------+----------------+---------------------------------+
+| synopsis           | model_instance | schema    | table          | columns                         |
++--------------------+----------------+-----------+----------------+---------------------------------+
+| order_products_syn | tgan           | instacart | order_products | [product_id, add_to_cart_order] |
++--------------------+----------------+-----------+----------------+---------------------------------+
+(1 row)
+
+!ok
+
+SELECT count(*) FROM instacart.order_products_syn;
++------+
+| c2   |
++------+
+| 1000 |
++------+
+(1 row)
+
+!ok
+
+DROP SYNOPSIS order_products_syn;
+(0 rows modified)
+
+!update
+
+SHOW SYNOPSES;
++
+ |
++
++
+(0 rows)
+
+!ok
+
+DROP MODEL INSTANCE tgan;
+(0 rows modified)
+
+!update
+
+SHOW MODEL tablegan INSTANCES;
++
+ |
++
++
+(0 rows)
+
+!ok
+
+DROP MODEL tablegan;
+(0 rows modified)
+
+!update
+
+SHOW MODELS;
++
+ |
++
++
+(0 rows)
+
+!ok
+

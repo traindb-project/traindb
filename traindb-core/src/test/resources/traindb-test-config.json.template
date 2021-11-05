@@ -1,0 +1,8 @@
+[
+  {
+    "name": "instacart",
+    "url": "jdbc:traindb:mysql://localhost",
+    "user": "",
+    "password": ""
+  }
+]

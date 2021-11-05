@@ -32,6 +32,8 @@ limitations under the License.
 
     <properties>
         <datanucleus.version>5.2.0-release</datanucleus.version>
+        <calcite.version>1.28.0</calcite.version>
+        <skipTests>true</skipTests>
     </properties>
 
     <dependencyManagement>
@@ -87,7 +89,13 @@ limitations under the License.
             <dependency>
                 <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-core</artifactId>
-                <version>1.27.0</version>
+                <version>${calcite.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-testkit</artifactId>
+                <version>${calcite.version}</version>
+                <scope>test</scope>
             </dependency>
 
             <dependency>
@@ -221,6 +229,12 @@ limitations under the License.
                 <groupId>org.jmockit</groupId>
                 <artifactId>jmockit</artifactId>
                 <version>1.49</version>
+                <scope>test</scope>
+            </dependency>
+            <dependency>
+                <groupId>net.hydromatic</groupId>
+                <artifactId>quidem</artifactId>
+                <version>0.9</version>
                 <scope>test</scope>
             </dependency>
         </dependencies>

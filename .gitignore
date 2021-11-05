@@ -12,6 +12,7 @@ jars/
 *.class
 site/
 dependency-reduced-pom.xml
+traindb-test-config.json
 
 # eclipse
 .classpath
