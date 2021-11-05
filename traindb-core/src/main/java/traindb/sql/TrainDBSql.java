@@ -22,6 +22,7 @@ import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.verdictdb.VerdictSingleResult;
+import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import traindb.common.TrainDBLogger;
 
 public final class TrainDBSql {
@@ -96,7 +97,7 @@ public final class TrainDBSql {
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
-    return null;
+    return VerdictSingleResultFromDbmsQueryResult.empty();
   }
 
   private static class Listener extends TrainDBSqlBaseListener {
