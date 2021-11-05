@@ -16,6 +16,7 @@ package traindb.engine;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import java.io.File;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
@@ -207,7 +208,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     // train ML model
     ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "train",
-        mModel.getClassName(), mModel.getUri(), dataFilename, metadataFilename, outputPath);
+        mModel.getClassName(), TrainDBConfiguration.absoluteUri(mModel.getUri()),
+        dataFilename, metadataFilename, outputPath);
     pb.inheritIO();
     Process process = pb.start();
     process.waitFor();
@@ -311,8 +313,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     // generate synopsis from ML model
     ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "synopsis",
-        mModel.getClassName(), mModel.getUri(), instancePath, String.valueOf(limitNumber),
-        outputPath);
+        mModel.getClassName(), TrainDBConfiguration.absoluteUri(mModel.getUri()),
+        instancePath, String.valueOf(limitNumber), outputPath);
     pb.inheritIO();
     Process process = pb.start();
     process.waitFor();

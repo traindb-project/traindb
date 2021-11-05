@@ -14,6 +14,7 @@
 
 package traindb.common;
 
+import java.io.File;
 import java.io.InputStream;
 import java.util.Properties;
 import org.verdictdb.commons.VerdictOption;
@@ -63,5 +64,13 @@ public class TrainDBConfiguration extends VerdictOption {
       prefix = System.getenv("TRAINDB_PREFIX");
     }
     return prefix.trim();
+  }
+
+  public static String absoluteUri(String uri) {
+    File f = new File(uri);
+    if (!f.isAbsolute()) {
+      return getTrainDBPrefixPath() + "/" + uri;
+    }
+    return uri;
   }
 }
