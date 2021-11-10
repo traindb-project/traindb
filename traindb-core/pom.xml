@@ -133,6 +133,33 @@ limitations under the License.
         </dependency>
     </dependencies>
 
+    <profiles>
+        <profile>
+            <id>jdk8</id>
+            <activation>
+                <jdk>1.8</jdk>
+            </activation>
+            <build>
+                <plugins>
+                    <plugin>
+                        <groupId>org.apache.maven.plugins</groupId>
+                        <artifactId>maven-surefire-plugin</artifactId>
+                        <configuration>
+                            <skipTests>${skipTests}</skipTests>
+                            <argLine>-Xmx16G</argLine>
+                            <disableXmlReport>true</disableXmlReport>
+                            <useFile>false</useFile>
+                            <useManifestOnlyJar>false</useManifestOnlyJar>
+                            <systemPropertyVariables>
+                                <TRAINDB_PREFIX>${project.build.directory}/test-classes</TRAINDB_PREFIX>
+                            </systemPropertyVariables>
+                        </configuration>
+                    </plugin>
+                </plugins>
+            </build>
+        </profile>
+    </profiles>
+
     <build>
         <plugins>
             <plugin>
@@ -187,7 +214,7 @@ limitations under the License.
                 <artifactId>maven-surefire-plugin</artifactId>
                 <configuration>
                     <skipTests>${skipTests}</skipTests>
-                    <argLine>-Xmx16G</argLine>
+                    <argLine>-Xmx16G --add-opens java.base/java.util=ALL-UNNAMED</argLine>
                     <useFile>false</useFile>
                     <useManifestOnlyJar>false</useManifestOnlyJar>
                     <systemPropertyVariables>
