@@ -34,7 +34,6 @@ import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.connection.DbmsQueryResult;
 import org.verdictdb.connection.JdbcConnection;
 import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
-import org.verdictdb.coordinator.VerdictSingleResultFromListData;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.CatalogStore;
@@ -361,7 +360,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModel.getClassName(), mModel.getUri()));
     }
 
-    VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInfo);
+    VerdictSingleResult result = new TrainDBResultFromListData(header, modelInfo);
     return result;
   }
 
@@ -376,7 +375,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModelInstance.getColumnNames().toString()));
     }
 
-    VerdictSingleResult result = new VerdictSingleResultFromListData(header, modelInstanceInfo);
+    VerdictSingleResult result = new TrainDBResultFromListData(header, modelInstanceInfo);
     return result;
   }
 
@@ -392,7 +391,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModelInstance.getColumnNames()));
     }
 
-    VerdictSingleResult result = new VerdictSingleResultFromListData(header, synopsisInfo);
+    VerdictSingleResult result = new TrainDBResultFromListData(header, synopsisInfo);
     return result;
   }
 }
