@@ -75,23 +75,6 @@ public class TrainDBContext {
   }
 
   /**
-   * This method does not support concurrent execution of queries; thus, should not be used in
-   * production.
-   *
-   * @param jdbcConn
-   * @return TrainDBContext
-   * @throws TrainDBException
-   */
-  public static TrainDBContext fromJdbcConnection(Connection jdbcConn) throws TrainDBException {
-    try {
-      DbmsConnection conn = JdbcConnection.create(jdbcConn);
-      return new TrainDBContext(conn);
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
-  }
-
-  /**
    * Uses a connection pool.
    *
    * @param jdbcConnectionString
