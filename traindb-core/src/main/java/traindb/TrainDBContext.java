@@ -14,7 +14,6 @@
 
 package traindb;
 
-import java.sql.Connection;
 import java.sql.SQLException;
 import java.util.Collection;
 import java.util.LinkedList;
@@ -226,15 +225,6 @@ public class TrainDBContext {
 
   public boolean isClosed() {
     return isClosed;
-  }
-
-  @Deprecated
-  public JdbcConnection getJdbcConnection() {
-    DbmsConnection testConn = conn;
-    if (testConn instanceof CachedDbmsConnection) {
-      testConn = ((CachedDbmsConnection) conn).getOriginalConnection();
-    }
-    return (testConn instanceof JdbcConnection) ? (JdbcConnection) testConn : null;
   }
 
   public String getContextId() {

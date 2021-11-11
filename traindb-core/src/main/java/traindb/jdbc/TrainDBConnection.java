@@ -318,8 +318,6 @@ public class TrainDBConnection implements java.sql.Connection {
   @Override
   public boolean isValid(int timeout) throws SQLException {
     return !vc.isClosed();
-    //    JdbcConnection conn = vc.getJdbcConnection();
-    //    return (conn != null) && conn.getConnection().isValid(timeout);
   }
 
   @Override
