@@ -101,23 +101,7 @@ public class TrainDBContext {
    */
   public static TrainDBContext fromConnectionString(String jdbcConnectionString)
       throws TrainDBException {
-    String jdbcConnStr = removeTrainDBKeywordIfExists(jdbcConnectionString);
-    if (!attemptLoadDriverClass(jdbcConnStr)) {
-      throw new TrainDBException(
-          String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
-    }
-    TrainDBConfiguration conf = new TrainDBConfiguration();
-    conf.parseConnectionString(jdbcConnStr);
-
-    try {
-      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr), conf);
-      } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr), conf);
-      }
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
+    return fromConnectionString(jdbcConnectionString, null);
   }
 
   /**
@@ -139,7 +123,9 @@ public class TrainDBContext {
     }
     TrainDBConfiguration conf = new TrainDBConfiguration();
     conf.parseConnectionString(jdbcConnStr);
-    conf.parseProperties(info);
+    if (info != null) {
+      conf.parseProperties(info);
+    }
 
     try {
       if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
@@ -163,26 +149,10 @@ public class TrainDBContext {
    */
   public static TrainDBContext fromConnectionString(
       String jdbcConnectionString, String user, String password) throws TrainDBException {
-    String jdbcConnStr = removeTrainDBKeywordIfExists(jdbcConnectionString);
-    if (!attemptLoadDriverClass(jdbcConnStr)) {
-      throw new TrainDBException(
-          String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
-    }
     Properties info = new Properties();
     info.setProperty("user", user);
     info.setProperty("password", password);
-    TrainDBConfiguration conf = new TrainDBConfiguration();
-    conf.parseConnectionString(jdbcConnStr);
-
-    try {
-      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), conf);
-      } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info), conf);
-      }
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
+    return fromConnectionString(jdbcConnectionString, info);
   }
 
   private static String removeTrainDBKeywordIfExists(String connectionString) {
