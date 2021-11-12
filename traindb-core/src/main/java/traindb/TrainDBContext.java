@@ -124,6 +124,10 @@ public class TrainDBContext {
     dataSource.setUrl(jdbcConnStr);
     dataSource.setDriverClassName(jdbcDriverClassName);
     dataSource.setValidationQuery("SELECT 1");
+    if (info != null) {
+      dataSource.setUsername(info.getProperty("user"));
+      dataSource.setPassword(info.getProperty("password"));
+    }
 
     return new TrainDBContext(dataSource, info, conf);
   }
