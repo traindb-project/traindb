@@ -19,6 +19,7 @@ import java.util.Collection;
 import java.util.LinkedList;
 import java.util.List;
 import java.util.Properties;
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.lang3.RandomStringUtils;
 import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
@@ -53,6 +54,7 @@ public class TrainDBContext {
   private boolean isClosed = false;
   private VerdictMetaStore metaStore;
   private CatalogStore catalogStore;
+  private BasicDataSource dataSource;
   private long executionSerialNumber = 0;
   private TrainDBConfiguration conf;
   /**
@@ -60,16 +62,25 @@ public class TrainDBContext {
    */
   private List<TrainDBExecContext> exCtxs = new LinkedList<>();
 
-  public TrainDBContext(DbmsConnection conn) throws TrainDBException {
-    this(conn, new TrainDBConfiguration());
-  }
-
-  public TrainDBContext(DbmsConnection conn, TrainDBConfiguration conf) throws TrainDBException {
+  public TrainDBContext(BasicDataSource dataSource, Properties info, TrainDBConfiguration conf)
+      throws TrainDBException {
+    String jdbcConnStr = dataSource.getUrl();
+    DbmsConnection conn;
+    try {
+      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
+        conn = JdbcConnection.create(jdbcConnStr, info);
+      } else {
+        conn = ConcurrentJdbcConnection.create(jdbcConnStr, info);
+      }
+    } catch (VerdictDBException e) {
+      throw new TrainDBException(e.getMessage());
+    }
     this.conn = new CachedDbmsConnection(conn);
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
     this.conf = conf;
     this.metaStore = getCachedMetaStore(conn, conf);
     this.catalogStore = new JDOCatalogStore();
+    this.dataSource = dataSource;
     initialize(conf, catalogStore);
   }
 
@@ -98,10 +109,10 @@ public class TrainDBContext {
   public static TrainDBContext fromConnectionString(String jdbcConnectionString, Properties info)
       throws TrainDBException {
     String jdbcConnStr = removeTrainDBKeywordIfExists(jdbcConnectionString);
-    if (!attemptLoadDriverClass(jdbcConnStr)) {
+    String jdbcDriverClassName = getJdbcDriverClassName(jdbcConnStr);
+    if (jdbcDriverClassName == null) {
       throw new TrainDBException(
-          String.format(
-              "JDBC driver not found for the connection string: %s", jdbcConnStr));
+          String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
     }
     TrainDBConfiguration conf = new TrainDBConfiguration();
     conf.parseConnectionString(jdbcConnStr);
@@ -109,15 +120,12 @@ public class TrainDBContext {
       conf.parseProperties(info);
     }
 
-    try {
-      if (SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnStr) instanceof MysqlSyntax) {
-        return new TrainDBContext(JdbcConnection.create(jdbcConnStr, info), conf);
-      } else {
-        return new TrainDBContext(ConcurrentJdbcConnection.create(jdbcConnStr, info), conf);
-      }
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
+    BasicDataSource dataSource = new BasicDataSource();
+    dataSource.setUrl(jdbcConnStr);
+    dataSource.setDriverClassName(jdbcDriverClassName);
+    dataSource.setValidationQuery("SELECT 1");
+
+    return new TrainDBContext(dataSource, info, conf);
   }
 
   /**
@@ -153,21 +161,22 @@ public class TrainDBContext {
     return connectionString;
   }
 
-  private static boolean attemptLoadDriverClass(String jdbcConnectionString) {
+  private static String getJdbcDriverClassName(String jdbcConnectionString) {
     SqlSyntax syntax = SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnectionString);
     if (syntax == null) {
-      return false;
+      return null;
     }
     Collection<String> driverClassNames = syntax.getCandidateJDBCDriverClassNames();
     for (String className : driverClassNames) {
       try {
         Class.forName(className);
         LOG.debug(className + " has been loaded into the classpath.");
+        return className;
       } catch (ClassNotFoundException e) {
         /* do nothing */
       }
     }
-    return true;
+    return null;
   }
 
   private VerdictMetaStore getCachedMetaStore(DbmsConnection conn, TrainDBConfiguration conf) {
