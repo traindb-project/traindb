@@ -44,6 +44,7 @@ import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBExecContext;
+import traindb.schema.SchemaManager;
 
 
 public class TrainDBContext {
@@ -55,6 +56,7 @@ public class TrainDBContext {
   private VerdictMetaStore metaStore;
   private CatalogStore catalogStore;
   private BasicDataSource dataSource;
+  private SchemaManager schemaManager;
   private long executionSerialNumber = 0;
   private TrainDBConfiguration conf;
   /**
@@ -80,8 +82,11 @@ public class TrainDBContext {
     this.conf = conf;
     this.metaStore = getCachedMetaStore(conn, conf);
     this.catalogStore = new JDOCatalogStore();
-    this.dataSource = dataSource;
     initialize(conf, catalogStore);
+
+    this.dataSource = dataSource;
+    this.schemaManager = SchemaManager.getInstance(catalogStore);
+    schemaManager.loadDataSource(dataSource);
   }
 
   /**
@@ -252,7 +257,7 @@ public class TrainDBContext {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
     exCtx = new TrainDBExecContext(
-        conn, catalogStore, metaStore, contextId, execSerialNumber, conf);
+        conn, catalogStore, schemaManager, metaStore, contextId, execSerialNumber, conf);
     exCtxs.add(exCtx);
     return exCtx;
   }

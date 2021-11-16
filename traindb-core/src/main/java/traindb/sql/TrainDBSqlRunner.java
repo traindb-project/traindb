@@ -39,5 +39,7 @@ public interface TrainDBSqlRunner {
   VerdictSingleResult showModelInstances(String modelName) throws Exception;
 
   VerdictSingleResult showSynopses() throws Exception;
+
+  VerdictSingleResult processQuery(String query) throws Exception;
 }
 

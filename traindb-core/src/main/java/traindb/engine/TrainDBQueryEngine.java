@@ -26,6 +26,16 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlExplainFormat;
+import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.tools.FrameworkConfig;
+import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.tools.Planner;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.CachedDbmsConnection;
@@ -42,6 +52,7 @@ import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
+import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSqlRunner;
 
 
@@ -50,12 +61,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
   private DbmsConnection conn;
   private CatalogContext catalogContext;
+  private SchemaManager schemaManager;
   private TrainDBConfiguration conf;
 
   public TrainDBQueryEngine(DbmsConnection conn, CatalogStore catalogStore,
-                            TrainDBConfiguration conf) {
+                            SchemaManager schemaManager, TrainDBConfiguration conf) {
     this.conn = conn;
     this.catalogContext = catalogStore.getCatalogContext();
+    this.schemaManager = schemaManager;
     this.conf = conf;
   }
 
@@ -245,6 +258,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     String sql = sb.toString();
     conn.execute(sql);
+    schemaManager.refreshDataSource();
   }
 
   private void loadSynopsisIntoTable(DbmsConnection dbmsConn, String synopsisName,
@@ -338,6 +352,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     String sql = sb.toString();
     conn.execute(sql);
+    schemaManager.refreshDataSource();
   }
 
   @Override
@@ -392,5 +407,23 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     VerdictSingleResult result = new TrainDBResultFromListData(header, synopsisInfo);
     return result;
+  }
+
+  @Override
+  public VerdictSingleResult processQuery(String query) throws Exception {
+    SqlParser.Config parserConf = SqlParser.config().withUnquotedCasing(Casing.TO_LOWER);
+    FrameworkConfig config = Frameworks.newConfigBuilder()
+        .defaultSchema(schemaManager.getCurrentSchema())
+        .parserConfig(parserConf).build();
+    Planner planner = Frameworks.getPlanner(config);
+    SqlNode parse = planner.parse(query);
+    LOG.debug("Parsed query: " + parse.toString());
+    SqlNode validate = planner.validate(parse);
+    RelRoot relRoot = planner.rel(validate);
+    LOG.debug(
+        RelOptUtil.dumpPlan("Generated plan: ", relRoot.rel, SqlExplainFormat.TEXT,
+            SqlExplainLevel.ALL_ATTRIBUTES));
+
+    return null;
   }
 }

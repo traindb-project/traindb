@@ -25,6 +25,7 @@ import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
+import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.TrainDBSqlRunner;
@@ -38,9 +39,9 @@ public class TrainDBExecContext {
   ExecutionContext executionContext;
 
   public TrainDBExecContext(
-      DbmsConnection conn, CatalogStore catalogStore, VerdictMetaStore metaStore,
-      String contextId, long serialNumber, TrainDBConfiguration conf) {
-    engine = new TrainDBQueryEngine(conn, catalogStore, conf);
+      DbmsConnection conn, CatalogStore catalogStore, SchemaManager schemaManager,
+      VerdictMetaStore metaStore, String contextId, long serialNumber, TrainDBConfiguration conf) {
+    engine = new TrainDBQueryEngine(conn, catalogStore, schemaManager, conf);
     executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
   }
 
@@ -73,6 +74,7 @@ public class TrainDBExecContext {
 
     // Pass input query to VerdictDB
     try {
+      engine.processQuery(query);
       return executionContext.sql(query, getResult);
     } catch (Exception e) {
       throw new TrainDBException(e.getMessage());
