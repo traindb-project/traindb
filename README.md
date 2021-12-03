@@ -16,7 +16,7 @@ Currently, we are implementing a prototype for proof of concept.
 ### Download
 
 ```console
-$ git clone https://github.com/traindb-project/traindb-prototype.git
+$ git clone https://github.com/traindb-project/traindb.git
 ```
 
 ### Build
