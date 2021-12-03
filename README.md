@@ -1,4 +1,4 @@
-# traindb-prototype
+# TrainDB
 
 TrainDB is a ML-based approximate query processing engine that aims to answer time-consuming analytical queries in a few seconds.
 TrainDB will provide SQL-like query interface and support various DBMS data sources.
