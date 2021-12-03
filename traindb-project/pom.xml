@@ -33,6 +33,7 @@ limitations under the License.
     <properties>
         <datanucleus.version>5.2.0-release</datanucleus.version>
         <calcite.version>1.28.0</calcite.version>
+        <janino.version>3.1.6</janino.version>
         <skipTests>true</skipTests>
     </properties>
 
@@ -84,6 +85,16 @@ limitations under the License.
                 <groupId>org.slf4j</groupId>
                 <artifactId>slf4j-log4j12</artifactId>
                 <version>1.7.32</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.janino</groupId>
+                <artifactId>commons-compiler</artifactId>
+                <version>${janino.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.codehaus.janino</groupId>
+                <artifactId>janino</artifactId>
+                <version>${janino.version}</version>
             </dependency>
 
             <dependency>
