@@ -74,7 +74,7 @@ public class TrainDBExecContext {
 
     // Pass input query to VerdictDB
     try {
-      engine.processQuery(query);
+      // engine.processQuery(query);
       return executionContext.sql(query, getResult);
     } catch (Exception e) {
       throw new TrainDBException(e.getMessage());
