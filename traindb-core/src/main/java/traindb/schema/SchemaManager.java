@@ -56,6 +56,12 @@ public final class SchemaManager {
     dataSourceMap = new HashMap<>();
     schemaMap = new HashMap<>();
     tableMap = new HashMap<>();
+
+    try {
+      Class.forName("traindb.engine.calcite.Driver");
+    } catch (ClassNotFoundException e) {
+      // FIXME
+    }
   }
 
   public static SchemaManager getInstance(CatalogStore catalogStore) {
