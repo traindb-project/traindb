@@ -22,7 +22,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.util.Map;
 import javax.sql.DataSource;
-import org.apache.calcite.adapter.jdbc.JdbcCatalogSchema;
 import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.Schema;
@@ -45,7 +44,7 @@ public class TrainDBJdbcDataSource extends AbstractSchema {
     this.name = "traindb"; // FIXME
     this.dataSource = dataSource;
     final Expression expression =
-        Schemas.subSchemaExpression(parentSchema, name, JdbcCatalogSchema.class);
+        Schemas.subSchemaExpression(parentSchema, name, TrainDBJdbcSchema.class);
     this.dialect = createDialect(dataSource);
     this.convention = JdbcConvention.of(dialect, expression, name);
     computeSubSchemaMap();
