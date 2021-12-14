@@ -288,6 +288,7 @@ final class JdbcUtils {
       return cache.getUnchecked(key);
     }
   }
+
   public static void close(
       @Nullable Connection connection,
       @Nullable Statement statement,

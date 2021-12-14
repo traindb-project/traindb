@@ -47,17 +47,17 @@ public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode
       int i = 0;
       for (SqlNode operand : call.getOperandList()) {
         // FROM operand
-          if (i == 2) {
-              nodeStack.push(State.FROM);
-          } else {
-              nodeStack.push(State.NOT_FROM);
-          }
+        if (i == 2) {
+          nodeStack.push(State.FROM);
+        } else {
+          nodeStack.push(State.NOT_FROM);
+        }
 
         i++;
 
-          if (operand == null) {
-              continue;
-          }
+        if (operand == null) {
+          continue;
+        }
 
         operand.accept(this);
         nodeStack.pop();
@@ -68,9 +68,9 @@ public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode
     SqlOperator operator = call.getOperator();
     if (operator != null && operator.getKind() == SqlKind.AS) {
       // AS operator will be probed only if it is in FROM clause
-        if (nodeStack.peek() == State.FROM) {
-            call.operand(0).accept(this);
-        }
+      if (nodeStack.peek() == State.FROM) {
+        call.operand(0).accept(this);
+      }
       return null;
     }
 
@@ -80,9 +80,9 @@ public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode
   @Override
   public SqlNode visit(SqlIdentifier identifier) {
     // check whether this is fully qualified table name
-      if (!nodeStack.empty() && nodeStack.peek() == State.FROM) {
-          tableIds.add(identifier);
-      }
+    if (!nodeStack.empty() && nodeStack.peek() == State.FROM) {
+      tableIds.add(identifier);
+    }
 
     return identifier;
   }

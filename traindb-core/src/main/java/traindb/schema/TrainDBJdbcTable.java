@@ -24,6 +24,7 @@ import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.ColumnMetaData;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.linq4j.Enumerable;
@@ -55,7 +56,6 @@ import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import traindb.common.TrainDBLogger;
-import org.apache.calcite.avatica.MetaImpl;
 
 public final class TrainDBJdbcTable extends AbstractQueryableTable
     implements TranslatableTable, ScannableTable {
@@ -141,9 +141,11 @@ public final class TrainDBJdbcTable extends AbstractQueryableTable
     }
   }
 
-  /** Given "INTEGER", returns BasicSqlType(INTEGER).
+  /**
+   * Given "INTEGER", returns BasicSqlType(INTEGER).
    * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
-   * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2). */
+   * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
+   */
   private static RelDataType parseTypeString(RelDataTypeFactory typeFactory,
                                              String typeString) {
     int precision = -1;
@@ -269,10 +271,9 @@ public final class TrainDBJdbcTable extends AbstractQueryableTable
           ((CalciteConnection) queryProvider).getTypeFactory();
       final SqlString sql = generateSql();
       final List<Pair<ColumnMetaData.Rep, Integer>> pairs = fieldClasses(typeFactory);
-      @SuppressWarnings({"rawtypes", "unchecked"})
-      final Enumerable<T> enumerable =
+      @SuppressWarnings({"rawtypes", "unchecked"}) final Enumerable<T> enumerable =
           (Enumerable) ResultSetEnumerable.of(getJdbcDataSource().getDataSource(), sql.getSql(),
-                                              JdbcUtils.rowBuilderFactory2(pairs));
+              JdbcUtils.rowBuilderFactory2(pairs));
       return enumerable.enumerator();
     }
   }
