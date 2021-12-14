@@ -210,7 +210,7 @@ public final class TrainDBJdbcTable extends AbstractQueryableTable
             tableName(), null, null, null, null, null, null, null, null);
     final SqlWriterConfig config = SqlPrettyWriter.config()
         .withAlwaysUseParentheses(true)
-        .withDialect(jdbcSchema.getJdbcDataSource().getDialect());
+        .withDialect(getJdbcDataSource().getDialect());
     final SqlPrettyWriter writer = new SqlPrettyWriter(config);
     node.unparse(writer, 0, 0);
     return writer.toSqlString();
