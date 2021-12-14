@@ -417,7 +417,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         .parserConfig(parserConf).build();
     Planner planner = Frameworks.getPlanner(config);
     SqlNode parse = planner.parse(query);
+    TableNameQualifier.toFullyQualifiedName(schemaManager, conn.getDefaultSchema(), parse);
     LOG.debug("Parsed query: " + parse.toString());
+
     SqlNode validate = planner.validate(parse);
     RelRoot relRoot = planner.rel(validate);
     LOG.debug(
