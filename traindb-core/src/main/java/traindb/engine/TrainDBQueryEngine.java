@@ -21,7 +21,10 @@ import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.Connection;
+import java.sql.DriverManager;
 import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -29,6 +32,7 @@ import java.util.List;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlNode;
@@ -36,12 +40,14 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
+import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.CachedDbmsConnection;
 import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.connection.DbmsQueryResult;
 import org.verdictdb.connection.JdbcConnection;
+import org.verdictdb.connection.JdbcQueryResult;
 import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
@@ -425,6 +431,19 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     LOG.debug(
         RelOptUtil.dumpPlan("Generated plan: ", relRoot.rel, SqlExplainFormat.TEXT,
             SqlExplainLevel.ALL_ATTRIBUTES));
+
+    SqlDialect.DatabaseProduct dp = SqlDialect.DatabaseProduct.POSTGRESQL;
+    String queryString = validate.toSqlString(dp.getDialect()).getSql();
+    LOG.debug("query string: " + queryString);
+
+    try {
+      Connection internalConn = DriverManager.getConnection("jdbc:traindb-calcite:");
+      PreparedStatement stmt = internalConn.prepareStatement(queryString);
+      ResultSet rs = stmt.executeQuery();
+      return new VerdictSingleResultFromDbmsQueryResult(new JdbcQueryResult(rs));
+    } catch (SQLException e) {
+      LOG.debug(ExceptionUtils.getStackTrace(e));
+    }
 
     return null;
   }

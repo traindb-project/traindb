@@ -21,7 +21,6 @@ import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import javax.sql.DataSource;
-import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
