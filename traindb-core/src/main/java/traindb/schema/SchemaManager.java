@@ -26,6 +26,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.Frameworks;
+import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBLogger;
 
@@ -39,9 +40,9 @@ public final class SchemaManager {
   private final CatalogStore catalogStore;
   private TrainDBJdbcDataSource traindbDataSource;
 
-  private final Map<String, List<TrainDBJdbcDataSource>> dataSourceMap;
-  private final Map<String, List<TrainDBJdbcSchema>> schemaMap;
-  private final Map<String, List<TrainDBJdbcTable>> tableMap;
+  private final Map<String, List<TrainDBDataSource>> dataSourceMap;
+  private final Map<String, List<TrainDBSchema>> schemaMap;
+  private final Map<String, List<TrainDBTable>> tableMap;
 
   // to synchronize requests for Calcite Schema
   private final ReadWriteLock lock = new ReentrantReadWriteLock(false);
@@ -84,22 +85,18 @@ public final class SchemaManager {
     writeLock.unlock();
   }
 
-  public TrainDBJdbcDataSource getJdbcDataSource() {
-    return traindbDataSource;
-  }
-
   public void refreshDataSource() {
     loadDataSource(traindbDataSource.getDataSource());
   }
 
-  private void addDataSourceToMaps(TrainDBJdbcDataSource jdbcDataSource) {
-    addToListMap(dataSourceMap, jdbcDataSource.getName(), jdbcDataSource);
-    for (Schema schema : jdbcDataSource.getSubSchemaMap().values()) {
-      TrainDBJdbcSchema jdbcSchema = (TrainDBJdbcSchema) schema;
-      addToListMap(schemaMap, jdbcSchema.getName(), jdbcSchema);
-      for (Table table : ((TrainDBJdbcSchema) schema).getTableMap().values()) {
-        TrainDBJdbcTable jdbcTable = (TrainDBJdbcTable) table;
-        addToListMap(tableMap, jdbcTable.getName(), jdbcTable);
+  private void addDataSourceToMaps(TrainDBDataSource traindbDataSource) {
+    addToListMap(dataSourceMap, traindbDataSource.getName(), traindbDataSource);
+    for (Schema schema : traindbDataSource.getSubSchemaMap().values()) {
+      TrainDBSchema traindbSchema = (TrainDBSchema) schema;
+      addToListMap(schemaMap, traindbSchema.getName(), traindbSchema);
+      for (Table table : traindbSchema.getTableMap().values()) {
+        TrainDBTable traindbTable = (TrainDBTable) table;
+        addToListMap(tableMap, traindbTable.getName(), traindbTable);
       }
     }
   }
@@ -134,12 +131,12 @@ public final class SchemaManager {
   }
 
   public List<String> toFullyQualifiedTableName(List<String> names, String defaultSchema) {
-    TrainDBJdbcDataSource dataSource = null;
-    TrainDBJdbcSchema schema = null;
-    TrainDBJdbcTable table = null;
+    TrainDBDataSource dataSource = null;
+    TrainDBSchema schema = null;
+    TrainDBTable table = null;
 
-    List<TrainDBJdbcDataSource> candidateDataSources;
-    List<TrainDBJdbcSchema> candidateSchemas;
+    List<TrainDBDataSource> candidateDataSources;
+    List<TrainDBSchema> candidateSchemas;
 
     switch (names.size()) {
       case 1: // table
@@ -148,11 +145,11 @@ public final class SchemaManager {
           throw new RuntimeException("invalid name: " + defaultSchema + "." + names.get(0));
         }
         schema = candidateSchemas.get(0);
-        table = (TrainDBJdbcTable) schema.getTable(names.get(0));
+        table = (TrainDBTable) schema.getTable(names.get(0));
         if (table == null) {
           throw new RuntimeException("invalid name: " + defaultSchema + "." + names.get(0));
         }
-        dataSource = schema.getJdbcDataSource();
+        dataSource = schema.getDataSource();
         break;
       case 2: // schema.table
         candidateSchemas = schemaMap.get(names.get(0));
@@ -160,11 +157,11 @@ public final class SchemaManager {
           throw new RuntimeException("invalid name: " + names.get(0) + "." + names.get(1));
         }
         schema = candidateSchemas.get(0);
-        table = (TrainDBJdbcTable) schema.getTable(names.get(1));
+        table = (TrainDBTable) schema.getTable(names.get(1));
         if (table == null) {
           throw new RuntimeException("invalid name: " + names.get(0) + "." + names.get(1));
         }
-        dataSource = schema.getJdbcDataSource();
+        dataSource = schema.getDataSource();
         break;
       case 3: // dataSource.schema.table
         candidateDataSources = dataSourceMap.get(names.get(0));
@@ -173,12 +170,12 @@ public final class SchemaManager {
               "invalid name: " + names.get(0) + "." + names.get(1) + "." + names.get(2));
         }
         dataSource = candidateDataSources.get(0);
-        schema = (TrainDBJdbcSchema) dataSource.getSubSchemaMap().get(names.get(1));
+        schema = (TrainDBSchema) dataSource.getSubSchemaMap().get(names.get(1));
         if (schema == null) {
           throw new RuntimeException(
               "invalid name: " + names.get(0) + "." + names.get(1) + "." + names.get(2));
         }
-        table = (TrainDBJdbcTable) schema.getTable(names.get(2));
+        table = (TrainDBTable) schema.getTable(names.get(2));
         if (table == null) {
           throw new RuntimeException(
               "invalid name: " + names.get(0) + "." + names.get(1) + "." + names.get(2));
