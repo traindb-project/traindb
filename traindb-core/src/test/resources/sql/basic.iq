@@ -47,7 +47,7 @@ SHOW SYNOPSES;
 
 !ok
 
-SELECT count(*) FROM instacart.order_products_syn;
+SELECT count(*) as c2 FROM instacart.order_products_syn;
 +------+
 | c2   |
 +------+
