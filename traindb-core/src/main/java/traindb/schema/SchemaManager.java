@@ -86,7 +86,12 @@ public final class SchemaManager {
   }
 
   public void refreshDataSource() {
+    writeLock.lock();
+    dataSourceMap.clear();
+    schemaMap.clear();
+    tableMap.clear();
     loadDataSource(traindbDataSource.getDataSource());
+    writeLock.unlock();
   }
 
   private void addDataSourceToMaps(TrainDBDataSource traindbDataSource) {
