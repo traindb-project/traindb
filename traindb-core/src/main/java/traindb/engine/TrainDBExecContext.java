@@ -74,7 +74,9 @@ public class TrainDBExecContext {
 
     // Pass input query to VerdictDB
     try {
-      engine.processQuery(query);
+      if (System.getenv("ENABLE_TRAINDB_CALCITE") != null) {
+        return engine.processQuery(query);
+      }
       return executionContext.sql(query, getResult);
     } catch (Exception e) {
       throw new TrainDBException(e.getMessage());
