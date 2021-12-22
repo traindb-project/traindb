@@ -72,6 +72,7 @@ showTargets
     | K_MODEL K_INSTANCES  # ShowModelInstances
     | K_SYNOPSES  # ShowSynopses
     | K_SCHEMAS  # ShowSchemas
+    | K_TABLES  # ShowTables
     ;
 
 modelInstanceName
@@ -143,6 +144,7 @@ K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
+K_TABLES : T A B L E S ;
 K_TRAIN : T R A I N ;
 K_TYPE : T Y P E ;
 K_USE : U S E ;

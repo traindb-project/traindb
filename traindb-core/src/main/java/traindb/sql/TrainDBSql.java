@@ -97,6 +97,9 @@ public final class TrainDBSql {
       case SHOW_SCHEMAS:
         TrainDBSqlShowCommand showSchemas = (TrainDBSqlShowCommand) command;
         return runner.showSchemas();
+      case SHOW_TABLES:
+        TrainDBSqlShowCommand showTables = (TrainDBSqlShowCommand) command;
+        return runner.showTables();
       case USE_SCHEMA:
         TrainDBSqlUseSchema useSchema = (TrainDBSqlUseSchema) command;
         runner.useSchema(useSchema.getSchemaName());
@@ -203,6 +206,11 @@ public final class TrainDBSql {
     @Override
     public void exitShowSchemas(TrainDBSqlParser.ShowSchemasContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Schemas());
+    }
+
+    @Override
+    public void exitShowTables(TrainDBSqlParser.ShowTablesContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Tables());
     }
 
     @Override

@@ -430,6 +430,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public VerdictSingleResult showTables() throws Exception {
+    List<String> header = Arrays.asList("table");
+    List<List<Object>> tableInfo = new ArrayList<>();
+    List<String> rows = conn.getTables(conn.getDefaultSchema());
+
+    for (Object o : rows) {
+      tableInfo.add(Arrays.asList(o));
+    }
+
+    VerdictSingleResult result = new TrainDBResultFromListData(header, tableInfo);
+    return result;
+  }
+
+  @Override
   public void useSchema(String schemaName) throws Exception {
     if (!conn.getSchemas().contains(schemaName)) {
       throw new CatalogException("schema '" + schemaName + "' does not exist");

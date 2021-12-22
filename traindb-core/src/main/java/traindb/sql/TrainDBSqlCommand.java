@@ -28,6 +28,7 @@ public abstract class TrainDBSqlCommand {
     DROP_SYNOPSIS,
     SHOW_SYNOPSES,
     SHOW_SCHEMAS,
+    SHOW_TABLES,
     USE_SCHEMA,
     OTHER
   }

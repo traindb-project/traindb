@@ -62,4 +62,15 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
       return Type.SHOW_SCHEMAS;
     }
   }
+
+  static class Tables extends TrainDBSqlShowCommand {
+    Tables() {
+      super();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_TABLES;
+    }
+  }
 }
