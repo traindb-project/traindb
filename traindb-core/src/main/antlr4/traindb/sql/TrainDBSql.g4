@@ -93,7 +93,7 @@ useSchema
     ;
 
 describeTable
-    : K_DESCRIBE tableName
+    : ( K_DESCRIBE | K_DESC ) tableName
     ;
 
 schemaName
@@ -129,6 +129,7 @@ error
 
 K_AS : A S ;
 K_CREATE : C R E A T E ;
+K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
 K_FROM : F R O M ;
