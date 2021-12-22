@@ -22,6 +22,7 @@ traindbStmts
     | createSynopsis
     | dropSynopsis
     | showStmt
+    | useSchema
     ;
 
 createModel
@@ -85,6 +86,10 @@ dropSynopsis
     : K_DROP K_SYNOPSIS synopsisName
     ;
 
+useSchema
+    : K_USE schemaName
+    ;
+
 qualifiedTableName
     : schemaName '.' tableName
     ;
@@ -140,6 +145,7 @@ K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TRAIN : T R A I N ;
 K_TYPE : T Y P E ;
+K_USE : U S E ;
 
 IDENTIFIER
     : '"' ( ~["\r\n] | '""' )* '"'

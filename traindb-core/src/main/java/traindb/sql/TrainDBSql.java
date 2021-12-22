@@ -97,6 +97,10 @@ public final class TrainDBSql {
       case SHOW_SCHEMAS:
         TrainDBSqlShowCommand showSchemas = (TrainDBSqlShowCommand) command;
         return runner.showSchemas();
+      case USE_SCHEMA:
+        TrainDBSqlUseSchema useSchema = (TrainDBSqlUseSchema) command;
+        runner.useSchema(useSchema.getSchemaName());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -199,6 +203,12 @@ public final class TrainDBSql {
     @Override
     public void exitShowSchemas(TrainDBSqlParser.ShowSchemasContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Schemas());
+    }
+
+    @Override
+    public void exitUseSchema(TrainDBSqlParser.UseSchemaContext ctx) {
+      String schemaName = ctx.schemaName().getText();
+      commands.add(new TrainDBSqlUseSchema(schemaName));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

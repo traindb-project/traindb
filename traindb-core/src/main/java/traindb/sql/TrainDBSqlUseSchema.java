@@ -14,21 +14,19 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlUseSchema extends TrainDBSqlCommand {
+  private final String schemaName;
 
-  public enum Type {
-    CREATE_MODEL,
-    DROP_MODEL,
-    SHOW_MODELS,
-    SHOW_MODEL_INSTANCES,
-    TRAIN_MODEL_INSTANCE,
-    DROP_MODEL_INSTANCE,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    USE_SCHEMA,
-    OTHER
+  TrainDBSqlUseSchema(String schemaName) {
+    this.schemaName = schemaName;
+  }
+
+  String getSchemaName() {
+    return schemaName;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.USE_SCHEMA;
   }
 }

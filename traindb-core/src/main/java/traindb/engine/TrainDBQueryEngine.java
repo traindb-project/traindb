@@ -430,6 +430,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public void useSchema(String schemaName) throws Exception {
+    if (!conn.getSchemas().contains(schemaName)) {
+      throw new CatalogException("schema '" + schemaName + "' does not exist");
+    }
+    conn.setDefaultSchema(schemaName);
+  }
+
+  @Override
   public VerdictSingleResult processQuery(String query) throws Exception {
     SqlParser.Config parserConf = SqlParser.config().withUnquotedCasing(Casing.TO_LOWER);
     FrameworkConfig config = Frameworks.newConfigBuilder()
