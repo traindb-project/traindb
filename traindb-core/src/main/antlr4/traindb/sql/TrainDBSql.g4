@@ -35,7 +35,7 @@ dropModel
     ;
 
 trainModelInstance
-    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON qualifiedTableName '(' columnNameList ')'
+    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON tableName '(' columnNameList ')'
     ;
 
 dropModelInstance
@@ -96,16 +96,12 @@ describeTable
     : K_DESCRIBE tableName
     ;
 
-qualifiedTableName
-    : schemaName '.' tableName
-    ;
-
 schemaName
     : IDENTIFIER
     ;
 
 tableName
-    : IDENTIFIER
+    : ( schemaName '.' ) tableIdentifier=IDENTIFIER
     ;
 
 columnNameList

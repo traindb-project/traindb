@@ -15,10 +15,16 @@
 package traindb.sql;
 
 class TrainDBSqlDescribeTable extends TrainDBSqlCommand {
+  private final String schemaName;
   private final String tableName;
 
-  TrainDBSqlDescribeTable(String tableName) {
+  TrainDBSqlDescribeTable(String schemaName, String tableName) {
+    this.schemaName = schemaName;
     this.tableName = tableName;
+  }
+
+  String getSchemaName() {
+    return schemaName;
   }
 
   String getTableName() {

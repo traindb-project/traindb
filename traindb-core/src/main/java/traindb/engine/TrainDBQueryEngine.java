@@ -201,6 +201,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (catalogContext.modelInstanceExists(modelInstanceName)) {
       throw new CatalogException("model instance '" + modelInstanceName + "' already exist");
     }
+    if (schemaName == null) {
+      schemaName = conn.getDefaultSchema();
+    }
 
     JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames);
     Path instancePath = catalogContext.getModelInstancePath(modelName, modelInstanceName);
@@ -453,10 +456,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public VerdictSingleResult describeTable(String tableName) throws Exception {
+  public VerdictSingleResult describeTable(String schemaName, String tableName) throws Exception {
     List<String> header = Arrays.asList("column name", "column type");
     List<List<Object>> columnInfo = new ArrayList<>();
-    List<Pair<String, String>> rows = conn.getColumns(conn.getDefaultSchema(), tableName);
+    if (schemaName == null) {
+      schemaName = conn.getDefaultSchema();
+    }
+    List<Pair<String, String>> rows = conn.getColumns(schemaName, tableName);
 
     for (Pair<String, String> pair : rows) {
       columnInfo.add(Arrays.asList(pair.getLeft(), pair.getRight()));

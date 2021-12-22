@@ -106,7 +106,7 @@ public final class TrainDBSql {
         break;
       case DESCRIBE_TABLE:
         TrainDBSqlDescribeTable describeTable = (TrainDBSqlDescribeTable) command;
-        return runner.describeTable(describeTable.getTableName());
+        return runner.describeTable(describeTable.getSchemaName(), describeTable.getTableName());
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -165,8 +165,8 @@ public final class TrainDBSql {
     public void exitTrainModelInstance(TrainDBSqlParser.TrainModelInstanceContext ctx) {
       String modelName = ctx.modelName().getText();
       String modelInstanceName = ctx.modelInstanceName().getText();
-      String schemaName = ctx.qualifiedTableName().schemaName().getText();
-      String tableName = ctx.qualifiedTableName().tableName().getText();
+      String schemaName = ctx.tableName().schemaName().getText();
+      String tableName = ctx.tableName().tableIdentifier.getText();
 
       List<String> columnNames = new ArrayList<>();
       for (TrainDBSqlParser.ColumnNameContext columnName : ctx.columnNameList().columnName()) {
@@ -224,8 +224,9 @@ public final class TrainDBSql {
 
     @Override
     public void exitDescribeTable(TrainDBSqlParser.DescribeTableContext ctx) {
-      String tableName = ctx.tableName().getText();
-      commands.add(new TrainDBSqlDescribeTable(tableName));
+      String schemaName = ctx.tableName().schemaName().getText();
+      String tableName = ctx.tableName().tableIdentifier.getText();
+      commands.add(new TrainDBSqlDescribeTable(schemaName, tableName));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {
