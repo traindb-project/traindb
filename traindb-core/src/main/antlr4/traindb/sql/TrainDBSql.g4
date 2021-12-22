@@ -68,7 +68,7 @@ showStmt
 
 showTargets
     : K_MODELS  # ShowModels
-    | K_MODEL modelName K_INSTANCES  # ShowModelInstances
+    | K_MODEL K_INSTANCES  # ShowModelInstances
     | K_SYNOPSES  # ShowSynopses
     ;
 

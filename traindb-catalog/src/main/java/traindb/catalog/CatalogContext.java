@@ -41,7 +41,7 @@ public interface CatalogContext {
 
   void dropModelInstance(String name) throws CatalogException;
 
-  Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException;
+  Collection<MModelInstance> getModelInstances() throws CatalogException;
 
   boolean modelInstanceExists(String name) throws CatalogException;
 

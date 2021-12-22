@@ -70,7 +70,7 @@ public final class TrainDBSql {
         return runner.showModels();
       case SHOW_MODEL_INSTANCES:
         TrainDBSqlShowCommand showModelInstances = (TrainDBSqlShowCommand) command;
-        return runner.showModelInstances(showModelInstances.getModelName());
+        return runner.showModelInstances();
       case TRAIN_MODEL_INSTANCE:
         TrainDBSqlTrainModelInstance trainModelInstance = (TrainDBSqlTrainModelInstance) command;
         runner.trainModelInstance(
@@ -145,7 +145,7 @@ public final class TrainDBSql {
 
     @Override
     public void exitShowModelInstances(TrainDBSqlParser.ShowModelInstancesContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.ModelInstances(ctx.modelName().getText()));
+      commands.add(new TrainDBSqlShowCommand.ModelInstances());
     }
 
     @Override

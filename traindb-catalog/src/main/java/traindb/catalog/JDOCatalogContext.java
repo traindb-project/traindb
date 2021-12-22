@@ -131,15 +131,12 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public Collection<MModelInstance> getModelInstances(String modelName) throws CatalogException {
+  public Collection<MModelInstance> getModelInstances() throws CatalogException {
     try {
       Query query = pm.newQuery(MModelInstance.class);
-      query.setFilter("model.name == modelName");
-      query.declareParameters("String modelName");
-
-      return (List<MModelInstance>) query.execute(modelName);
+      return (List<MModelInstance>) query.execute();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model '" + modelName + "' instances", e);
+      throw new CatalogException("failed to get model instances", e);
     }
   }
 
@@ -152,7 +149,9 @@ public final class JDOCatalogContext implements CatalogContext {
   public MModelInstance getModelInstance(String name) throws CatalogException {
     try {
       Query query = pm.newQuery(MModelInstance.class);
-      query.setFilter("name == name");
+      if (name != null) {
+        query.setFilter("name == name");
+      }
       query.declareParameters("String name");
       query.setUnique(true);
 

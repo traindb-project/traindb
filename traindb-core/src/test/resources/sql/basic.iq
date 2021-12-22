@@ -22,7 +22,7 @@ TRAIN MODEL tablegan INSTANCE tgan ON instacart.order_products(product_id, add_t
 
 !update
 
-SHOW MODEL tablegan INSTANCES;
+SHOW MODEL INSTANCES;
 +----------+----------------+-----------+----------------+---------------------------------+
 | model    | model_instance | schema    | table          | columns                         |
 +----------+----------------+-----------+----------------+---------------------------------+
@@ -76,7 +76,7 @@ DROP MODEL INSTANCE tgan;
 
 !update
 
-SHOW MODEL tablegan INSTANCES;
+SHOW MODEL INSTANCES;
 +
  |
 +
