@@ -94,6 +94,9 @@ public final class TrainDBSql {
       case SHOW_SYNOPSES:
         TrainDBSqlShowCommand showSynopses = (TrainDBSqlShowCommand) command;
         return runner.showSynopses();
+      case SHOW_SCHEMAS:
+        TrainDBSqlShowCommand showSchemas = (TrainDBSqlShowCommand) command;
+        return runner.showSchemas();
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -191,6 +194,11 @@ public final class TrainDBSql {
     @Override
     public void exitShowSynopses(TrainDBSqlParser.ShowSynopsesContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Synopses());
+    }
+
+    @Override
+    public void exitShowSchemas(TrainDBSqlParser.ShowSchemasContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Schemas());
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

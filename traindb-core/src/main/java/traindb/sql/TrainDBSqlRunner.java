@@ -40,6 +40,8 @@ public interface TrainDBSqlRunner {
 
   VerdictSingleResult showSynopses() throws Exception;
 
+  VerdictSingleResult showSchemas() throws Exception;
+
   VerdictSingleResult processQuery(String query) throws Exception;
 }
 

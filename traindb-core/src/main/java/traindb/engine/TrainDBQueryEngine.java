@@ -416,6 +416,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public VerdictSingleResult showSchemas() throws Exception {
+    List<String> header = Arrays.asList("schema");
+    List<List<Object>> schemaInfo = new ArrayList<>();
+    List<String> rows = conn.getSchemas();
+
+    for (Object o : rows) {
+      schemaInfo.add(Arrays.asList(o));
+    }
+
+    VerdictSingleResult result = new TrainDBResultFromListData(header, schemaInfo);
+    return result;
+  }
+
+  @Override
   public VerdictSingleResult processQuery(String query) throws Exception {
     SqlParser.Config parserConf = SqlParser.config().withUnquotedCasing(Casing.TO_LOWER);
     FrameworkConfig config = Frameworks.newConfigBuilder()

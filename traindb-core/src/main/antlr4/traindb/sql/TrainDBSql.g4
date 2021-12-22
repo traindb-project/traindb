@@ -70,6 +70,7 @@ showTargets
     : K_MODELS  # ShowModels
     | K_MODEL K_INSTANCES  # ShowModelInstances
     | K_SYNOPSES  # ShowSynopses
+    | K_SCHEMAS  # ShowSchemas
     ;
 
 modelInstanceName
@@ -133,6 +134,7 @@ K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
 K_ON : O N ;
 K_REMOTE : R E M O T E ;
+K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
