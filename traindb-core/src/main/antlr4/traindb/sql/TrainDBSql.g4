@@ -23,6 +23,7 @@ traindbStmts
     | dropSynopsis
     | showStmt
     | useSchema
+    | describeTable
     ;
 
 createModel
@@ -91,6 +92,10 @@ useSchema
     : K_USE schemaName
     ;
 
+describeTable
+    : K_DESCRIBE tableName
+    ;
+
 qualifiedTableName
     : schemaName '.' tableName
     ;
@@ -128,6 +133,7 @@ error
 
 K_AS : A S ;
 K_CREATE : C R E A T E ;
+K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
 K_FROM : F R O M ;
 K_IN : I N ;

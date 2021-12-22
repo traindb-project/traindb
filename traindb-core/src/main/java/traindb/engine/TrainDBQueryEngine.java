@@ -41,6 +41,7 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.commons.lang3.exception.ExceptionUtils;
+import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.CachedDbmsConnection;
@@ -449,6 +450,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new CatalogException("schema '" + schemaName + "' does not exist");
     }
     conn.setDefaultSchema(schemaName);
+  }
+
+  @Override
+  public VerdictSingleResult describeTable(String tableName) throws Exception {
+    List<String> header = Arrays.asList("column name", "column type");
+    List<List<Object>> columnInfo = new ArrayList<>();
+    List<Pair<String, String>> rows = conn.getColumns(conn.getDefaultSchema(), tableName);
+
+    for (Pair<String, String> pair : rows) {
+      columnInfo.add(Arrays.asList(pair.getLeft(), pair.getRight()));
+    }
+
+    VerdictSingleResult result = new TrainDBResultFromListData(header, columnInfo);
+    return result;
   }
 
   @Override

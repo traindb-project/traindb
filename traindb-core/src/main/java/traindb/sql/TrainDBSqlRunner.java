@@ -46,6 +46,8 @@ public interface TrainDBSqlRunner {
 
   void useSchema(String schemaName) throws Exception;
 
+  VerdictSingleResult describeTable(String tableName) throws Exception;
+
   VerdictSingleResult processQuery(String query) throws Exception;
 }
 
