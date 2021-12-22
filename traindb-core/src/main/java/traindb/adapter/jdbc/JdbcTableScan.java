@@ -12,15 +12,12 @@
  * limitations under the License.
  */
 
-package traindb.schema;
+package traindb.adapter.jdbc;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 import com.google.common.collect.ImmutableList;
 import java.util.List;
-import org.apache.calcite.adapter.jdbc.JdbcConvention;
-import org.apache.calcite.adapter.jdbc.JdbcImplementor;
-import org.apache.calcite.adapter.jdbc.JdbcRel;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelTraitSet;
@@ -47,7 +44,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
   }
 
   @Override
-  public JdbcImplementor.Result implement(JdbcImplementor implementor) {
+  public SqlImplementor.Result implement(JdbcImplementor implementor) {
     return implementor.result(jdbcTable.tableName(),
         ImmutableList.of(JdbcImplementor.Clause.FROM), this, null);
   }

@@ -15,19 +15,13 @@
 package traindb.sql;
 
 abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
-  private String modelName;
 
-  protected TrainDBSqlShowCommand(String modelName) {
-    this.modelName = modelName;
-  }
-
-  String getModelName() {
-    return modelName;
+  protected TrainDBSqlShowCommand() {
   }
 
   static class Models extends TrainDBSqlShowCommand {
     Models() {
-      super(null);
+      super();
     }
 
     @Override
@@ -37,8 +31,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class ModelInstances extends TrainDBSqlShowCommand {
-    ModelInstances(String modelName) {
-      super(modelName);
+    ModelInstances() {
+      super();
     }
 
     @Override
@@ -49,7 +43,7 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
 
   static class Synopses extends TrainDBSqlShowCommand {
     Synopses() {
-      super(null);
+      super();
     }
 
     @Override

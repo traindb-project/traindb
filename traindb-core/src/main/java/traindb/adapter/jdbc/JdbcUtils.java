@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.schema;
+package traindb.adapter.jdbc;
 
 import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
@@ -288,6 +288,7 @@ final class JdbcUtils {
       return cache.getUnchecked(key);
     }
   }
+
   public static void close(
       @Nullable Connection connection,
       @Nullable Statement statement,

@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.schema;
+package traindb.adapter.jdbc;
 
 import static java.util.Objects.requireNonNull;
 
@@ -20,34 +20,29 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.util.Map;
 import javax.sql.DataSource;
-import org.apache.calcite.adapter.jdbc.JdbcCatalogSchema;
-import org.apache.calcite.adapter.jdbc.JdbcConvention;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.SqlDialect;
 import traindb.common.TrainDBLogger;
+import traindb.schema.TrainDBDataSource;
 
-public class TrainDBJdbcDataSource extends AbstractSchema {
+public class TrainDBJdbcDataSource extends TrainDBDataSource {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBJdbcDataSource.class);
 
-  private final String name;
   private final DataSource dataSource;
   private final SqlDialect dialect;
   private final JdbcConvention convention;
-  private ImmutableMap<String, Schema> subSchemaMap;
 
   public TrainDBJdbcDataSource(SchemaPlus parentSchema, DataSource dataSource) {
-    this.name = "traindb"; // FIXME
+    super();
     this.dataSource = dataSource;
     final Expression expression =
-        Schemas.subSchemaExpression(parentSchema, name, JdbcCatalogSchema.class);
+        Schemas.subSchemaExpression(parentSchema, getName(), TrainDBJdbcSchema.class);
     this.dialect = createDialect(dataSource);
-    this.convention = JdbcConvention.of(dialect, expression, name);
+    this.convention = JdbcConvention.of(dialect, expression, getName());
     computeSubSchemaMap();
   }
 
@@ -78,25 +73,6 @@ public class TrainDBJdbcDataSource extends AbstractSchema {
    */
   public static SqlDialect createDialect(DataSource dataSource) {
     return JdbcUtils.DialectPool.INSTANCE.get(dataSource);
-  }
-
-  public final String getName() {
-    return name;
-  }
-
-  @Override
-  public final boolean isMutable() {
-    return false;
-  }
-
-  @Override
-  public final Map<String, Schema> getSubSchemaMap() {
-    LOG.debug("getSubSchemaMap called. subSchemaMapSize=" + subSchemaMap.size());
-    return subSchemaMap;
-  }
-
-  public final void setSubSchemaMap(ImmutableMap<String, Schema> subSchemaMap) {
-    this.subSchemaMap = subSchemaMap;
   }
 
   public DataSource getDataSource() {

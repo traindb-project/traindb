@@ -57,6 +57,9 @@ fi
 
 TRAINDB_OPTS="$JAVA_HEAP_MAX"
 
+# uncomment if you want to attach a debugger
+#TRAINDB_OPTS="$TRAINDB_OPTS -agentlib:jdwp=transport=dt_socket,server=y,suspend=n,address=*:5005"
+
 lines=$("$JAVA" -version 2>&1 | tr '\r' '\n')
 ver=$(echo $lines | sed -e 's/.*version "\(.*\)"\(.*\)/\1/; 1q')
 if [[ $ver = "1."* ]]; then
