@@ -22,7 +22,7 @@ $ git clone https://github.com/traindb-project/traindb.git
 ### Build
 
 ```console
-$ cd traindb-prototype
+$ cd traindb
 $ mvn package
 ```
 
