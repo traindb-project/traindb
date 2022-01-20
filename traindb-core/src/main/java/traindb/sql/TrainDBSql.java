@@ -135,9 +135,9 @@ public final class TrainDBSql {
     public void exitCreateModel(TrainDBSqlParser.CreateModelContext ctx) {
       String modelName = ctx.modelName().getText();
       String modelType = ctx.modelType().getText();
-      String modelLocation = ctx.modelLocation().getText();
-      String modelClassName = ctx.modelClassName().getText();
-      String modelUri = ctx.modelUri().getText();
+      String modelLocation = ctx.modelSpecClause().modelLocation().getText();
+      String modelClassName = ctx.modelSpecClause().modelClassName().getText();
+      String modelUri = ctx.modelSpecClause().modelUri().getText();
       LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType
           + " location=" + modelLocation + " class=" + modelClassName + " uri=" + modelUri);
       commands.add(new TrainDBSqlCreateModel(

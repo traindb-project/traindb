@@ -27,7 +27,7 @@ traindbStmts
     ;
 
 createModel
-    : K_CREATE K_MODEL modelName K_TYPE modelType modelLocation K_AS modelClassName K_IN modelUri
+    : K_CREATE K_MODEL modelName K_TYPE modelType modelSpecClause
     ;
 
 dropModel
@@ -49,6 +49,10 @@ modelName
 modelType
     : K_INFERENCE
     | K_SYNOPSIS
+    ;
+
+modelSpecClause
+    : modelLocation K_AS modelClassName K_IN modelUri
     ;
 
 modelLocation
