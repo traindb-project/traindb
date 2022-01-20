@@ -148,10 +148,10 @@ limitations under the License.
     </build>
 
     <scm>
-      <connection>scm:git:https://github.com/traindb-project/traindb-prototype.git</connection>
-      <developerConnection>scm:git:https://github.com/traindb-project/traindb-prototype.git</developerConnection>
+      <connection>scm:git:https://github.com/traindb-project/traindb.git</connection>
+      <developerConnection>scm:git:https://github.com/traindb-project/traindb.git</developerConnection>
       <tag>HEAD</tag>
-      <url>https://github.com/traindb-project/traindb-prototype</url>
+      <url>https://github.com/traindb-project/traindb</url>
     </scm>
 
 </project>
