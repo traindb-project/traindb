@@ -14,7 +14,6 @@
 
 package traindb.adapter.jdbc;
 
-import com.google.common.collect.ImmutableList;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.sql.SqlDialect;
@@ -27,17 +26,6 @@ public class JdbcImplementor extends RelToSqlConverter {
   public JdbcImplementor(SqlDialect dialect, JavaTypeFactory typeFactory) {
     super(dialect);
     Util.discard(typeFactory);
-  }
-
-  // CHECKSTYLE: IGNORE 1
-
-  /**
-   * @see #dispatch
-   */
-  @SuppressWarnings("MissingSummary")
-  public Result visit(JdbcTableScan scan) {
-    return result(scan.jdbcTable.tableName(),
-        ImmutableList.of(Clause.FROM), scan, null);
   }
 
   public Result implement(RelNode node) {
