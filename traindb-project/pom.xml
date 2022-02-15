@@ -263,6 +263,7 @@ limitations under the License.
                             <includeResources>false</includeResources>
                             <includeTestResources>false</includeTestResources>
                             <configLocation>src/main/resources/checkstyle/google_checks.xml</configLocation>
+                            <suppressionsLocation>src/main/resources/checkstyle/suppressions.xml</suppressionsLocation>
                             <consoleOutput>true</consoleOutput>
                             <encoding>UTF-8</encoding>
                             <failsOnError>true</failsOnError>
