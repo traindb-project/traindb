@@ -61,6 +61,7 @@ import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSqlRunner;
+import traindb.sql.parser.TrainDBCalciteSQLParserImpl;
 
 
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
@@ -175,7 +176,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   // FIXME temporary
   private DbmsQueryResult getTrainingData(String schemaName, String tableName,
-                                              List<String> columnNames) throws Exception {
+                                          List<String> columnNames) throws Exception {
     // query to get table metadata
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
@@ -474,7 +475,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public VerdictSingleResult processQuery(String query) throws Exception {
-    SqlParser.Config parserConf = SqlParser.config().withUnquotedCasing(Casing.TO_LOWER);
+    SqlParser.Config parserConf = SqlParser.config()
+        .withParserFactory(TrainDBCalciteSQLParserImpl.FACTORY)
+        .withUnquotedCasing(Casing.TO_LOWER);
     FrameworkConfig config = Frameworks.newConfigBuilder()
         .defaultSchema(schemaManager.getCurrentSchema())
         .parserConfig(parserConf).build();
