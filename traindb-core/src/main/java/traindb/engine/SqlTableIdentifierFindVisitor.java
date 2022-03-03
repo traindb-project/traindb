@@ -15,75 +15,49 @@
 package traindb.engine;
 
 import java.util.ArrayList;
-import java.util.Stack;
 import org.apache.calcite.sql.SqlCall;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlKind;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelect;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 
 public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode> {
-  private final Stack<State> nodeStack = new Stack<>();
   private final ArrayList<SqlIdentifier> tableIds;
-
-  /*
-   * To find table name identifiers, we use a state stack.
-   * It is used to indicate whether an identifier is in FROM clause.
-   */
-  private enum State {
-    NOT_FROM,
-    FROM
-  }
 
   public SqlTableIdentifierFindVisitor(ArrayList<SqlIdentifier> tableIds) {
     this.tableIds = tableIds;
   }
 
+  private void flatten(SqlNode node, ArrayList<SqlNode> list) {
+    switch (node.getKind()) {
+      case JOIN:
+        SqlJoin join = (SqlJoin) node;
+        flatten(join.getLeft(), list);
+        flatten(join.getRight(), list);
+        break;
+      case AS:
+        SqlCall call = (SqlCall) node;
+        flatten(call.operand(0), list);
+        break;
+      case IDENTIFIER:
+        tableIds.add((SqlIdentifier) node);
+        break;
+      default:
+        break;
+    }
+  }
+
   @Override
   public SqlNode visit(SqlCall call) {
     if (call instanceof SqlSelect) {
-      int i = 0;
-      for (SqlNode operand : call.getOperandList()) {
-        // FROM operand
-        if (i == 2) {
-          nodeStack.push(State.FROM);
-        } else {
-          nodeStack.push(State.NOT_FROM);
-        }
-
-        i++;
-
-        if (operand == null) {
-          continue;
-        }
-
-        operand.accept(this);
-        nodeStack.pop();
-      }
-      return null;
-    }
-
-    SqlOperator operator = call.getOperator();
-    if (operator != null && operator.getKind() == SqlKind.AS) {
-      // AS operator will be probed only if it is in FROM clause
-      if (nodeStack.peek() == State.FROM) {
-        call.operand(0).accept(this);
-      }
+      SqlNode from = ((SqlSelect) call).getFrom();
+      ArrayList<SqlNode> list = new ArrayList<>();
+      flatten(from, list);
       return null;
     }
 
     return super.visit(call);
   }
 
-  @Override
-  public SqlNode visit(SqlIdentifier identifier) {
-    // check whether this is fully qualified table name
-    if (!nodeStack.empty() && nodeStack.peek() == State.FROM) {
-      tableIds.add(identifier);
-    }
-
-    return identifier;
-  }
 }
