@@ -224,7 +224,10 @@ public final class TrainDBSql {
 
     @Override
     public void exitDescribeTable(TrainDBSqlParser.DescribeTableContext ctx) {
-      String schemaName = ctx.tableName().schemaName().getText();
+      String schemaName = null;
+      if (ctx.tableName().schemaName() != null) {
+        schemaName = ctx.tableName().schemaName().getText();
+      }
       String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlDescribeTable(schemaName, tableName));
     }

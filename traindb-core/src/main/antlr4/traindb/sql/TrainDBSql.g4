@@ -105,7 +105,7 @@ schemaName
     ;
 
 tableName
-    : ( schemaName '.' ) tableIdentifier=IDENTIFIER
+    : ( schemaName '.' )? tableIdentifier=IDENTIFIER
     ;
 
 columnNameList
