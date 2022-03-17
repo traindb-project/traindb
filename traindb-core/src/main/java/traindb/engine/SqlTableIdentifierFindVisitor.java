@@ -20,13 +20,16 @@ import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlWithItem;
 import org.apache.calcite.sql.util.SqlBasicVisitor;
 
 public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode> {
   private final ArrayList<SqlIdentifier> tableIds;
+  private final ArrayList<String> excludeIds;
 
-  public SqlTableIdentifierFindVisitor(ArrayList<SqlIdentifier> tableIds) {
+  public SqlTableIdentifierFindVisitor(ArrayList<SqlIdentifier> tableIds, ArrayList<String> excludeIds) {
     this.tableIds = tableIds;
+    this.excludeIds = excludeIds;
   }
 
   private void flatten(SqlNode node, ArrayList<SqlNode> list) {
@@ -54,7 +57,8 @@ public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode
       SqlNode from = ((SqlSelect) call).getFrom();
       ArrayList<SqlNode> list = new ArrayList<>();
       flatten(from, list);
-      return null;
+    } else if (call instanceof SqlWithItem) {
+      excludeIds.add(((SqlWithItem) call).name.toString());
     }
 
     return super.visit(call);
