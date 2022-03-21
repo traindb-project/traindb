@@ -1,5 +1,5 @@
-# simple.iq
-!use instacart
+# basic.iq
+!use instacart_small
 !set outputformat mysql
 
 CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
@@ -17,17 +17,17 @@ SHOW MODELS;
 
 !ok
 
-TRAIN MODEL tablegan INSTANCE tgan ON instacart.order_products(product_id, add_to_cart_order);
+TRAIN MODEL tablegan INSTANCE tgan ON instacart_small.order_products(product_id, add_to_cart_order);
 (0 rows modified)
 
 !update
 
 SHOW MODEL INSTANCES;
-+----------+----------------+-----------+----------------+---------------------------------+
-| model    | model_instance | schema    | table          | columns                         |
-+----------+----------------+-----------+----------------+---------------------------------+
-| tablegan | tgan           | instacart | order_products | [product_id, add_to_cart_order] |
-+----------+----------------+-----------+----------------+---------------------------------+
++----------+----------------+-----------------+----------------+---------------------------------+
+| model    | model_instance | schema          | table          | columns                         |
++----------+----------------+-----------------+----------------+---------------------------------+
+| tablegan | tgan           | instacart_small | order_products | [product_id, add_to_cart_order] |
++----------+----------------+-----------------+----------------+---------------------------------+
 (1 row)
 
 !ok
@@ -38,16 +38,16 @@ CREATE SYNOPSIS order_products_syn FROM MODEL INSTANCE tgan LIMIT 1000;
 !update
 
 SHOW SYNOPSES;
-+--------------------+----------------+-----------+----------------+---------------------------------+
-| synopsis           | model_instance | schema    | table          | columns                         |
-+--------------------+----------------+-----------+----------------+---------------------------------+
-| order_products_syn | tgan           | instacart | order_products | [product_id, add_to_cart_order] |
-+--------------------+----------------+-----------+----------------+---------------------------------+
++--------------------+----------------+-----------------+----------------+---------------------------------+
+| synopsis           | model_instance | schema          | table          | columns                         |
++--------------------+----------------+-----------------+----------------+---------------------------------+
+| order_products_syn | tgan           | instacart_small | order_products | [product_id, add_to_cart_order] |
++--------------------+----------------+-----------------+----------------+---------------------------------+
 (1 row)
 
 !ok
 
-SELECT count(*) as c2 FROM instacart.order_products_syn;
+SELECT count(*) as c2 FROM instacart_small.order_products_syn;
 +------+
 | c2   |
 +------+
