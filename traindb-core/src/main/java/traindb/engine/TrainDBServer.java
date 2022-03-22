@@ -24,7 +24,6 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
-import traindb.catalog.JDOCatalogStore;
 import traindb.common.TrainDBConfiguration;
 
 
@@ -33,6 +32,7 @@ public class TrainDBServer implements Runnable {
   public static void main(String[] args) {
     new TrainDBServer().run();
   }
+
   public TrainDBServer() {
   }
 
@@ -56,8 +56,7 @@ public class TrainDBServer implements Runnable {
       Injector injector = app.initialize();
 
       log.info("TrainDBServer started.");
-    }
-    catch (Throwable e) {
+    } catch (Throwable e) {
       log.error(e);
       System.exit(1);
     }

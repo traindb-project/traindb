@@ -27,7 +27,8 @@ public final class SqlTableIdentifierFindVisitor extends SqlBasicVisitor<SqlNode
   private final ArrayList<SqlIdentifier> tableIds;
   private final ArrayList<String> excludeIds;
 
-  public SqlTableIdentifierFindVisitor(ArrayList<SqlIdentifier> tableIds, ArrayList<String> excludeIds) {
+  public SqlTableIdentifierFindVisitor(ArrayList<SqlIdentifier> tableIds,
+                                       ArrayList<String> excludeIds) {
     this.tableIds = tableIds;
     this.excludeIds = excludeIds;
   }

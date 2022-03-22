@@ -6,4 +6,5 @@
 
 <suppressions>
     <suppress files="[\\/]traindb/adapter/jdbc[\\/]" checks="[a-zA-Z0-9]*"/>
+    <suppress files="[\\/]traindb/engine/calcite[\\/]" checks="[a-zA-Z0-9]*"/>
 </suppressions>

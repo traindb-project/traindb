@@ -20,12 +20,10 @@ import javax.ws.rs.Produces;
 import javax.ws.rs.core.MediaType;
 
 @Path("/v1/service")
-public class TrainDBServiceResource
-{
+public class TrainDBServiceResource {
   @GET
   @Produces(MediaType.APPLICATION_JSON)
-  public String hello()
-  {
+  public String hello() {
     return "Hello TrainDB!";
   }
 }

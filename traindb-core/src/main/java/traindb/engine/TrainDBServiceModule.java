@@ -14,17 +14,15 @@
 
 package traindb.engine;
 
+import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
+
 import com.google.inject.Binder;
 import com.google.inject.Module;
 
-import static io.airlift.jaxrs.JaxrsBinder.jaxrsBinder;
-
 public class TrainDBServiceModule
-    implements Module
-{
+    implements Module {
   @Override
-  public void configure(Binder binder)
-  {
+  public void configure(Binder binder) {
     jaxrsBinder(binder).bind(TrainDBServiceResource.class);
   }
 }
