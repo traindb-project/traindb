@@ -28,9 +28,13 @@ public final class TableNameQualifier {
   public static void toFullyQualifiedName(SchemaManager schemaManager, String defaultSchema,
                                           SqlNode query) {
     ArrayList<SqlIdentifier> tableIds = new ArrayList<>();
-    query.accept(new SqlTableIdentifierFindVisitor(tableIds));
+    ArrayList<String> excludeIds = new ArrayList<>();
+    query.accept(new SqlTableIdentifierFindVisitor(tableIds, excludeIds));
 
     for (SqlIdentifier tableId : tableIds) {
+      if (excludeIds.contains(tableId.toString())) {
+        continue;
+      }
       List<String> fqn = schemaManager.toFullyQualifiedTableName(
           tableId.names, defaultSchema);
       tableId.setNames(fqn, null);
