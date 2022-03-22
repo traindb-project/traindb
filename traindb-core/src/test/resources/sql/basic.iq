@@ -2,6 +2,56 @@
 !use instacart_small
 !set outputformat mysql
 
+SELECT count(*) as cnt FROM (select * from instacart.order_products) t;
++---------+
+| cnt     |
++---------+
+| 1384617 |
++---------+
+(1 row)
+
+!ok
+
+USE instacart_small;
+(0 rows modified)
+
+!update
+
+SELECT count(*) as cnt FROM (select * from order_products where product_id < 1000) t;
++-------+
+| cnt   |
++-------+
+| 21212 |
++-------+
+(1 row)
+
+!ok
+
+SELECT count(*) as cnt
+FROM order_products as a, (select * from instacart.order_products where product_id < 1000) as b
+WHERE a.product_id = b.product_id;
++---------+
+| cnt     |
++---------+
+| 8488212 |
++---------+
+(1 row)
+
+!ok
+
+WITH b as (select * from instacart.order_products where product_id < 1000)
+SELECT count(*) as cnt
+FROM instacart.order_products a, b
+WHERE a.product_id = b.product_id;
++---------+
+| cnt     |
++---------+
+| 8488212 |
++---------+
+(1 row)
+
+!ok
+
 CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
 (0 rows modified)
 
