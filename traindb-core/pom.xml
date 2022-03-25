@@ -44,6 +44,12 @@ limitations under the License.
         <dependency>
             <groupId>org.verdictdb</groupId>
             <artifactId>verdictdb-core</artifactId>
+            <exclusions>
+                <exclusion>
+                    <groupId>me.tongfei</groupId>
+                    <artifactId>progressbar</artifactId>
+                </exclusion>
+            </exclusions>
         </dependency>
 
         <dependency>

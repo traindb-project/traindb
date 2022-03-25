@@ -258,6 +258,11 @@ limitations under the License.
                 <version>0.5.8</version>
             </dependency>
             <dependency>
+                <groupId>me.tongfei</groupId>
+                <artifactId>progressbar</artifactId>
+                <version>0.9.3</version>
+            </dependency>
+            <dependency>
                 <groupId>org.xerial</groupId>
                 <artifactId>sqlite-jdbc</artifactId>
                 <version>3.36.0.3</version>
