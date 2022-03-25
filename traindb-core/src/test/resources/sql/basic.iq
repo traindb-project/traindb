@@ -2,7 +2,7 @@
 !use instacart_small
 !set outputformat mysql
 
-SELECT count(*) as cnt FROM (select * from instacart.order_products) t;
+SELECT count(*) as cnt FROM (select * from instacart_small.order_products) t;
 +---------+
 | cnt     |
 +---------+
@@ -28,7 +28,7 @@ SELECT count(*) as cnt FROM (select * from order_products where product_id < 100
 !ok
 
 SELECT count(*) as cnt
-FROM order_products as a, (select * from instacart.order_products where product_id < 1000) as b
+FROM order_products as a, (select * from instacart_small.order_products where product_id < 1000) as b
 WHERE a.product_id = b.product_id;
 +---------+
 | cnt     |
@@ -39,9 +39,9 @@ WHERE a.product_id = b.product_id;
 
 !ok
 
-WITH b as (select * from instacart.order_products where product_id < 1000)
+WITH b as (select * from instacart_small.order_products where product_id < 1000)
 SELECT count(*) as cnt
-FROM instacart.order_products a, b
+FROM instacart_small.order_products a, b
 WHERE a.product_id = b.product_id;
 +---------+
 | cnt     |
