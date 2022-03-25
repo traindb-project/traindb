@@ -16,6 +16,25 @@ import abc
 
 class TrainDBModel(abc.ABC):
   """Base class for all the ``TrainDB`` models."""
+  def get_columns(self, real_data, table_metadata):
+    model_columns = []
+    categorical_columns = []
+
+    fields_meta = table_metadata['fields']
+
+    for column in real_data.columns:
+      field_meta = fields_meta[column]
+      field_type = field_meta['type']
+      if field_type == 'id':
+        continue
+
+      index = len(model_columns)
+      if field_type == 'categorical':
+        categorical_columns.append(index)
+
+      model_columns.append(column)
+
+    return model_columns, categorical_columns
 
   def train(self, real_data, table_metadata): 
     pass

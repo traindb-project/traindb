@@ -40,7 +40,7 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
         super().__init__(random_dim, num_channels, l2scale, batch_size, epochs)
 
     def train(self, real_data, table_metadata):
-        columns, categoricals = self._get_columns(real_data, table_metadata)
+        columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
 
