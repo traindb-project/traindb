@@ -40,17 +40,19 @@ data: {
   # FMPP will use the declaration from default_config.fmpp.
   parser: {
     # Generated parser implementation package and class name.
-    package: "traindb.sql.parser",
-    class: "TrainDBCalciteSQLParserImpl",
+    package: "traindb.sql.calcite",
+    class: "TrainDBSqlCalciteParserImpl",
 
     # List of additional classes and packages to import.
     # Example: "org.apache.calcite.sql.*", "java.util.List".
     imports: [
+      "traindb.sql.calcite.TrainDBSqlSelectKeyword"
     ]
 
     # List of new keywords. Example: "DATABASES", "TABLES". If the keyword is
     # not a reserved keyword, add it to the 'nonReservedKeywords' section.
     keywords: [
+      "APPROXIMATE"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -382,6 +384,7 @@ data: {
     # List of non-reserved keywords to add;
     # items in this list become non-reserved.
     nonReservedKeywordsToAdd: [
+      "APPROXIMATE"
     ]
 
     # List of non-reserved keywords to remove;

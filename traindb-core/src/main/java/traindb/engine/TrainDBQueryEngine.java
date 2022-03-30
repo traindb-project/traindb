@@ -61,7 +61,8 @@ import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSqlRunner;
-import traindb.sql.parser.TrainDBCalciteSQLParserImpl;
+import traindb.sql.calcite.TrainDBPlanner;
+import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 
 
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
@@ -476,21 +477,21 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public VerdictSingleResult processQuery(String query) throws Exception {
     SqlParser.Config parserConf = SqlParser.config()
-        .withParserFactory(TrainDBCalciteSQLParserImpl.FACTORY)
+        .withParserFactory(TrainDBSqlCalciteParserImpl.FACTORY)
         .withUnquotedCasing(Casing.TO_LOWER);
     FrameworkConfig config = Frameworks.newConfigBuilder()
         .defaultSchema(schemaManager.getCurrentSchema())
         .parserConfig(parserConf).build();
-    Planner planner = Frameworks.getPlanner(config);
+
+    Planner planner = new TrainDBPlanner(config);
     SqlNode parse = planner.parse(query);
     TableNameQualifier.toFullyQualifiedName(schemaManager, conn.getDefaultSchema(), parse);
     LOG.debug("Parsed query: " + parse.toString());
 
     SqlNode validate = planner.validate(parse);
     RelRoot relRoot = planner.rel(validate);
-    LOG.debug(
-        RelOptUtil.dumpPlan("Generated plan: ", relRoot.rel, SqlExplainFormat.TEXT,
-            SqlExplainLevel.ALL_ATTRIBUTES));
+    LOG.debug(RelOptUtil.dumpPlan("Logical plan: ", relRoot.rel, SqlExplainFormat.TEXT,
+              SqlExplainLevel.ALL_ATTRIBUTES));
 
     SqlDialect.DatabaseProduct dp = SqlDialect.DatabaseProduct.POSTGRESQL;
     String queryString = validate.toSqlString(dp.getDialect()).getSql();
