@@ -127,7 +127,7 @@ public class JdbcRules {
       };
 
   static final RelFactories.CorrelateFactory CORRELATE_FACTORY =
-      (left, right, correlationId, requiredColumns, joinType) -> {
+      (left, right, hints, correlationId, requiredColumns, joinType) -> {
         throw new UnsupportedOperationException("JdbcCorrelate");
       };
 
@@ -216,7 +216,6 @@ public class JdbcRules {
               TABLE_SCAN_FACTORY,
               SNAPSHOT_FACTORY));
 
-  /** Creates a list of rules with the given JDBC convention instance. */
   public static List<RelOptRule> rules(JdbcConvention out) {
     final ImmutableList.Builder<RelOptRule> b = ImmutableList.builder();
     foreachRule(out, b::add);
@@ -599,7 +598,7 @@ public class JdbcRules {
     }
   }
 
-  /** Implementation of {@link Filter} i/
+  /** Implementation of {@link Filter} in
    * {@link JdbcConvention jdbc calling convention}. */
   public static class JdbcFilter extends Filter implements JdbcRel {
     public JdbcFilter(

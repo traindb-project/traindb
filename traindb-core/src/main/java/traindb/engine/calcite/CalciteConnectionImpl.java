@@ -14,25 +14,6 @@
 
 package traindb.engine.calcite;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-import java.lang.reflect.Type;
-import java.sql.PreparedStatement;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -67,7 +48,6 @@ import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.prepare.CalciteCatalogReader;
-import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.type.DelegatingTypeSystem;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.runtime.Hook;
@@ -88,7 +68,29 @@ import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Util;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+
 import org.checkerframework.checker.nullness.qual.Nullable;
+
+import java.lang.reflect.Type;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicBoolean;
+
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
+
+import static java.util.Objects.requireNonNull;
 
 /**
  * Implementation of JDBC connection
@@ -99,28 +101,30 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 abstract class CalciteConnectionImpl
     extends AvaticaConnection
     implements CalciteConnection, QueryProvider {
-  // must be package-protected
-  static final Trojan TROJAN = createTrojan();
   public final JavaTypeFactory typeFactory;
+
   final Function0<CalcitePrepare> prepareFactory;
   final CalciteServer server = new CalciteServerImpl();
   CalciteSchema rootSchema;
+
+  // must be package-protected
+  static final Trojan TROJAN = createTrojan();
 
   /**
    * Creates a CalciteConnectionImpl.
    *
    * <p>Not public; method is called only from the driver.
    *
-   * @param driver      Driver
-   * @param factory     Factory for JDBC objects
-   * @param url         Server URL
-   * @param info        Other connection properties
-   * @param rootSchema  Root schema, or null
+   * @param driver Driver
+   * @param factory Factory for JDBC objects
+   * @param url Server URL
+   * @param info Other connection properties
+   * @param rootSchema Root schema, or null
    * @param typeFactory Type factory, or null
    */
   protected CalciteConnectionImpl(Driver driver, AvaticaFactory factory,
-                                  String url, Properties info, @Nullable CalciteSchema rootSchema,
-                                  @Nullable JavaTypeFactory typeFactory) {
+      String url, Properties info, @Nullable CalciteSchema rootSchema,
+      @Nullable JavaTypeFactory typeFactory) {
     super(driver, factory, url, info);
     CalciteConnectionConfig cfg = new CalciteConnectionConfigImpl(info);
     this.prepareFactory = driver.prepareFactory;
@@ -132,8 +136,7 @@ abstract class CalciteConnectionImpl
       if (cfg.conformance().shouldConvertRaggedUnionTypesToVarying()) {
         typeSystem =
             new DelegatingTypeSystem(typeSystem) {
-              @Override
-              public boolean
+              @Override public boolean
               shouldConvertRaggedUnionTypesToVarying() {
                 return true;
               }
@@ -156,20 +159,16 @@ abstract class CalciteConnectionImpl
     return (CalciteMetaImpl) meta;
   }
 
-  @Override
-  public CalciteConnectionConfig config() {
+  @Override public CalciteConnectionConfig config() {
     return new CalciteConnectionConfigImpl(info);
   }
 
-  @Override
-  public Context createPrepareContext() {
+  @Override public Context createPrepareContext() {
     return new ContextImpl(this);
   }
 
-  /**
-   * Called after the constructor has completed and the model has been
-   * loaded.
-   */
+  /** Called after the constructor has completed and the model has been
+   * loaded. */
   void init() {
     final MaterializationService service = MaterializationService.instance();
     for (CalciteSchema.LatticeEntry e : Schemas.getLatticeEntries(rootSchema)) {
@@ -181,42 +180,23 @@ abstract class CalciteConnectionImpl
     }
   }
 
-  @Override
-  public <T> T unwrap(Class<T> iface) throws SQLException {
+  @Override public <T> T unwrap(Class<T> iface) throws SQLException {
     if (iface == RelRunner.class) {
-      return iface.cast(new RelRunner() {
-        @Override
-        public PreparedStatement prepareStatement(RelNode rel)
-            throws SQLException {
-          return prepareStatement_(CalcitePrepare.Query.of(rel),
+      return iface.cast((RelRunner) rel ->
+          prepareStatement_(CalcitePrepare.Query.of(rel),
               ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY,
-              getHoldability());
-        }
-
-        @SuppressWarnings("deprecation")
-        @Override
-        public PreparedStatement prepare(RelNode rel) {
-          try {
-            return prepareStatement(rel);
-          } catch (SQLException e) {
-            throw Util.throwAsRuntime(e);
-          }
-        }
-      });
+              getHoldability()));
     }
     return super.unwrap(iface);
   }
 
-  @Override
-  public CalciteStatement createStatement(int resultSetType,
-                                          int resultSetConcurrency, int resultSetHoldability)
-      throws SQLException {
+  @Override public CalciteStatement createStatement(int resultSetType,
+      int resultSetConcurrency, int resultSetHoldability) throws SQLException {
     return (CalciteStatement) super.createStatement(resultSetType,
         resultSetConcurrency, resultSetHoldability);
   }
 
-  @Override
-  public CalcitePreparedStatement prepareStatement(
+  @Override public CalcitePreparedStatement prepareStatement(
       String sql,
       int resultSetType,
       int resultSetConcurrency,
@@ -260,8 +240,7 @@ abstract class CalciteConnectionImpl
     }
   }
 
-  @Override
-  public AtomicBoolean getCancelFlag(Meta.StatementHandle handle)
+  @Override public AtomicBoolean getCancelFlag(Meta.StatementHandle handle)
       throws NoSuchStatementException {
     final CalciteServerStatement serverStatement = server.getStatement(handle);
     return ((CalciteServerStatementImpl) serverStatement).cancelFlag;
@@ -269,8 +248,7 @@ abstract class CalciteConnectionImpl
 
   // CalciteConnection methods
 
-  @Override
-  public SchemaPlus getRootSchema() {
+  @Override public SchemaPlus getRootSchema() {
     return rootSchema.plus();
   }
 
@@ -278,58 +256,55 @@ abstract class CalciteConnectionImpl
     this.rootSchema = rootSchema;
   }
 
-  @Override
-  public JavaTypeFactory getTypeFactory() {
+  @Override public JavaTypeFactory getTypeFactory() {
     return typeFactory;
+  }
+
+  @Override public Properties getProperties() {
+    return info;
   }
 
   // QueryProvider methods
 
-  @Override
-  public Properties getProperties() {
-    return info;
-  }
-
-  @Override
-  public <T> Queryable<T> createQuery(
+  @Override public <T> Queryable<T> createQuery(
       Expression expression, Class<T> rowType) {
     return new CalciteQueryable<>(this, rowType, expression);
   }
 
-  @Override
-  public <T> Queryable<T> createQuery(Expression expression, Type rowType) {
+  @Override public <T> Queryable<T> createQuery(Expression expression, Type rowType) {
     return new CalciteQueryable<>(this, rowType, expression);
   }
 
-  @Override
-  public <T> T execute(Expression expression, Type type) {
+  @Override public <T> T execute(Expression expression, Type type) {
     return castNonNull(null); // TODO:
   }
 
-  @Override
-  public <T> T execute(Expression expression, Class<T> type) {
+  @Override public <T> T execute(Expression expression, Class<T> type) {
     return castNonNull(null); // TODO:
   }
 
-  @Override
-  public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
+  @Override public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
     try {
       CalciteStatement statement = (CalciteStatement) createStatement();
       CalcitePrepare.CalciteSignature<T> signature =
           statement.prepare(queryable);
-      return enumerable(statement.handle, signature).enumerator();
+      return enumerable(statement.handle, signature, null).enumerator();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }
   }
 
   public <T> Enumerable<T> enumerable(Meta.StatementHandle handle,
-                                      CalcitePrepare.CalciteSignature<T> signature)
-      throws SQLException {
+      CalcitePrepare.CalciteSignature<T> signature,
+      @Nullable List<TypedValue> parameterValues0) throws SQLException {
     Map<String, Object> map = new LinkedHashMap<>();
     AvaticaStatement statement = lookupStatement(handle);
-    final List<TypedValue> parameterValues =
-        TROJAN.getParameterValues(statement);
+    final List<TypedValue> parameterValues;
+    if (parameterValues0 == null || parameterValues0.isEmpty()) {
+      parameterValues = TROJAN.getParameterValues(statement);
+    } else {
+      parameterValues = parameterValues0;
+    }
 
     if (MetaImpl.checkParameterValueHasNull(parameterValues)) {
       throw new SQLException("exception while executing query: unbound parameter");
@@ -355,7 +330,7 @@ abstract class CalciteConnectionImpl
   }
 
   public DataContext createDataContext(Map<String, Object> parameterValues,
-                                       @Nullable CalciteSchema rootSchema) {
+      @Nullable CalciteSchema rootSchema) {
     if (config().spark()) {
       return DataContexts.EMPTY;
     }
@@ -372,14 +347,12 @@ abstract class CalciteConnectionImpl
     return factory;
   }
 
-  /**
-   * Implementation of Queryable.
+  /** Implementation of Queryable.
    *
-   * @param <T> element type
-   */
+   * @param <T> element type */
   static class CalciteQueryable<T> extends BaseQueryable<T> {
     CalciteQueryable(CalciteConnection connection, Type elementType,
-                     Expression expression) {
+        Expression expression) {
       super(connection, elementType, expression);
     }
 
@@ -388,20 +361,16 @@ abstract class CalciteConnectionImpl
     }
   }
 
-  /**
-   * Implementation of Server.
-   */
+  /** Implementation of Server. */
   private static class CalciteServerImpl implements CalciteServer {
     final Map<Integer, CalciteServerStatement> statementMap = new HashMap<>();
 
-    @Override
-    public void removeStatement(Meta.StatementHandle h) {
+    @Override public void removeStatement(Meta.StatementHandle h) {
       statementMap.remove(h.id);
     }
 
-    @Override
-    public void addStatement(CalciteConnection connection,
-                             Meta.StatementHandle h) {
+    @Override public void addStatement(CalciteConnection connection,
+        Meta.StatementHandle h) {
       final CalciteConnectionImpl c = (CalciteConnectionImpl) connection;
       final CalciteServerStatement previous =
           statementMap.put(h.id, new CalciteServerStatementImpl(c));
@@ -410,8 +379,7 @@ abstract class CalciteConnectionImpl
       }
     }
 
-    @Override
-    public CalciteServerStatement getStatement(Meta.StatementHandle h)
+    @Override public CalciteServerStatement getStatement(Meta.StatementHandle h)
         throws NoSuchStatementException {
       CalciteServerStatement statement = statementMap.get(h.id);
       if (statement == null) {
@@ -421,26 +389,21 @@ abstract class CalciteConnectionImpl
     }
   }
 
-  /**
-   * Schema that has no parents.
-   */
+  /** Schema that has no parents. */
   static class RootSchema extends AbstractSchema {
     RootSchema() {
       super();
     }
 
-    @Override
-    public Expression getExpression(@Nullable SchemaPlus parentSchema,
-                                    String name) {
+    @Override public Expression getExpression(@Nullable SchemaPlus parentSchema,
+        String name) {
       return Expressions.call(
           DataContext.ROOT,
           BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method);
     }
   }
 
-  /**
-   * Implementation of DataContext.
-   */
+  /** Implementation of DataContext. */
   static class DataContextImpl implements DataContext {
     private final ImmutableMap<Object, Object> map;
     private final @Nullable CalciteSchema rootSchema;
@@ -448,7 +411,7 @@ abstract class CalciteConnectionImpl
     private final JavaTypeFactory typeFactory;
 
     DataContextImpl(CalciteConnectionImpl connection,
-                    Map<String, Object> parameters, @Nullable CalciteSchema rootSchema) {
+        Map<String, Object> parameters, @Nullable CalciteSchema rootSchema) {
       this.queryProvider = connection;
       this.typeFactory = connection.getTypeFactory();
       this.rootSchema = rootSchema;
@@ -496,8 +459,7 @@ abstract class CalciteConnectionImpl
       map = builder.build();
     }
 
-    @Override
-    public synchronized @Nullable Object get(String name) {
+    @Override public synchronized @Nullable Object get(String name) {
       Object o = map.get(name);
       if (o == AvaticaSite.DUMMY_VALUE) {
         return null;
@@ -536,25 +498,20 @@ abstract class CalciteConnectionImpl
       return new SqlAdvisor(validator, parserConfig);
     }
 
-    @Override
-    public @Nullable SchemaPlus getRootSchema() {
+    @Override public @Nullable SchemaPlus getRootSchema() {
       return rootSchema == null ? null : rootSchema.plus();
     }
 
-    @Override
-    public JavaTypeFactory getTypeFactory() {
+    @Override public JavaTypeFactory getTypeFactory() {
       return typeFactory;
     }
 
-    @Override
-    public QueryProvider getQueryProvider() {
+    @Override public QueryProvider getQueryProvider() {
       return queryProvider;
     }
   }
 
-  /**
-   * Implementation of Context.
-   */
+  /** Implementation of Context. */
   static class ContextImpl implements CalcitePrepare.Context {
     private final CalciteConnectionImpl connection;
     private final CalciteSchema mutableRootSchema;
@@ -568,23 +525,19 @@ abstract class CalciteConnectionImpl
       this.rootSchema = mutableRootSchema.createSnapshot(schemaVersion);
     }
 
-    @Override
-    public JavaTypeFactory getTypeFactory() {
+    @Override public JavaTypeFactory getTypeFactory() {
       return connection.typeFactory;
     }
 
-    @Override
-    public CalciteSchema getRootSchema() {
+    @Override public CalciteSchema getRootSchema() {
       return rootSchema;
     }
 
-    @Override
-    public CalciteSchema getMutableRootSchema() {
+    @Override public CalciteSchema getMutableRootSchema() {
       return mutableRootSchema;
     }
 
-    @Override
-    public List<String> getDefaultSchemaPath() {
+    @Override public List<String> getDefaultSchemaPath() {
       final String schemaName;
       try {
         schemaName = connection.getSchema();
@@ -596,24 +549,20 @@ abstract class CalciteConnectionImpl
           : ImmutableList.of(schemaName);
     }
 
-    @Override
-    public @Nullable List<String> getObjectPath() {
+    @Override public @Nullable List<String> getObjectPath() {
       return null;
     }
 
-    @Override
-    public CalciteConnectionConfig config() {
+    @Override public CalciteConnectionConfig config() {
       return connection.config();
     }
 
-    @Override
-    public DataContext getDataContext() {
+    @Override public DataContext getDataContext() {
       return connection.createDataContext(ImmutableMap.of(),
           rootSchema);
     }
 
-    @Override
-    public RelRunner getRelRunner() {
+    @Override public RelRunner getRelRunner() {
       final RelRunner runner;
       try {
         runner = connection.unwrap(RelRunner.class);
@@ -626,54 +575,45 @@ abstract class CalciteConnectionImpl
       return runner;
     }
 
-    @Override
-    public CalcitePrepare.SparkHandler spark() {
+    @Override public CalcitePrepare.SparkHandler spark() {
       final boolean enable = config().spark();
       return CalcitePrepare.Dummy.getSparkHandler(enable);
     }
   }
 
-  /**
-   * Implementation of {@link CalciteServerStatement}.
-   */
+  /** Implementation of {@link CalciteServerStatement}. */
   static class CalciteServerStatementImpl
       implements CalciteServerStatement {
     private final CalciteConnectionImpl connection;
-    private final AtomicBoolean cancelFlag = new AtomicBoolean();
     private @Nullable Iterator<Object> iterator;
     private Meta.@Nullable Signature signature;
+    private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
     CalciteServerStatementImpl(CalciteConnectionImpl connection) {
       this.connection = requireNonNull(connection, "connection");
     }
 
-    @Override
-    public Context createPrepareContext() {
+    @Override public Context createPrepareContext() {
       return connection.createPrepareContext();
     }
 
-    @Override
-    public CalciteConnection getConnection() {
+    @Override public CalciteConnection getConnection() {
       return connection;
     }
 
-    @Override
-    public Meta.@Nullable Signature getSignature() {
-      return signature;
-    }
-
-    @Override
-    public void setSignature(Meta.Signature signature) {
+    @Override public void setSignature(Meta.Signature signature) {
       this.signature = signature;
     }
 
-    @Override
-    public @Nullable Iterator<Object> getResultSet() {
+    @Override public Meta.@Nullable Signature getSignature() {
+      return signature;
+    }
+
+    @Override public @Nullable Iterator<Object> getResultSet() {
       return iterator;
     }
 
-    @Override
-    public void setResultSet(Iterator<Object> iterator) {
+    @Override public void setResultSet(Iterator<Object> iterator) {
       this.iterator = iterator;
     }
   }

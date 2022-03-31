@@ -32,7 +32,7 @@ limitations under the License.
 
     <properties>
         <datanucleus.version>5.2.0-release</datanucleus.version>
-        <calcite.version>1.29.0</calcite.version>
+        <calcite.version>1.30.0</calcite.version>
         <janino.version>3.1.6</janino.version>
         <airlift.version>213</airlift.version>
         <skipTests>true</skipTests>
