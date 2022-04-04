@@ -7,7 +7,7 @@ Currently, we are implementing a prototype for proof of concept.
 
 ## Requirements
 
-* Java 8+
+* Java 11+
 * Maven 3.x
 * SQLite3
 
