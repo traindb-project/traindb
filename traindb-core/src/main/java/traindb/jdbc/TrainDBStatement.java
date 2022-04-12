@@ -19,7 +19,6 @@ import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.SQLFeatureNotSupportedException;
 import java.sql.SQLWarning;
-import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.jdbc41.VerdictResultSet;
 import traindb.TrainDBContext;
@@ -42,13 +41,6 @@ public class TrainDBStatement implements java.sql.Statement {
     this.exCtx = context.createTrainDBExecContext();
   }
 
-  private Boolean checkStreamQuery(String query) {
-    if (query.trim().toLowerCase().startsWith("stream")) {
-      return true;
-    }
-    return false;
-  }
-
   @Override
   public boolean execute(String sql) throws SQLException {
     try {
@@ -65,15 +57,6 @@ public class TrainDBStatement implements java.sql.Statement {
   @Override
   public ResultSet executeQuery(String sql) throws SQLException {
     try {
-      if (checkStreamQuery(sql)) {
-        TrainDBStreamResultSet resultSet = new TrainDBStreamResultSet();
-        sql = sql.replaceFirst("(?i)stream", "");
-        VerdictResultStream resultStream = exCtx.streamsql(sql);
-        ExecuteStream executeStream = new ExecuteStream(resultStream, resultSet, exCtx);
-        resultSet.setRunnable(executeStream);
-        new Thread(executeStream).start();
-        return resultSet;
-      }
       result = exCtx.sql(sql);
       return new VerdictResultSet(result);
     } catch (TrainDBException e) {
@@ -294,40 +277,5 @@ public class TrainDBStatement implements java.sql.Statement {
   @Override
   public boolean isCloseOnCompletion() throws SQLException {
     throw new SQLFeatureNotSupportedException();
-  }
-
-  class ExecuteStream implements Runnable {
-
-    VerdictResultStream resultStream;
-
-    TrainDBStreamResultSet resultSet;
-
-    TrainDBExecContext exCtx;
-
-    ExecuteStream(VerdictResultStream resultStream, TrainDBStreamResultSet resultSet,
-                  TrainDBExecContext exCtx) {
-      this.resultStream = resultStream;
-      this.resultSet = resultSet;
-      this.exCtx = exCtx;
-    }
-
-    public void run() {
-      while (!resultStream.isCompleted()) {
-        VerdictSingleResult singleResult = resultStream.next();
-        if (!resultStream.hasNext()) {
-          synchronized ((Object) resultSet.hasReadAllQueryResults) {
-            resultSet.appendSingleResult(singleResult);
-            resultSet.setCompleted();
-          }
-          LOG.debug("Execution Completed\n");
-        } else {
-          resultSet.appendSingleResult(singleResult);
-        }
-      }
-    }
-
-    public void abort() {
-      exCtx.abort();
-    }
   }
 }

@@ -15,12 +15,9 @@
 package traindb.engine;
 
 import java.util.List;
-import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.coordinator.ExecutionContext;
-import org.verdictdb.exception.VerdictDBException;
-import org.verdictdb.metastore.VerdictMetaStore;
 import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
@@ -36,13 +33,16 @@ public class TrainDBExecContext {
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   TrainDBSqlRunner engine;
+  String contextId;
+  long serialNumber;
   ExecutionContext executionContext;
 
   public TrainDBExecContext(
       DbmsConnection conn, CatalogStore catalogStore, SchemaManager schemaManager,
-      VerdictMetaStore metaStore, String contextId, long serialNumber, TrainDBConfiguration conf) {
+      String contextId, long serialNumber, TrainDBConfiguration conf) {
     engine = new TrainDBQueryEngine(conn, catalogStore, schemaManager, conf);
-    executionContext = new ExecutionContext(conn, metaStore, contextId, serialNumber, conf);
+    this.contextId = contextId;
+    this.serialNumber = serialNumber;
   }
 
   public VerdictSingleResult sql(String query) throws TrainDBException {
@@ -74,29 +74,16 @@ public class TrainDBExecContext {
 
     // Pass input query to VerdictDB
     try {
-      if (System.getenv("ENABLE_TRAINDB_CALCITE") != null) {
-        return engine.processQuery(query);
-      }
-      return executionContext.sql(query, getResult);
+      return engine.processQuery(query);
     } catch (Exception e) {
       throw new TrainDBException(e.getMessage());
     }
   }
 
-  public VerdictResultStream streamsql(String query) throws TrainDBException {
-    try {
-      return executionContext.streamsql(query);
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
-  }
-
   public void abort() {
-    executionContext.abort();
   }
 
   public void terminate() {
-    executionContext.terminate();
   }
 
 }

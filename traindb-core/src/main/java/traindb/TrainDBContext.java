@@ -21,14 +21,11 @@ import java.util.List;
 import java.util.Properties;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.lang3.RandomStringUtils;
-import org.verdictdb.VerdictResultStream;
 import org.verdictdb.VerdictSingleResult;
 import org.verdictdb.connection.CachedDbmsConnection;
 import org.verdictdb.connection.ConcurrentJdbcConnection;
 import org.verdictdb.connection.DbmsConnection;
 import org.verdictdb.connection.JdbcConnection;
-import org.verdictdb.core.scrambling.ScrambleMetaSet;
-import org.verdictdb.core.sqlobject.CreateSchemaQuery;
 import org.verdictdb.exception.VerdictDBDbmsException;
 import org.verdictdb.exception.VerdictDBException;
 import org.verdictdb.metastore.CachedScrambleMetaStore;
@@ -53,7 +50,6 @@ public class TrainDBContext {
   private final String contextId;
   private DbmsConnection conn;
   private boolean isClosed = false;
-  private VerdictMetaStore metaStore;
   private CatalogStore catalogStore;
   private BasicDataSource dataSource;
   private SchemaManager schemaManager;
@@ -80,7 +76,6 @@ public class TrainDBContext {
     this.conn = new CachedDbmsConnection(conn);
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
     this.conf = conf;
-    this.metaStore = getCachedMetaStore(conn, conf);
     this.catalogStore = new JDOCatalogStore();
     initialize(conf, catalogStore);
 
@@ -202,14 +197,6 @@ public class TrainDBContext {
    */
   private void initialize(TrainDBConfiguration conf, CatalogStore catalogStore)
       throws TrainDBException {
-    String schema = conf.getVerdictTempSchemaName();
-    CreateSchemaQuery query = new CreateSchemaQuery(schema);
-    query.setIfNotExists(true);
-    try {
-      conn.execute(query);
-    } catch (VerdictDBException e) {
-      throw new TrainDBException(e.getMessage());
-    }
     conf.loadConfiguration();
     try {
       catalogStore.start(conf.getProps());
@@ -257,7 +244,7 @@ public class TrainDBContext {
     long execSerialNumber = getNextExecutionSerialNumber();
     TrainDBExecContext exCtx = null;
     exCtx = new TrainDBExecContext(
-        conn, catalogStore, schemaManager, metaStore, contextId, execSerialNumber, conf);
+        conn, catalogStore, schemaManager, contextId, execSerialNumber, conf);
     exCtxs.add(exCtx);
     return exCtx;
   }
@@ -267,57 +254,20 @@ public class TrainDBContext {
     return executionSerialNumber;
   }
 
-  public ScrambleMetaSet getScrambleMetaSet() {
-    return metaStore.retrieve();
-  }
-
-  public VerdictMetaStore getMetaStore() {
-    return metaStore;
-  }
-
   public void removeTrainDBExecContext(TrainDBExecContext exCtx) {
-    exCtx.terminate();
     exCtxs.remove(exCtx);
   }
 
-  /**
-   * terminates all open execution context.
-   */
   public void abort() {
     for (TrainDBExecContext exCtx : exCtxs) {
       exCtx.terminate();
     }
   }
 
-  /**
-   * Returns a reliable result set as an answer. Right now, simply returns the first batch of
-   * Continuous results.
-   *
-   * <p>Automatically spawns an independent execution context, then runs a query using it.
-   *
-   * @param query Either a select query or a create-scramble query
-   * @return A single query result is returned. If the query is a create-scramble query,
-   *     the number of inserted rows are returned.
-   * @throws TrainDBException
-   */
   public VerdictSingleResult sql(String query) throws TrainDBException {
     TrainDBExecContext exCtx = createTrainDBExecContext();
     VerdictSingleResult result = exCtx.sql(query, false);
     removeTrainDBExecContext(exCtx);
     return result;
-  }
-
-  /**
-   * Returns a progressive query result set as an answer.
-   *
-   * @param query Either a select query or a create-scramble query.
-   * @return Reader enables progressive query result consumption.
-   *     If this is a create-scramble query, the number of inserted rows are returned.
-   * @throws TrainDBException
-   */
-  public VerdictResultStream streamsql(String query) throws TrainDBException {
-    TrainDBExecContext exCtx = createTrainDBExecContext();
-    VerdictResultStream stream = exCtx.streamsql(query);
-    return stream;
   }
 }
