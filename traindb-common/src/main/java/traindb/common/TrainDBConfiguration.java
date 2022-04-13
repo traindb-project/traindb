@@ -17,18 +17,17 @@ package traindb.common;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Properties;
-import org.verdictdb.commons.VerdictOption;
+import org.apache.calcite.avatica.ConnectionConfigImpl;
 
-public class TrainDBConfiguration extends VerdictOption {
-
+public class TrainDBConfiguration extends ConnectionConfigImpl {
   private final TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   private final String TRAINDB_CONFIG_FILENAME = "traindb.properties";
   private Properties props;
 
-  public TrainDBConfiguration() {
-    super();
-    this.props = new Properties();
+  public TrainDBConfiguration(Properties p) {
+    super(p);
+    this.props = p;
   }
 
   public void loadConfiguration() {

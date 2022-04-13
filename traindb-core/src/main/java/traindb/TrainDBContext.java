@@ -60,8 +60,7 @@ public class TrainDBContext {
    */
   private List<TrainDBExecContext> exCtxs = new LinkedList<>();
 
-  public TrainDBContext(BasicDataSource dataSource, Properties info, TrainDBConfiguration conf)
-      throws TrainDBException {
+  public TrainDBContext(BasicDataSource dataSource, Properties info) throws TrainDBException {
     String jdbcConnStr = dataSource.getUrl();
     DbmsConnection conn;
     try {
@@ -75,7 +74,7 @@ public class TrainDBContext {
     }
     this.conn = new CachedDbmsConnection(conn);
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
-    this.conf = conf;
+    this.conf = new TrainDBConfiguration(info);
     this.catalogStore = new JDOCatalogStore();
     initialize(conf, catalogStore);
 
@@ -94,7 +93,7 @@ public class TrainDBContext {
    */
   public static TrainDBContext fromConnectionString(String jdbcConnectionString)
       throws TrainDBException {
-    return fromConnectionString(jdbcConnectionString, null);
+    return fromConnectionString(jdbcConnectionString, new Properties());
   }
 
   /**
@@ -114,11 +113,6 @@ public class TrainDBContext {
       throw new TrainDBException(
           String.format("JDBC driver not found for the connection string: %s", jdbcConnStr));
     }
-    TrainDBConfiguration conf = new TrainDBConfiguration();
-    conf.parseConnectionString(jdbcConnStr);
-    if (info != null) {
-      conf.parseProperties(info);
-    }
 
     BasicDataSource dataSource = new BasicDataSource();
     dataSource.setUrl(jdbcConnStr);
@@ -129,7 +123,7 @@ public class TrainDBContext {
       dataSource.setPassword(info.getProperty("password"));
     }
 
-    return new TrainDBContext(dataSource, info, conf);
+    return new TrainDBContext(dataSource, info);
   }
 
   /**
@@ -183,13 +177,6 @@ public class TrainDBContext {
     return null;
   }
 
-  private VerdictMetaStore getCachedMetaStore(DbmsConnection conn, TrainDBConfiguration conf) {
-    CachedScrambleMetaStore metaStore =
-        new CachedScrambleMetaStore(new ScrambleMetaStore(conn, conf));
-    metaStore.refreshCache();
-    return metaStore;
-  }
-
   /**
    * Creates the schema for temp tables.
    *
@@ -215,10 +202,6 @@ public class TrainDBContext {
     } catch (VerdictDBDbmsException e) {
       e.printStackTrace();
     }
-  }
-
-  public void setLoglevel(String level) {
-    conf.setVerdictConsoleLogLevel(level);
   }
 
   public void close() {
