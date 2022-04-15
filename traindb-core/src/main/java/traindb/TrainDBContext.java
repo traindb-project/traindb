@@ -76,7 +76,8 @@ public class TrainDBContext {
     this.contextId = RandomStringUtils.randomAlphanumeric(5);
     this.conf = new TrainDBConfiguration(info);
     this.catalogStore = new JDOCatalogStore();
-    initialize(conf, catalogStore);
+    conf.loadConfiguration();
+    catalogStore.start(conf.getProps());
 
     this.dataSource = dataSource;
     this.schemaManager = SchemaManager.getInstance(catalogStore);
@@ -175,21 +176,6 @@ public class TrainDBContext {
       }
     }
     return null;
-  }
-
-  /**
-   * Creates the schema for temp tables.
-   *
-   * @throws TrainDBException
-   */
-  private void initialize(TrainDBConfiguration conf, CatalogStore catalogStore)
-      throws TrainDBException {
-    conf.loadConfiguration();
-    try {
-      catalogStore.start(conf.getProps());
-    } catch (CatalogException e) {
-      throw new TrainDBException(e.getMessage());
-    }
   }
 
   public DbmsConnection getConnection() {

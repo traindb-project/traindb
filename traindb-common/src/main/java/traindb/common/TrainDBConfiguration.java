@@ -17,9 +17,9 @@ package traindb.common;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Properties;
-import org.apache.calcite.avatica.ConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionConfigImpl;
 
-public class TrainDBConfiguration extends ConnectionConfigImpl {
+public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
   private final TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   private final String TRAINDB_CONFIG_FILENAME = "traindb.properties";

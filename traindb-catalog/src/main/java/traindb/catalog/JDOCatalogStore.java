@@ -26,7 +26,7 @@ public final class JDOCatalogStore implements CatalogStore {
   private final TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   @Override
-  public void start(Properties conf) throws CatalogException {
+  public void start(Properties conf) {
     Properties props = new Properties();
     props.setProperty("javax.jdo.PersistenceManagerFactoryClass",
         "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
