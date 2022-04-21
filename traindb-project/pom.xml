@@ -109,6 +109,11 @@ limitations under the License.
                 <version>${calcite.version}</version>
                 <scope>test</scope>
             </dependency>
+            <dependency>
+                <groupId>org.apache.calcite.avatica</groupId>
+                <artifactId>avatica-core</artifactId>
+                <version>1.20.0</version>
+            </dependency>
 
             <dependency>
                 <groupId>org.datanucleus</groupId>

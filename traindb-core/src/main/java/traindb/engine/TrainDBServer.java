@@ -24,6 +24,7 @@ import io.airlift.jaxrs.JaxrsModule;
 import io.airlift.json.JsonModule;
 import io.airlift.log.Logger;
 import io.airlift.node.NodeModule;
+import java.util.Properties;
 import traindb.common.TrainDBConfiguration;
 
 
@@ -51,7 +52,7 @@ public class TrainDBServer implements Runnable {
     );
 
     Bootstrap app = new Bootstrap(modules.build());
-    TrainDBConfiguration conf = new TrainDBConfiguration();
+    TrainDBConfiguration conf = new TrainDBConfiguration(new Properties());
     try {
       Injector injector = app.initialize();
 

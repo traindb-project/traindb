@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
 import java.sql.SQLException;
 import org.apache.calcite.avatica.AvaticaPreparedStatement;
@@ -27,7 +27,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * it is instantiated using
  * {@link org.apache.calcite.avatica.AvaticaFactory#newPreparedStatement}.
  */
-abstract class CalcitePreparedStatement extends AvaticaPreparedStatement {
+public abstract class TrainDBPreparedStatement extends AvaticaPreparedStatement {
   /**
    * Creates a CalcitePreparedStatement.
    *
@@ -39,7 +39,7 @@ abstract class CalcitePreparedStatement extends AvaticaPreparedStatement {
    * @param resultSetHoldability Result set holdability
    * @throws SQLException if database error occurs
    */
-  protected CalcitePreparedStatement(CalciteConnectionImpl connection,
+  protected TrainDBPreparedStatement(TrainDBConnectionImpl connection,
                                      Meta.@Nullable StatementHandle h, Meta.Signature signature,
                                      int resultSetType,
                                      int resultSetConcurrency, int resultSetHoldability)
@@ -49,7 +49,7 @@ abstract class CalcitePreparedStatement extends AvaticaPreparedStatement {
   }
 
   @Override
-  public CalciteConnectionImpl getConnection() throws SQLException {
-    return (CalciteConnectionImpl) super.getConnection();
+  public TrainDBConnectionImpl getConnection() throws SQLException {
+    return (TrainDBConnectionImpl) super.getConnection();
   }
 }

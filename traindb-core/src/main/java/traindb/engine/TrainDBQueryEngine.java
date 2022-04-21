@@ -16,11 +16,11 @@ package traindb.engine;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import com.opencsv.CSVWriter;
 import java.io.FileReader;
 import java.io.FileWriter;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.sql.Connection;
 import java.sql.DriverManager;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
@@ -41,24 +41,18 @@ import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.tools.Planner;
 import org.apache.commons.lang3.exception.ExceptionUtils;
-import org.apache.commons.lang3.tuple.Pair;
 import org.json.simple.JSONObject;
 import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.connection.CachedDbmsConnection;
-import org.verdictdb.connection.DbmsConnection;
-import org.verdictdb.connection.DbmsQueryResult;
-import org.verdictdb.connection.JdbcConnection;
 import org.verdictdb.connection.JdbcQueryResult;
 import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
-import traindb.catalog.CatalogStore;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
-import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
+import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.sql.calcite.TrainDBPlanner;
@@ -68,17 +62,16 @@ import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
-  private DbmsConnection conn;
+  private TrainDBConnectionImpl conn;
   private CatalogContext catalogContext;
   private SchemaManager schemaManager;
   private TrainDBConfiguration conf;
 
-  public TrainDBQueryEngine(DbmsConnection conn, CatalogStore catalogStore,
-                            SchemaManager schemaManager, TrainDBConfiguration conf) {
+  public TrainDBQueryEngine(TrainDBConnectionImpl conn, TrainDBConfiguration cfg) {
     this.conn = conn;
-    this.catalogContext = catalogStore.getCatalogContext();
-    this.schemaManager = schemaManager;
-    this.conf = conf;
+    this.catalogContext = conn.getCatalogContext();
+    this.schemaManager = conn.getSchemaManager();
+    this.conf = cfg;
   }
 
   @Override
@@ -115,11 +108,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(" WHERE 1<0");
 
     String sql = sb.toString();
-    DbmsQueryResult res = conn.execute(sql);
+    ResultSet res = conn.executeQueryInternal(sql);
 
     JSONObject root = new JSONObject();
     JSONObject fields = new JSONObject();
-    for (int i = 0; i < res.getColumnCount(); i++) {
+    for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
       JSONObject typeInfo = new JSONObject();
 
       /* datatype (type, subtype)
@@ -133,7 +126,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         ('id', 'integer'): 'int',
         ('id', 'string'): 'str'
        */
-      switch (res.getColumnType(i)) {
+      switch (res.getMetaData().getColumnType(i)) {
         case Types.CHAR:
         case Types.VARCHAR:
           typeInfo.put("type", "categorical");
@@ -166,7 +159,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           break;
       }
 
-      fields.put(res.getColumnName(i), typeInfo);
+      fields.put(res.getMetaData().getColumnName(i), typeInfo);
     }
     root.put("fields", fields);
     root.put("schema", schemaName);
@@ -176,7 +169,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   // FIXME temporary
-  private DbmsQueryResult getTrainingData(String schemaName, String tableName,
+  private ResultSet getTrainingData(String schemaName, String tableName,
                                           List<String> columnNames) throws Exception {
     // query to get table metadata
     StringBuilder sb = new StringBuilder();
@@ -192,8 +185,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(tableName);
 
     String sql = sb.toString();
-    DbmsQueryResult res = conn.execute(sql);
-    return res;
+    return conn.executeQueryInternal(sql);
   }
 
   @Override
@@ -204,7 +196,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new CatalogException("model instance '" + modelInstanceName + "' already exist");
     }
     if (schemaName == null) {
-      schemaName = conn.getDefaultSchema();
+      schemaName = conn.getSchema();
     }
 
     JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames);
@@ -220,12 +212,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     fileWriter.close();
 
     // FIXME securely pass training data for ML model training
-    DbmsQueryResult trainingData = getTrainingData(schemaName, tableName, columnNames);
+    ResultSet trainingData = getTrainingData(schemaName, tableName, columnNames);
     String dataFilename = outputPath + "/data.csv";
     FileWriter datafileWriter = new FileWriter(dataFilename);
-    datafileWriter.write(new VerdictSingleResultFromDbmsQueryResult(trainingData).toCsv());
-    datafileWriter.flush();
-    datafileWriter.close();
+    CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
+    csvWriter.writeAll(trainingData, true);
+    csvWriter.close();
 
     MModel mModel = catalogContext.getModel(modelName);
 
@@ -269,24 +261,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(" WHERE 1<0");
 
     String sql = sb.toString();
-    conn.execute(sql);
-    schemaManager.refreshDataSource();
+    conn.executeInternal(sql);
+    conn.refreshRootSchema();
   }
 
-  private void loadSynopsisIntoTable(DbmsConnection dbmsConn, String synopsisName,
-                                     MModelInstance mModelInstance, String synopsisFile)
-      throws Exception {
-    Connection origConn = null;
-    if (dbmsConn instanceof CachedDbmsConnection) {
-      loadSynopsisIntoTable(((CachedDbmsConnection) dbmsConn).getOriginalConnection(),
-          synopsisName, mModelInstance, synopsisFile);
-      return;
-    } else if (dbmsConn instanceof JdbcConnection) {
-      origConn = ((JdbcConnection) dbmsConn).getConnection();
-    } else {
-      throw new TrainDBException("cannot load synopsis data into table");
-    }
-
+  private void loadSynopsisIntoTable(String synopsisName, MModelInstance mModelInstance,
+                                     String synopsisFile) throws Exception {
     StringBuilder sb = new StringBuilder();
     sb.append("INSERT INTO ");
     sb.append(mModelInstance.getSchemaName());
@@ -303,7 +283,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         .withSkipLines(1).build();
     String sql = sb.toString();
 
-    PreparedStatement pstmt = origConn.prepareStatement(sql);
+    PreparedStatement pstmt = conn.prepareInternal(sql);
     int collen = mModelInstance.getColumnNames().size();
     String[] row;
     try {
@@ -343,13 +323,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Process process = pb.start();
     process.waitFor();
 
-    // create synopsis table from generated synopsis file
-    if (conn.getTables(mModelInstance.getSchemaName()).contains(synopsisName)) {
-      throw new CatalogException("table '" + mModelInstance.getSchemaName() + "." + synopsisName
-          + "' already exists in source DBMS");
-    }
     createSynopsisTable(synopsisName, mModelInstance);
-    loadSynopsisIntoTable(conn, synopsisName, mModelInstance, outputPath);
+    loadSynopsisIntoTable(synopsisName, mModelInstance, outputPath);
 
     catalogContext.createSynopsis(synopsisName, modelInstanceName);
   }
@@ -363,8 +338,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(synopsisName);
 
     String sql = sb.toString();
-    conn.execute(sql);
-    schemaManager.refreshDataSource();
+    conn.executeInternal(sql);
+    conn.refreshRootSchema();
   }
 
   @Override
@@ -425,10 +400,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public VerdictSingleResult showSchemas() throws Exception {
     List<String> header = Arrays.asList("schema");
     List<List<Object>> schemaInfo = new ArrayList<>();
-    List<String> rows = conn.getSchemas();
+    ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
 
-    for (Object o : rows) {
-      schemaInfo.add(Arrays.asList(o));
+    while (rows.next()) {
+      schemaInfo.add(Arrays.asList(rows.getString(1)));
     }
 
     VerdictSingleResult result = new TrainDBResultFromListData(header, schemaInfo);
@@ -439,10 +414,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public VerdictSingleResult showTables() throws Exception {
     List<String> header = Arrays.asList("table");
     List<List<Object>> tableInfo = new ArrayList<>();
-    List<String> rows = conn.getTables(conn.getDefaultSchema());
 
-    for (Object o : rows) {
-      tableInfo.add(Arrays.asList(o));
+    ResultSet rs = conn.getMetaData().getTables(
+        conn.getCatalog(), conn.getSchema(), null, null);
+
+    while (rs.next()) {
+      tableInfo.add(Arrays.asList(rs.getString(3)));
     }
 
     VerdictSingleResult result = new TrainDBResultFromListData(header, tableInfo);
@@ -451,10 +428,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public void useSchema(String schemaName) throws Exception {
-    if (!conn.getSchemas().contains(schemaName)) {
+    ResultSet rs = conn.getMetaData().getSchemas(conn.getCatalog(), schemaName);
+    if (!rs.isBeforeFirst()) {
       throw new CatalogException("schema '" + schemaName + "' does not exist");
     }
-    conn.setDefaultSchema(schemaName);
+    conn.setSchema(schemaName);
   }
 
   @Override
@@ -462,12 +440,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<String> header = Arrays.asList("column name", "column type");
     List<List<Object>> columnInfo = new ArrayList<>();
     if (schemaName == null) {
-      schemaName = conn.getDefaultSchema();
+      schemaName = conn.getSchema();
     }
-    List<Pair<String, String>> rows = conn.getColumns(schemaName, tableName);
+    ResultSet rs = conn.getMetaData().getColumns(null, schemaName, tableName, null);
 
-    for (Pair<String, String> pair : rows) {
-      columnInfo.add(Arrays.asList(pair.getLeft(), pair.getRight()));
+    while (rs.next()) {
+      columnInfo.add(Arrays.asList(rs.getString(4), rs.getString(6)));
     }
 
     VerdictSingleResult result = new TrainDBResultFromListData(header, columnInfo);
@@ -485,7 +463,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     Planner planner = new TrainDBPlanner(config);
     SqlNode parse = planner.parse(query);
-    TableNameQualifier.toFullyQualifiedName(schemaManager, conn.getDefaultSchema(), parse);
+    TableNameQualifier.toFullyQualifiedName(schemaManager, conn.getSchema(), parse);
     LOG.debug("Parsed query: " + parse.toString());
 
     SqlNode validate = planner.validate(parse);
@@ -498,8 +476,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     LOG.debug("query string: " + queryString);
 
     try {
-      Connection internalConn = DriverManager.getConnection("jdbc:traindb-calcite:");
-      PreparedStatement stmt = internalConn.prepareStatement(queryString);
+      PreparedStatement stmt = conn.prepareInternal(queryString);
       ResultSet rs = stmt.executeQuery();
       return new VerdictSingleResultFromDbmsQueryResult(new JdbcQueryResult(rs));
     } catch (SQLException e) {

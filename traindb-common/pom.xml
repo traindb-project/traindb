@@ -50,8 +50,8 @@ limitations under the License.
         </dependency>
 
         <dependency>
-            <groupId>org.verdictdb</groupId>
-            <artifactId>verdictdb-core</artifactId>
+            <groupId>org.apache.calcite</groupId>
+            <artifactId>calcite-core</artifactId>
         </dependency>
         <dependency>
             <groupId>sqlline</groupId>

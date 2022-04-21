@@ -18,7 +18,7 @@ import java.util.Properties;
 
 public interface CatalogStore {
 
-  void start(Properties conf) throws CatalogException;
+  void start(Properties conf);
 
   void stop();
 

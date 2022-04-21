@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
 import com.google.common.collect.ImmutableList;
 import java.sql.ResultSet;
@@ -37,12 +37,9 @@ import org.apache.calcite.runtime.ObjectEnumeratorCursor;
  * Implementation of {@link ResultSet}
  * for the Calcite engine.
  */
-public class CalciteResultSet extends AvaticaResultSet {
+public class TrainDBResultSet extends AvaticaResultSet {
 
-  /**
-   * Creates a CalciteResultSet.
-   */
-  CalciteResultSet(AvaticaStatement statement,
+  TrainDBResultSet(AvaticaStatement statement,
                    CalcitePrepare.CalciteSignature calciteSignature,
                    ResultSetMetaData resultSetMetaData, TimeZone timeZone,
                    Meta.Frame firstFrame) throws SQLException {
@@ -60,9 +57,9 @@ public class CalciteResultSet extends AvaticaResultSet {
   }
 
   @Override
-  protected CalciteResultSet execute() throws SQLException {
+  protected TrainDBResultSet execute() throws SQLException {
     // Call driver's callback. It is permitted to throw a RuntimeException.
-    CalciteConnectionImpl connection = getCalciteConnection();
+    TrainDBConnectionImpl connection = getTrainDBConnection();
     final boolean autoTemp = connection.config().autoTemp();
     Handler.ResultSink resultSink = null;
     if (autoTemp) {
@@ -95,10 +92,10 @@ public class CalciteResultSet extends AvaticaResultSet {
             statement.getStatementType());
     ResultSetMetaData subResultSetMetaData =
         new AvaticaResultSetMetaData(statement, null, newSignature);
-    final CalciteResultSet resultSet =
-        new CalciteResultSet(statement, signature, subResultSetMetaData,
+    final TrainDBResultSet resultSet =
+        new TrainDBResultSet(statement, signature, subResultSetMetaData,
             localCalendar.getTimeZone(), new Meta.Frame(0, true, iterable));
-    final Cursor cursor = CalciteResultSet.createCursor(elementType, iterable);
+    final Cursor cursor = TrainDBResultSet.createCursor(elementType, iterable);
     return resultSet.execute2(cursor, columnMetaDataList);
   }
 
@@ -109,7 +106,7 @@ public class CalciteResultSet extends AvaticaResultSet {
   }
 
   // do not make public
-  CalciteConnectionImpl getCalciteConnection() throws SQLException {
-    return (CalciteConnectionImpl) statement.getConnection();
+  TrainDBConnectionImpl getTrainDBConnection() throws SQLException {
+    return (TrainDBConnectionImpl) statement.getConnection();
   }
 }

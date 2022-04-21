@@ -14,320 +14,76 @@
 
 package traindb.jdbc;
 
-import java.sql.Connection;
-import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.SQLFeatureNotSupportedException;
-import java.sql.SQLWarning;
-import org.verdictdb.VerdictResultStream;
-import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.jdbc41.VerdictResultSet;
-import traindb.TrainDBContext;
-import traindb.common.TrainDBException;
-import traindb.common.TrainDBLogger;
-import traindb.engine.TrainDBExecContext;
+import org.apache.calcite.avatica.AvaticaStatement;
+import org.apache.calcite.avatica.Meta;
+import org.apache.calcite.avatica.NoSuchStatementException;
+import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.linq4j.Queryable;
+import org.apache.calcite.server.CalciteServerStatement;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class TrainDBStatement implements java.sql.Statement {
-
-  private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
-
-  Connection conn;
-  TrainDBContext tc;
-  TrainDBExecContext exCtx;
-  VerdictSingleResult result;
-
-  public TrainDBStatement(Connection conn, TrainDBContext context) {
-    this.conn = conn;
-    this.tc = context;
-    this.exCtx = context.createTrainDBExecContext();
+/**
+ * Implementation of {@link java.sql.Statement}
+ * for the Calcite engine.
+ */
+public abstract class TrainDBStatement extends AvaticaStatement {
+  /**
+   * Creates a TrainDBStatement.
+   *
+   * @param connection           Connection
+   * @param h                    Statement handle
+   * @param resultSetType        Result set type
+   * @param resultSetConcurrency Result set concurrency
+   * @param resultSetHoldability Result set holdability
+   */
+  TrainDBStatement(TrainDBConnectionImpl connection, Meta.@Nullable StatementHandle h,
+                   int resultSetType, int resultSetConcurrency, int resultSetHoldability) {
+    super(connection, h, resultSetType, resultSetConcurrency,
+        resultSetHoldability);
   }
 
-  private Boolean checkStreamQuery(String query) {
-    if (query.trim().toLowerCase().startsWith("stream")) {
-      return true;
-    }
-    return false;
-  }
-
-  @Override
-  public boolean execute(String sql) throws SQLException {
-    try {
-      result = exCtx.sql(sql, false);
-      if (result == null) {
-        return false;
-      }
-      return !result.isEmpty();
-    } catch (TrainDBException e) {
-      throw new SQLException(e);
-    }
-  }
-
-  @Override
-  public ResultSet executeQuery(String sql) throws SQLException {
-    try {
-      if (checkStreamQuery(sql)) {
-        TrainDBStreamResultSet resultSet = new TrainDBStreamResultSet();
-        sql = sql.replaceFirst("(?i)stream", "");
-        VerdictResultStream resultStream = exCtx.streamsql(sql);
-        ExecuteStream executeStream = new ExecuteStream(resultStream, resultSet, exCtx);
-        resultSet.setRunnable(executeStream);
-        new Thread(executeStream).start();
-        return resultSet;
-      }
-      result = exCtx.sql(sql);
-      return new VerdictResultSet(result);
-    } catch (TrainDBException e) {
-      throw new SQLException(e);
-    }
-  }
-
-  @Override
-  public int executeUpdate(String sql) throws SQLException {
-    try {
-      result = exCtx.sql(sql);
-      return (int) result.getRowCount();
-    } catch (TrainDBException e) {
-      throw new SQLException(e);
-    }
-  }
-
-  @Override
-  public void close() throws SQLException {
-    tc.removeTrainDBExecContext(exCtx);
-  }
-
-  @Override
-  public boolean isClosed() throws SQLException {
-    // TODO Auto-generated method stub
-    return false;
-  }
-
-  @Override
-  public ResultSet getResultSet() throws SQLException {
-    return new VerdictResultSet(result);
-  }
-
-  @Override
-  public Connection getConnection() throws SQLException {
-    return conn;
-  }
+  // implement Statement
 
   @Override
   public <T> T unwrap(Class<T> iface) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean isWrapperFor(Class<?> iface) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getMaxFieldSize() throws SQLException {
-    return 0; // no limit
-  }
-
-  @Override
-  public void setMaxFieldSize(int max) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getMaxRows() throws SQLException {
-    return 0; // no limit
-  }
-
-  @Override
-  public void setMaxRows(int max) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void setEscapeProcessing(boolean enable) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getQueryTimeout() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void setQueryTimeout(int seconds) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void cancel() throws SQLException {
-    exCtx.terminate();
-  }
-
-  @Override
-  public SQLWarning getWarnings() throws SQLException {
-    return null;
-  }
-
-  @Override
-  public void clearWarnings() throws SQLException {
-  }
-
-  @Override
-  public void setCursorName(String name) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getUpdateCount() throws SQLException {
-    return 0;
-  }
-
-  @Override
-  public boolean getMoreResults() throws SQLException {
-    return false;
-  }
-
-  @Override
-  public int getFetchDirection() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void setFetchDirection(int direction) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getFetchSize() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void setFetchSize(int rows) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getResultSetConcurrency() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getResultSetType() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void addBatch(String sql) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void clearBatch() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int[] executeBatch() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean getMoreResults(int current) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public ResultSet getGeneratedKeys() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int executeUpdate(String sql, int autoGeneratedKeys) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int executeUpdate(String sql, int[] columnIndexes) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int executeUpdate(String sql, String[] columnNames) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean execute(String sql, int autoGeneratedKeys) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean execute(String sql, int[] columnIndexes) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean execute(String sql, String[] columnNames) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public int getResultSetHoldability() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean isPoolable() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void setPoolable(boolean poolable) throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public void closeOnCompletion() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  @Override
-  public boolean isCloseOnCompletion() throws SQLException {
-    throw new SQLFeatureNotSupportedException();
-  }
-
-  class ExecuteStream implements Runnable {
-
-    VerdictResultStream resultStream;
-
-    TrainDBStreamResultSet resultSet;
-
-    TrainDBExecContext exCtx;
-
-    ExecuteStream(VerdictResultStream resultStream, TrainDBStreamResultSet resultSet,
-                  TrainDBExecContext exCtx) {
-      this.resultStream = resultStream;
-      this.resultSet = resultSet;
-      this.exCtx = exCtx;
-    }
-
-    public void run() {
-      while (!resultStream.isCompleted()) {
-        VerdictSingleResult singleResult = resultStream.next();
-        if (!resultStream.hasNext()) {
-          synchronized ((Object) resultSet.hasReadAllQueryResults) {
-            resultSet.appendSingleResult(singleResult);
-            resultSet.setCompleted();
-          }
-          LOG.debug("Execution Completed\n");
-        } else {
-          resultSet.appendSingleResult(singleResult);
-        }
+    if (iface == CalciteServerStatement.class) {
+      final CalciteServerStatement statement;
+      try {
+        statement = getConnection().server.getStatement(handle);
+      } catch (NoSuchStatementException e) {
+        throw new AssertionError("invalid statement", e);
       }
+      return iface.cast(statement);
     }
+    return super.unwrap(iface);
+  }
 
-    public void abort() {
-      exCtx.abort();
+  @Override
+  public TrainDBConnectionImpl getConnection() {
+    return (TrainDBConnectionImpl) connection;
+  }
+
+  public <T> CalcitePrepare.CalciteSignature<T> prepare(
+      Queryable<T> queryable) {
+    final TrainDBConnectionImpl calciteConnection = getConnection();
+    final CalcitePrepare prepare = calciteConnection.prepareFactory.apply();
+    final CalciteServerStatement serverStatement;
+    try {
+      serverStatement = calciteConnection.server.getStatement(handle);
+    } catch (NoSuchStatementException e) {
+      throw new AssertionError("invalid statement", e);
+    }
+    final CalcitePrepare.Context prepareContext =
+        serverStatement.createPrepareContext();
+    return prepare.prepareQueryable(prepareContext, queryable);
+  }
+
+  @Override
+  protected void close_() {
+    if (!closed) {
+      ((TrainDBConnectionImpl) connection).server.removeStatement(handle);
+      super.close_();
     }
   }
 }
