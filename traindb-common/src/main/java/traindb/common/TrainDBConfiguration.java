@@ -17,6 +17,7 @@ package traindb.common;
 import java.io.File;
 import java.io.InputStream;
 import java.util.Properties;
+import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 
 public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
@@ -71,5 +72,10 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
       return getTrainDBPrefixPath() + "/" + uri;
     }
     return uri;
+  }
+
+  @Override
+  public Casing unquotedCasing() {
+    return Casing.TO_LOWER;
   }
 }

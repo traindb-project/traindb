@@ -57,12 +57,6 @@ public final class SchemaManager {
     dataSourceMap = new HashMap<>();
     schemaMap = new HashMap<>();
     tableMap = new HashMap<>();
-
-    try {
-      Class.forName("traindb.engine.calcite.Driver");
-    } catch (ClassNotFoundException e) {
-      // FIXME
-    }
   }
 
   public static SchemaManager getInstance(CatalogStore catalogStore) {
@@ -74,7 +68,7 @@ public final class SchemaManager {
   }
 
   public void loadDataSource(DataSource dataSource) {
-    SchemaPlus newRootSchema = Frameworks.createRootSchema(false);
+    SchemaPlus newRootSchema = Frameworks.createRootSchema(true);
     TrainDBJdbcDataSource newJdbcDataSource = new TrainDBJdbcDataSource(newRootSchema, dataSource);
     newRootSchema.add(newJdbcDataSource.getName(), newJdbcDataSource);
     addDataSourceToMaps(newJdbcDataSource);

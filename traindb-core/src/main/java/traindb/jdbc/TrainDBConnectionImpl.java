@@ -12,8 +12,30 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
+
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.sql.Connection;
+import java.sql.PreparedStatement;
+import java.sql.ResultSet;
+import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.Collection;
+import java.util.HashMap;
+import java.util.Iterator;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Locale;
+import java.util.Map;
+import java.util.Properties;
+import java.util.TimeZone;
+import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.DataContexts;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -29,7 +51,6 @@ import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.UnregisteredDriver;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteConnectionConfigImpl;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalcitePrepare.Context;
@@ -68,29 +89,15 @@ import org.apache.calcite.tools.RelRunner;
 import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Util;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
+import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.lang.reflect.Type;
-import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Locale;
-import java.util.Map;
-import java.util.Properties;
-import java.util.TimeZone;
-import java.util.concurrent.atomic.AtomicBoolean;
-
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
-
-import static java.util.Objects.requireNonNull;
+import org.verdictdb.sqlsyntax.SqlSyntax;
+import org.verdictdb.sqlsyntax.SqlSyntaxList;
+import traindb.catalog.CatalogContext;
+import traindb.catalog.CatalogStore;
+import traindb.catalog.JDOCatalogStore;
+import traindb.common.TrainDBConfiguration;
+import traindb.schema.SchemaManager;
 
 /**
  * Implementation of JDBC connection
@@ -98,10 +105,14 @@ import static java.util.Objects.requireNonNull;
  *
  * <p>Abstract to allow newer versions of JDBC to add methods.
  */
-abstract class CalciteConnectionImpl
+public abstract class TrainDBConnectionImpl
     extends AvaticaConnection
     implements CalciteConnection, QueryProvider {
+  public final TrainDBConfiguration cfg;
   public final JavaTypeFactory typeFactory;
+  private CatalogStore catalogStore;
+  private SchemaManager schemaManager;
+  private BasicDataSource dataSource;
 
   final Function0<CalcitePrepare> prepareFactory;
   final CalciteServer server = new CalciteServerImpl();
@@ -122,11 +133,12 @@ abstract class CalciteConnectionImpl
    * @param rootSchema Root schema, or null
    * @param typeFactory Type factory, or null
    */
-  protected CalciteConnectionImpl(Driver driver, AvaticaFactory factory,
-      String url, Properties info, @Nullable CalciteSchema rootSchema,
-      @Nullable JavaTypeFactory typeFactory) {
+  protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,
+                                  String url, Properties info, @Nullable CalciteSchema rootSchema,
+                                  @Nullable JavaTypeFactory typeFactory) {
     super(driver, factory, url, info);
-    CalciteConnectionConfig cfg = new CalciteConnectionConfigImpl(info);
+    this.cfg = new TrainDBConfiguration(info);
+    this.cfg.loadConfiguration();
     this.prepareFactory = driver.prepareFactory;
     if (typeFactory != null) {
       this.typeFactory = typeFactory;
@@ -144,10 +156,16 @@ abstract class CalciteConnectionImpl
       }
       this.typeFactory = new JavaTypeFactoryImpl(typeSystem);
     }
+    this.catalogStore = new JDOCatalogStore();
+    catalogStore.start(cfg.getProps());
+    this.schemaManager = SchemaManager.getInstance(catalogStore);
+    this.dataSource = dataSource(url, info);
+    schemaManager.loadDataSource(dataSource);
+
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
-            : CalciteSchema.createRootSchema(true));
+            : CalciteSchema.from(schemaManager.getCurrentSchema()));
     Preconditions.checkArgument(this.rootSchema.isRoot(), "must be root schema");
     this.properties.put(InternalProperty.CASE_SENSITIVE, cfg.caseSensitive());
     this.properties.put(InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing());
@@ -155,16 +173,90 @@ abstract class CalciteConnectionImpl
     this.properties.put(InternalProperty.QUOTING, cfg.quoting());
   }
 
-  CalciteMetaImpl meta() {
-    return (CalciteMetaImpl) meta;
+  private BasicDataSource dataSource(String url, Properties info) {
+    BasicDataSource dataSource = new BasicDataSource();
+    dataSource.setUrl(url);
+    dataSource.setDriverClassName(getJdbcDriverClassName(url));
+    dataSource.setValidationQuery("SELECT 1");
+    dataSource.setUsername(info.getProperty("user"));
+    dataSource.setPassword(info.getProperty("password"));
+    return dataSource;
+  }
+
+  private Connection extraConnection() {
+    try {
+      return dataSource.getConnection();
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void executeInternal(String sql) {
+    try {
+      Statement stmt = extraConnection().createStatement();
+      stmt.execute(sql);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public ResultSet executeQueryInternal(String sql) {
+    try {
+      Statement stmt = extraConnection().createStatement();
+      return stmt.executeQuery(sql);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public PreparedStatement prepareInternal(String sql) {
+    try {
+      return extraConnection().prepareStatement(sql);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+  }
+
+  public void refreshRootSchema() {
+    schemaManager.refreshDataSource();
+    setRootSchema(CalciteSchema.from(schemaManager.getCurrentSchema()));
+  }
+
+  private static String getJdbcDriverClassName(String jdbcConnectionString) {
+    SqlSyntax syntax = SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnectionString);
+    if (syntax == null) {
+      return null;
+    }
+    Collection<String> driverClassNames = syntax.getCandidateJDBCDriverClassNames();
+    for (String className : driverClassNames) {
+      try {
+        Class.forName(className);
+        return className;
+      } catch (ClassNotFoundException e) {
+        /* do nothing */
+      }
+    }
+    return null;
+  }
+
+  public CatalogContext getCatalogContext() {
+    return catalogStore.getCatalogContext();
+  }
+
+  public SchemaManager getSchemaManager() {
+    return schemaManager;
+  }
+
+  public TrainDBMetaImpl meta() {
+    return (TrainDBMetaImpl) meta;
   }
 
   @Override public CalciteConnectionConfig config() {
-    return new CalciteConnectionConfigImpl(info);
+    return cfg;
   }
 
   @Override public Context createPrepareContext() {
-    return new ContextImpl(this);
+    return new TrainDBContextImpl(this);
   }
 
   /** Called after the constructor has completed and the model has been
@@ -190,13 +282,13 @@ abstract class CalciteConnectionImpl
     return super.unwrap(iface);
   }
 
-  @Override public CalciteStatement createStatement(int resultSetType,
-      int resultSetConcurrency, int resultSetHoldability) throws SQLException {
-    return (CalciteStatement) super.createStatement(resultSetType,
+  @Override public TrainDBStatement createStatement(int resultSetType,
+                                                    int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+    return (TrainDBStatement) super.createStatement(resultSetType,
         resultSetConcurrency, resultSetHoldability);
   }
 
-  @Override public CalcitePreparedStatement prepareStatement(
+  @Override public TrainDBPreparedStatement prepareStatement(
       String sql,
       int resultSetType,
       int resultSetConcurrency,
@@ -206,7 +298,7 @@ abstract class CalciteConnectionImpl
         resultSetHoldability);
   }
 
-  private CalcitePreparedStatement prepareStatement_(
+  private TrainDBPreparedStatement prepareStatement_(
       CalcitePrepare.Query<?> query,
       int resultSetType,
       int resultSetConcurrency,
@@ -214,8 +306,8 @@ abstract class CalciteConnectionImpl
     try {
       final Meta.Signature signature =
           parseQuery(query, createPrepareContext(), -1);
-      final CalcitePreparedStatement calcitePreparedStatement =
-          (CalcitePreparedStatement) factory.newPreparedStatement(this, null,
+      final TrainDBPreparedStatement calcitePreparedStatement =
+          (TrainDBPreparedStatement) factory.newPreparedStatement(this, null,
               signature, resultSetType, resultSetConcurrency, resultSetHoldability);
       server.getStatement(calcitePreparedStatement.handle).setSignature(signature);
       return calcitePreparedStatement;
@@ -229,7 +321,7 @@ abstract class CalciteConnectionImpl
 
   <T> CalcitePrepare.CalciteSignature<T> parseQuery(
       CalcitePrepare.Query<T> query,
-      CalcitePrepare.Context prepareContext, long maxRowCount) {
+      Context prepareContext, long maxRowCount) {
     CalcitePrepare.Dummy.push(prepareContext);
     try {
       final CalcitePrepare prepare = prepareFactory.apply();
@@ -285,7 +377,7 @@ abstract class CalciteConnectionImpl
 
   @Override public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
     try {
-      CalciteStatement statement = (CalciteStatement) createStatement();
+      TrainDBStatement statement = (TrainDBStatement) createStatement();
       CalcitePrepare.CalciteSignature<T> signature =
           statement.prepare(queryable);
       return enumerable(statement.handle, signature, null).enumerator();
@@ -371,7 +463,7 @@ abstract class CalciteConnectionImpl
 
     @Override public void addStatement(CalciteConnection connection,
         Meta.StatementHandle h) {
-      final CalciteConnectionImpl c = (CalciteConnectionImpl) connection;
+      final TrainDBConnectionImpl c = (TrainDBConnectionImpl) connection;
       final CalciteServerStatement previous =
           statementMap.put(h.id, new CalciteServerStatementImpl(c));
       if (previous != null) {
@@ -410,8 +502,8 @@ abstract class CalciteConnectionImpl
     private final QueryProvider queryProvider;
     private final JavaTypeFactory typeFactory;
 
-    DataContextImpl(CalciteConnectionImpl connection,
-        Map<String, Object> parameters, @Nullable CalciteSchema rootSchema) {
+    DataContextImpl(TrainDBConnectionImpl connection,
+                    Map<String, Object> parameters, @Nullable CalciteSchema rootSchema) {
       this.queryProvider = connection;
       this.typeFactory = connection.getTypeFactory();
       this.rootSchema = rootSchema;
@@ -471,7 +563,7 @@ abstract class CalciteConnectionImpl
     }
 
     private SqlAdvisor getSqlAdvisor() {
-      final CalciteConnectionImpl con = (CalciteConnectionImpl) queryProvider;
+      final TrainDBConnectionImpl con = (TrainDBConnectionImpl) queryProvider;
       final String schemaName;
       try {
         schemaName = con.getSchema();
@@ -512,12 +604,12 @@ abstract class CalciteConnectionImpl
   }
 
   /** Implementation of Context. */
-  static class ContextImpl implements CalcitePrepare.Context {
-    private final CalciteConnectionImpl connection;
+  public static class TrainDBContextImpl implements Context {
+    private final TrainDBConnectionImpl connection;
     private final CalciteSchema mutableRootSchema;
     private final CalciteSchema rootSchema;
 
-    ContextImpl(CalciteConnectionImpl connection) {
+    TrainDBContextImpl(TrainDBConnectionImpl connection) {
       this.connection = requireNonNull(connection, "connection");
       long now = System.currentTimeMillis();
       SchemaVersion schemaVersion = new LongSchemaVersion(now);
@@ -582,14 +674,14 @@ abstract class CalciteConnectionImpl
   }
 
   /** Implementation of {@link CalciteServerStatement}. */
-  static class CalciteServerStatementImpl
+  public static class CalciteServerStatementImpl
       implements CalciteServerStatement {
-    private final CalciteConnectionImpl connection;
+    private final TrainDBConnectionImpl connection;
     private @Nullable Iterator<Object> iterator;
     private Meta.@Nullable Signature signature;
     private final AtomicBoolean cancelFlag = new AtomicBoolean();
 
-    CalciteServerStatementImpl(CalciteConnectionImpl connection) {
+    CalciteServerStatementImpl(TrainDBConnectionImpl connection) {
       this.connection = requireNonNull(connection, "connection");
     }
 

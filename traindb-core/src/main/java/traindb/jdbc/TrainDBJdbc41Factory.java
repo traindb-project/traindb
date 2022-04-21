@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
 import java.io.InputStream;
 import java.io.Reader;
@@ -43,26 +43,26 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * for Calcite and JDBC 4.1 (corresponds to JDK 1.7).
  */
 @SuppressWarnings("UnusedDeclaration")
-public class CalciteJdbc41Factory extends CalciteFactory {
+public class TrainDBJdbc41Factory extends CalciteFactory {
   /**
    * Creates a factory for JDBC version 4.1.
    */
-  public CalciteJdbc41Factory() {
+  public TrainDBJdbc41Factory() {
     this(4, 1);
   }
 
   /**
    * Creates a JDBC factory with given major/minor version number.
    */
-  protected CalciteJdbc41Factory(int major, int minor) {
+  protected TrainDBJdbc41Factory(int major, int minor) {
     super(major, minor);
   }
 
   @Override
-  public CalciteJdbc41Connection newConnection(
+  public TrainDBJdbc41Connection newConnection(
       UnregisteredDriver driver, AvaticaFactory factory, String url, Properties info,
       @Nullable CalciteSchema rootSchema, @Nullable JavaTypeFactory typeFactory) {
-    return new CalciteJdbc41Connection(
+    return new TrainDBJdbc41Connection(
         (Driver) driver, factory, url, info, rootSchema, typeFactory);
   }
 
@@ -70,17 +70,17 @@ public class CalciteJdbc41Factory extends CalciteFactory {
   public CalciteJdbc41DatabaseMetaData newDatabaseMetaData(
       AvaticaConnection connection) {
     return new CalciteJdbc41DatabaseMetaData(
-        (CalciteConnectionImpl) connection);
+        (TrainDBConnectionImpl) connection);
   }
 
   @Override
-  public CalciteJdbc41Statement newStatement(AvaticaConnection connection,
+  public TrainDBJdbc41Statement newStatement(AvaticaConnection connection,
                                              Meta.@Nullable StatementHandle h,
                                              int resultSetType,
                                              int resultSetConcurrency,
                                              int resultSetHoldability) {
-    return new CalciteJdbc41Statement(
-        (CalciteConnectionImpl) connection,
+    return new TrainDBJdbc41Statement(
+        (TrainDBConnectionImpl) connection,
         h,
         resultSetType, resultSetConcurrency,
         resultSetHoldability);
@@ -94,21 +94,21 @@ public class CalciteJdbc41Factory extends CalciteFactory {
       int resultSetType,
       int resultSetConcurrency,
       int resultSetHoldability) throws SQLException {
-    return new CalciteJdbc41PreparedStatement(
-        (CalciteConnectionImpl) connection, h,
+    return new TrainDBJdbc41PreparedStatement(
+        (TrainDBConnectionImpl) connection, h,
         (CalcitePrepare.CalciteSignature) signature, resultSetType,
         resultSetConcurrency, resultSetHoldability);
   }
 
   @Override
-  public CalciteResultSet newResultSet(
+  public TrainDBResultSet newResultSet(
       AvaticaStatement statement, QueryState state, Meta.Signature signature, TimeZone timeZone,
       Meta.Frame firstFrame) throws SQLException {
     final ResultSetMetaData metaData =
         newResultSetMetaData(statement, signature);
     final CalcitePrepare.CalciteSignature calciteSignature =
         (CalcitePrepare.CalciteSignature) signature;
-    return new CalciteResultSet(statement, calciteSignature, metaData, timeZone,
+    return new TrainDBResultSet(statement, calciteSignature, metaData, timeZone,
         firstFrame);
   }
 
@@ -121,8 +121,8 @@ public class CalciteJdbc41Factory extends CalciteFactory {
   /**
    * Implementation of connection for JDBC 4.1.
    */
-  private static class CalciteJdbc41Connection extends CalciteConnectionImpl {
-    CalciteJdbc41Connection(Driver driver, AvaticaFactory factory, String url,
+  private static class TrainDBJdbc41Connection extends TrainDBConnectionImpl {
+    TrainDBJdbc41Connection(Driver driver, AvaticaFactory factory, String url,
                             Properties info, @Nullable CalciteSchema rootSchema,
                             @Nullable JavaTypeFactory typeFactory) {
       super(driver, factory, url, info, rootSchema, typeFactory);
@@ -132,8 +132,8 @@ public class CalciteJdbc41Factory extends CalciteFactory {
   /**
    * Implementation of statement for JDBC 4.1.
    */
-  private static class CalciteJdbc41Statement extends CalciteStatement {
-    CalciteJdbc41Statement(CalciteConnectionImpl connection,
+  private static class TrainDBJdbc41Statement extends TrainDBStatement {
+    TrainDBJdbc41Statement(TrainDBConnectionImpl connection,
                            Meta.@Nullable StatementHandle h, int resultSetType,
                            int resultSetConcurrency,
                            int resultSetHoldability) {
@@ -145,9 +145,9 @@ public class CalciteJdbc41Factory extends CalciteFactory {
   /**
    * Implementation of prepared statement for JDBC 4.1.
    */
-  private static class CalciteJdbc41PreparedStatement
-      extends CalcitePreparedStatement {
-    CalciteJdbc41PreparedStatement(CalciteConnectionImpl connection,
+  private static class TrainDBJdbc41PreparedStatement
+      extends TrainDBPreparedStatement {
+    TrainDBJdbc41PreparedStatement(TrainDBConnectionImpl connection,
                                    Meta.@Nullable StatementHandle h,
                                    CalcitePrepare.CalciteSignature signature,
                                    int resultSetType, int resultSetConcurrency,
@@ -298,7 +298,7 @@ public class CalciteJdbc41Factory extends CalciteFactory {
    */
   private static class CalciteJdbc41DatabaseMetaData
       extends AvaticaDatabaseMetaData {
-    CalciteJdbc41DatabaseMetaData(CalciteConnectionImpl connection) {
+    CalciteJdbc41DatabaseMetaData(TrainDBConnectionImpl connection) {
       super(connection);
     }
   }

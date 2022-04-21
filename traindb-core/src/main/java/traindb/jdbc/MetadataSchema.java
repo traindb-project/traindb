@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
 import static org.apache.calcite.avatica.MetaImpl.MetaColumn;
 import static org.apache.calcite.avatica.MetaImpl.MetaTable;
@@ -33,10 +33,10 @@ class MetadataSchema extends AbstractSchema {
   private static final Map<String, Table> TABLE_MAP =
       ImmutableMap.of(
           "COLUMNS",
-          new CalciteMetaImpl.MetadataTable<MetaColumn>(MetaColumn.class) {
+          new TrainDBMetaImpl.MetadataTable<MetaColumn>(MetaColumn.class) {
             @Override
             public Enumerator<MetaColumn> enumerator(
-                final CalciteMetaImpl meta) {
+                final TrainDBMetaImpl meta) {
               final String catalog;
               try {
                 catalog = meta.getConnection().getCatalog();
@@ -48,9 +48,9 @@ class MetadataSchema extends AbstractSchema {
             }
           },
           "TABLES",
-          new CalciteMetaImpl.MetadataTable<MetaTable>(MetaTable.class) {
+          new TrainDBMetaImpl.MetadataTable<MetaTable>(MetaTable.class) {
             @Override
-            public Enumerator<MetaTable> enumerator(CalciteMetaImpl meta) {
+            public Enumerator<MetaTable> enumerator(TrainDBMetaImpl meta) {
               final String catalog;
               try {
                 catalog = meta.getConnection().getCatalog();

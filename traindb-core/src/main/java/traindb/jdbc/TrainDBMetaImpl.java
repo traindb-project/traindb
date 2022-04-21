@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine.calcite;
+package traindb.jdbc;
 
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.java.AbstractQueryableTable;
@@ -87,14 +87,15 @@ import static java.util.Objects.requireNonNull;
  * Helper for implementing the {@code getXxx} methods such as
  * {@link org.apache.calcite.avatica.AvaticaDatabaseMetaData#getTables}.
  */
-public class CalciteMetaImpl extends MetaImpl {
+public class TrainDBMetaImpl extends MetaImpl {
   static final Driver DRIVER = new Driver();
 
-  public CalciteMetaImpl(CalciteConnectionImpl connection) {
+  public TrainDBMetaImpl(TrainDBConnectionImpl connection) {
     super(connection);
     this.connProps
         .setAutoCommit(false)
         .setReadOnly(false)
+        .setCatalog("traindb")
         .setTransactionIsolation(Connection.TRANSACTION_NONE);
     this.connProps.setDirty(false);
   }
@@ -150,13 +151,13 @@ public class CalciteMetaImpl extends MetaImpl {
 
   @Override public StatementHandle createStatement(ConnectionHandle ch) {
     final StatementHandle h = super.createStatement(ch);
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
     calciteConnection.server.addStatement(calciteConnection, h);
     return h;
   }
 
   @Override public void closeStatement(StatementHandle h) {
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
     @SuppressWarnings("unused")
     final CalciteServerStatement stmt;
     try {
@@ -199,7 +200,7 @@ public class CalciteMetaImpl extends MetaImpl {
       Map<String, Object> internalParameters, List<ColumnMetaData> columns,
       CursorFactory cursorFactory, final Frame firstFrame) {
     try {
-      final CalciteConnectionImpl connection = getConnection();
+      final TrainDBConnectionImpl connection = getConnection();
       final AvaticaStatement statement = connection.createStatement();
       final CalcitePrepare.CalciteSignature<Object> signature =
           new CalcitePrepare.CalciteSignature<Object>("",
@@ -218,8 +219,8 @@ public class CalciteMetaImpl extends MetaImpl {
     }
   }
 
-  CalciteConnectionImpl getConnection() {
-    return (CalciteConnectionImpl) connection;
+  TrainDBConnectionImpl getConnection() {
+    return (TrainDBConnectionImpl) connection;
   }
 
   @Override public Map<DatabaseProperty, Object> getDatabaseProperties(ConnectionHandle ch) {
@@ -363,7 +364,7 @@ public class CalciteMetaImpl extends MetaImpl {
 
   Enumerable<MetaSchema> schemas(final String catalog) {
     return Linq4j.asEnumerable(
-        getConnection().rootSchema.getSubSchemaMap().values())
+        getConnection().rootSchema.getSubSchema(catalog, true).getSubSchemaMap().values())
         .select((Function1<CalciteSchema, MetaSchema>) calciteSchema ->
             new CalciteMetaSchema(calciteSchema, catalog,
                 calciteSchema.getName()))
@@ -413,7 +414,7 @@ public class CalciteMetaImpl extends MetaImpl {
   private ImmutableList<MetaTypeInfo> getAllDefaultType() {
     final ImmutableList.Builder<MetaTypeInfo> allTypeList =
         ImmutableList.builder();
-    final CalciteConnectionImpl conn = (CalciteConnectionImpl) connection;
+    final TrainDBConnectionImpl conn = (TrainDBConnectionImpl) connection;
     final RelDataTypeSystem typeSystem = conn.typeFactory.getTypeSystem();
     for (SqlTypeName sqlTypeName : SqlTypeName.values()) {
       if (sqlTypeName.isSpecial()) {
@@ -585,7 +586,7 @@ public class CalciteMetaImpl extends MetaImpl {
   @Override public StatementHandle prepare(ConnectionHandle ch, String sql,
       long maxRowCount) {
     final StatementHandle h = createStatement(ch);
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
 
     final CalciteServerStatement statement;
     try {
@@ -616,7 +617,7 @@ public class CalciteMetaImpl extends MetaImpl {
       final int updateCount;
       synchronized (callback.getMonitor()) {
         callback.clear();
-        final CalciteConnectionImpl calciteConnection = getConnection();
+        final TrainDBConnectionImpl calciteConnection = getConnection();
         final CalciteServerStatement statement =
             calciteConnection.server.getStatement(h);
         final Context context = statement.createPrepareContext();
@@ -663,7 +664,7 @@ public class CalciteMetaImpl extends MetaImpl {
 
   @Override public Frame fetch(StatementHandle h, long offset,
       int fetchMaxRowCount) throws NoSuchStatementException {
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
     final Signature signature = requireNonNull(stmt.getSignature(),
         () -> "stmt.getSignature() is null for " + stmt);
@@ -696,7 +697,7 @@ public class CalciteMetaImpl extends MetaImpl {
   @Override public ExecuteResult execute(StatementHandle h,
       List<TypedValue> parameterValues, int maxRowsInFirstFrame)
       throws NoSuchStatementException {
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
     CalciteServerStatement stmt = calciteConnection.server.getStatement(h);
     final Signature signature = requireNonNull(stmt.getSignature(),
         () -> "stmt.getSignature() is null for " + stmt);
@@ -738,7 +739,7 @@ public class CalciteMetaImpl extends MetaImpl {
   @Override public ExecuteBatchResult prepareAndExecuteBatch(
       final StatementHandle h,
       List<String> sqlCommands) throws NoSuchStatementException {
-    final CalciteConnectionImpl calciteConnection = getConnection();
+    final TrainDBConnectionImpl calciteConnection = getConnection();
     final CalciteServerStatement statement =
         calciteConnection.server.getStatement(h);
     final List<Long> updateCounts = new ArrayList<>();
@@ -780,7 +781,7 @@ public class CalciteMetaImpl extends MetaImpl {
   /** A trojan-horse method, subject to change without notice. */
   @VisibleForTesting
   public static DataContext createDataContext(CalciteConnection connection) {
-    return ((CalciteConnectionImpl) connection)
+    return ((TrainDBConnectionImpl) connection)
         .createDataContext(ImmutableMap.of(),
             CalciteSchema.from(connection.getRootSchema()));
   }
@@ -850,7 +851,7 @@ public class CalciteMetaImpl extends MetaImpl {
       return (Class<E>) elementType;
     }
 
-    protected abstract Enumerator<E> enumerator(CalciteMetaImpl connection);
+    protected abstract Enumerator<E> enumerator(TrainDBMetaImpl connection);
 
     @Override public <T> Queryable<T> asQueryable(QueryProvider queryProvider,
         SchemaPlus schema, String tableName) {
@@ -859,7 +860,7 @@ public class CalciteMetaImpl extends MetaImpl {
         @SuppressWarnings("unchecked")
         @Override public Enumerator<T> enumerator() {
           return (Enumerator<T>) MetadataTable.this.enumerator(
-              ((CalciteConnectionImpl) queryProvider).meta());
+              ((TrainDBConnectionImpl) queryProvider).meta());
         }
       };
     }
