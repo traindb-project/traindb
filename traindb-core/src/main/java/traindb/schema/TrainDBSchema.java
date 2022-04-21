@@ -18,10 +18,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import traindb.common.TrainDBLogger;
 
 public abstract class TrainDBSchema extends AbstractSchema {
-  private static TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBSchema.class);
   private final String name;
   private TrainDBDataSource dataSource;
   private ImmutableMap<String, Table> tableMap;
@@ -42,7 +40,6 @@ public abstract class TrainDBSchema extends AbstractSchema {
 
   @Override
   public final Map<String, Table> getTableMap() {
-    LOG.debug("getTableMap called. tableMapSize: " + tableMap.size());
     return tableMap;
   }
 

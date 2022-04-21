@@ -37,12 +37,6 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     } catch (Exception e) {
       LOG.debug("Could not load configuration file.");
     }
-
-    if (LOG.isDebugEnabled()) {
-      for (Object key : props.keySet()) {
-        LOG.debug(key + "=" + props.getProperty(key.toString()));
-      }
-    }
   }
 
   private void loadConfigurationFile(Properties props, String filename) throws Exception {

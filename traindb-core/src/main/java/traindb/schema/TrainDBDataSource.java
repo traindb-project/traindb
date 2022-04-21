@@ -18,10 +18,8 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.impl.AbstractSchema;
-import traindb.common.TrainDBLogger;
 
 public abstract class TrainDBDataSource extends AbstractSchema {
-  private static TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBDataSource.class);
 
   private final String name;
   private ImmutableMap<String, Schema> subSchemaMap;
@@ -41,7 +39,6 @@ public abstract class TrainDBDataSource extends AbstractSchema {
 
   @Override
   public final Map<String, Schema> getSubSchemaMap() {
-    LOG.debug("getSubSchemaMap called. subSchemaMapSize=" + subSchemaMap.size());
     return subSchemaMap;
   }
 
