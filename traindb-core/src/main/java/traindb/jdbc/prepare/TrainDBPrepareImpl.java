@@ -32,6 +32,7 @@ import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
 import org.apache.calcite.linq4j.Linq4j;
+import org.apache.calcite.linq4j.Nullness;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -87,6 +88,7 @@ import org.apache.calcite.schema.impl.StarTable;
 import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlBinaryOperator;
+import org.apache.calcite.sql.SqlExplain;
 import org.apache.calcite.sql.SqlExplainFormat;
 import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
@@ -108,6 +110,7 @@ import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
@@ -132,6 +135,7 @@ import java.util.Map;
 import java.util.Set;
 import org.verdictdb.VerdictSingleResult;
 import traindb.common.TrainDBConfiguration;
+import traindb.common.TrainDBLogger;
 import traindb.engine.TableNameQualifier;
 import traindb.engine.TrainDBQueryEngine;
 import traindb.jdbc.TrainDBConnectionImpl;
@@ -1021,6 +1025,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   /** Holds state for the process of preparing a SQL statement. */
   static class TrainDBPreparingStmt extends Prepare
       implements RelOptTable.ViewExpander {
+    private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
     protected final RelOptPlanner planner;
     protected final RexBuilder rexBuilder;
     protected final TrainDBPrepareImpl prepare;
@@ -1117,6 +1122,74 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       return implement(root);
     }
 
+    @Override
+    public Prepare.PreparedResult prepareSql(SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass, SqlValidator validator, boolean needsValidation) {
+      this.init(runtimeContextClass);
+      SqlToRelConverter.Config config = SqlToRelConverter.config().withTrimUnusedFields(true).withExpand((Boolean)Nullness.castNonNull(THREAD_EXPAND.get())).withInSubQueryThreshold((Integer)Nullness.castNonNull(THREAD_INSUBQUERY_THRESHOLD.get())).withExplain(sqlQuery.getKind() == SqlKind.EXPLAIN);
+      Holder<SqlToRelConverter.Config> configHolder = Holder.of(config);
+      Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.run(configHolder);
+      SqlToRelConverter sqlToRelConverter = this.getSqlToRelConverter(validator, this.catalogReader, (SqlToRelConverter.Config)configHolder.get());
+      SqlExplain sqlExplain = null;
+      if (sqlQuery.getKind() == SqlKind.EXPLAIN) {
+        sqlExplain = (SqlExplain)sqlQuery;
+        sqlQuery = sqlExplain.getExplicandum();
+        sqlToRelConverter.setDynamicParamCountInExplain(sqlExplain.getDynamicParamCount());
+      }
+
+      RelRoot root = sqlToRelConverter.convertQuery(sqlQuery, needsValidation, true);
+      Hook.CONVERTED.run(root.rel);
+      if (this.timingTracer != null) {
+        this.timingTracer.traceTime("end sql2rel");
+      }
+
+      RelDataType resultType = validator.getValidatedNodeType(sqlQuery);
+      this.fieldOrigins = validator.getFieldOrigins(sqlQuery);
+
+      assert this.fieldOrigins.size() == resultType.getFieldCount();
+
+      this.parameterRowType = validator.getParameterRowType(sqlQuery);
+      if (sqlExplain != null) {
+        SqlExplain.Depth explainDepth = sqlExplain.getDepth();
+        SqlExplainFormat format = sqlExplain.getFormat();
+        SqlExplainLevel detailLevel = sqlExplain.getDetailLevel();
+        switch(explainDepth) {
+          case TYPE:
+            return this.createPreparedExplanation(resultType, this.parameterRowType, (RelRoot)null, format, detailLevel);
+          case LOGICAL:
+            return this.createPreparedExplanation((RelDataType)null, this.parameterRowType, root, format, detailLevel);
+        }
+      }
+      LOG.debug(RelOptUtil.dumpPlan("Logical plan: ", root.rel, SqlExplainFormat.TEXT,
+          SqlExplainLevel.ALL_ATTRIBUTES));
+
+      root = root.withRel(this.flattenTypes(root.rel, true));
+      if (this.context.config().forceDecorrelate()) {
+        root = root.withRel(this.decorrelate(sqlToRelConverter, sqlQuery, root.rel));
+      }
+
+      root = this.trimUnusedFields(root);
+      Hook.TRIMMED.run(root.rel);
+      if (sqlExplain != null) {
+        switch(sqlExplain.getDepth()) {
+          case PHYSICAL:
+          default:
+            root = this.optimize(root, this.getMaterializations(), this.getLattices());
+            return this.createPreparedExplanation((RelDataType)null, this.parameterRowType, root, sqlExplain.getFormat(), sqlExplain.getDetailLevel());
+        }
+      } else {
+        root = this.optimize(root, this.getMaterializations(), this.getLattices());
+        if (this.timingTracer != null) {
+          this.timingTracer.traceTime("end optimization");
+        }
+
+        if (!root.kind.belongsTo(SqlKind.DML)) {
+          root = root.withKind(sqlNodeOriginal.getKind());
+        }
+
+        return this.implement(root);
+      }
+    }
+
     @Override protected SqlToRelConverter getSqlToRelConverter(
         SqlValidator validator,
         CatalogReader catalogReader,
@@ -1207,6 +1280,9 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
               projects, null, root.validatedRowType, rexBuilder);
           enumerable = EnumerableCalc.create(enumerable, program);
         }
+
+        LOG.debug(RelOptUtil.dumpPlan("Physical plan: ", enumerable, SqlExplainFormat.TEXT,
+            SqlExplainLevel.ALL_ATTRIBUTES));
 
         try {
           CatalogReader.THREAD_LOCAL.set(catalogReader);
