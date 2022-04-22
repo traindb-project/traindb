@@ -442,7 +442,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (schemaName == null) {
       schemaName = conn.getSchema();
     }
-    ResultSet rs = conn.getMetaData().getColumns(null, schemaName, tableName, null);
+    ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), schemaName, tableName, null);
 
     while (rs.next()) {
       columnInfo.add(Arrays.asList(rs.getString(4), rs.getString(6)));
