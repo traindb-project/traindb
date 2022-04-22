@@ -165,7 +165,6 @@ public class Driver extends UnregisteredDriver {
                             @Nullable JavaTypeFactory typeFactory) {
     return (CalciteConnection) ((CalciteFactory) factory)
         .newConnection(this, factory, CONNECT_STRING_PREFIX, new Properties(),
-            (CalciteSchema) SchemaManager.getInstance(null).getCurrentSchema(), typeFactory);
+            rootSchema, typeFactory);
   }
-
 }

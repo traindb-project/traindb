@@ -58,7 +58,6 @@ import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
-import org.apache.calcite.prepare.CalciteCatalogReader;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
@@ -136,7 +135,6 @@ import java.util.Set;
 import org.verdictdb.VerdictSingleResult;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
-import traindb.engine.TableNameQualifier;
 import traindb.engine.TrainDBQueryEngine;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.sql.TrainDBSql;
@@ -196,8 +194,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   private ParseResult parse_(Context context, String sql, boolean convert,
       boolean analyze, boolean fail) {
     final JavaTypeFactory typeFactory = context.getTypeFactory();
-    CalciteCatalogReader catalogReader =
-        new CalciteCatalogReader(
+    TrainDBCatalogReader catalogReader =
+        new TrainDBCatalogReader(
             context.getRootSchema(),
             context.getDefaultSchemaPath(),
             typeFactory,
@@ -220,7 +218,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   }
 
   private ParseResult convert_(Context context, String sql, boolean analyze,
-      boolean fail, CalciteCatalogReader catalogReader, SqlValidator validator,
+      boolean fail, TrainDBCatalogReader catalogReader, SqlValidator validator,
       SqlNode sqlNode1) {
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     final Convention resultConvention =
@@ -502,8 +500,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       return simplePrepare(context, castNonNull(query.sql));
     }
     final JavaTypeFactory typeFactory = context.getTypeFactory();
-    CalciteCatalogReader catalogReader =
-        new CalciteCatalogReader(
+    TrainDBCatalogReader catalogReader =
+        new TrainDBCatalogReader(
             context.getRootSchema(),
             context.getDefaultSchemaPath(),
             typeFactory,
@@ -644,7 +642,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       Query<T> query,
       Type elementType,
       long maxRowCount,
-      CalciteCatalogReader catalogReader,
+      TrainDBCatalogReader catalogReader,
       RelOptPlanner planner) {
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     final EnumerableRel.Prefer prefer;
@@ -724,12 +722,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             Meta.StatementType.OTHER_DDL);
       }
 
-      try {
-        TableNameQualifier.toFullyQualifiedName(conn.getSchemaManager(), conn.getSchema(), sqlNode);
-      } catch (Exception e) {
-        throw new RuntimeException(e.getMessage());
-      }
-
       final SqlValidator validator =
           createSqlValidator(context, catalogReader);
 
@@ -804,7 +796,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   }
 
   private static SqlValidator createSqlValidator(Context context,
-      CalciteCatalogReader catalogReader) {
+      TrainDBCatalogReader catalogReader) {
     final SqlOperatorTable opTab0 =
         context.config().fun(SqlOperatorTable.class,
             SqlStdOperatorTable.instance());
@@ -965,8 +957,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     // not here?
     try {
       final CalciteSchema schema = materialization.materializedTable_.schema;
-      CalciteCatalogReader catalogReader =
-          new CalciteCatalogReader(
+      TrainDBCatalogReader catalogReader =
+          new TrainDBCatalogReader(
               schema.root(),
               materialization.viewSchemaPath_,
               context.getTypeFactory(),
@@ -1007,8 +999,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         defaultSchema != null
             ? CalciteSchema.from(defaultSchema)
             : prepareContext.getRootSchema();
-    CalciteCatalogReader catalogReader =
-        new CalciteCatalogReader(schema.root(),
+    TrainDBCatalogReader catalogReader =
+        new TrainDBCatalogReader(schema.root(),
             schema.path(null),
             typeFactory,
             prepareContext.config());
@@ -1241,7 +1233,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     protected SqlValidator createSqlValidator(CatalogReader catalogReader) {
       return TrainDBPrepareImpl.createSqlValidator(context,
-          (CalciteCatalogReader) catalogReader);
+          (TrainDBCatalogReader) catalogReader);
     }
 
     @Override protected SqlValidator getSqlValidator() {

@@ -12,6 +12,30 @@ SELECT count(*) as cnt FROM (select * from instacart_small.order_products) t;
 
 !ok
 
+SELECT count(product_name) as cnt
+FROM instacart_small.aisles JOIN instacart_small.products
+ON instacart_small.aisles.aisle_id = instacart_small.products.aisle_id;
++-------+
+| cnt   |
++-------+
+| 49688 |
++-------+
+(1 row)
+
+!ok
+
+SELECT count(product_name) as cnt
+FROM instacart_small.aisles JOIN instacart_small.products
+ON aisles.aisle_id = products.aisle_id;
++-------+
+| cnt   |
++-------+
+| 49688 |
++-------+
+(1 row)
+
+!ok
+
 USE instacart_small;
 (0 rows modified)
 

@@ -564,16 +564,18 @@ public abstract class TrainDBConnectionImpl
 
     private SqlAdvisor getSqlAdvisor() {
       final TrainDBConnectionImpl con = (TrainDBConnectionImpl) queryProvider;
+      final String dataSourceName;
       final String schemaName;
       try {
+        dataSourceName = con.getCatalog();
         schemaName = con.getSchema();
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
       final List<String> schemaPath =
           schemaName == null
-              ? ImmutableList.of()
-              : ImmutableList.of(schemaName);
+              ? ImmutableList.of(dataSourceName)
+              : ImmutableList.of(dataSourceName, schemaName);
       final SqlValidatorWithHints validator =
           new SqlAdvisorValidator(SqlStdOperatorTable.instance(),
               new CalciteCatalogReader(requireNonNull(rootSchema, "rootSchema"),
@@ -630,15 +632,17 @@ public abstract class TrainDBConnectionImpl
     }
 
     @Override public List<String> getDefaultSchemaPath() {
+      final String dataSourceName;
       final String schemaName;
       try {
+        dataSourceName = connection.getCatalog();
         schemaName = connection.getSchema();
       } catch (SQLException e) {
         throw new RuntimeException(e);
       }
       return schemaName == null
-          ? ImmutableList.of()
-          : ImmutableList.of(schemaName);
+          ? ImmutableList.of(dataSourceName)
+          : ImmutableList.of(dataSourceName, schemaName);
     }
 
     @Override public @Nullable List<String> getObjectPath() {
