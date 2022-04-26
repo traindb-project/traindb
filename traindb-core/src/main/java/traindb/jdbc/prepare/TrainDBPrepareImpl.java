@@ -132,9 +132,9 @@ import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
-import org.verdictdb.VerdictSingleResult;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
+import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.sql.TrainDBSql;
@@ -588,7 +588,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
   }
 
-  CalciteSignature convertResultToSignature(Context context, String sql, VerdictSingleResult res) {
+  CalciteSignature convertResultToSignature(Context context, String sql, TrainDBListResultSet res) {
     if (res.isEmpty()) {
       return new CalciteSignature<>(sql,
           ImmutableList.of(),

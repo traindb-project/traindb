@@ -18,44 +18,31 @@ import com.google.common.base.Optional;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
-import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.commons.DataTypeConverter;
-import org.verdictdb.connection.DbmsQueryResultMetaData;
 
-public class TrainDBResultFromListData extends VerdictSingleResult {
+public class TrainDBListResultSet {
 
-  List<String> fieldsName = new ArrayList<>();
-  int cursor = -1;
+  private List<String> header = new ArrayList<>();
   private Optional<List<List<Object>>> result;
-  // used to support wasnull()
-  private Object lastValueRead;
+  int cursor = -1;
 
-  public TrainDBResultFromListData() {
-  }
-
-  public TrainDBResultFromListData(List<String> header, List<List<Object>> result) {
+  public TrainDBListResultSet(List<String> header, List<List<Object>> result) {
     super();
     if (result == null) {
       this.result = Optional.absent();
     } else {
-      fieldsName = header;
+      this.header = header;
       this.result = Optional.of(result);
     }
   }
 
-  public static TrainDBResultFromListData empty() {
-    return new TrainDBResultFromListData(null, null);
+  public static TrainDBListResultSet empty() {
+    return new TrainDBListResultSet(null, null);
   }
 
   public boolean isEmpty() {
     return !result.isPresent();
   }
 
-  public DbmsQueryResultMetaData getMetaData() {
-    return null;
-  }
-
-  @Override
   public int getColumnCount() {
     if (result.isPresent() == false || result.get().isEmpty()) {
       return 0;
@@ -69,12 +56,11 @@ public class TrainDBResultFromListData extends VerdictSingleResult {
     }
   }
 
-  @Override
   public String getColumnName(int index) {
     if (result.isPresent() == false) {
       throw new RuntimeException("An empty result is accessed.");
     } else {
-      return fieldsName.get(index);
+      return header.get(index);
     }
   }
 
@@ -84,17 +70,13 @@ public class TrainDBResultFromListData extends VerdictSingleResult {
     } else {
       Object o = (result.get().get(0)).get(index);
       if (o instanceof String) {
-        return DataTypeConverter.typeInt("varchar");
+        return Types.VARCHAR;
       } else if (o instanceof Integer) {
-        return DataTypeConverter.typeInt("int");
+        return Types.INTEGER;
       } else {
         return Types.JAVA_OBJECT;
       }
     }
-  }
-
-  public String getColumnTypeNamePy(int index) {
-    return DataTypeConverter.typeName(getColumnType(index));
   }
 
   public long getRowCount() {
@@ -105,17 +87,12 @@ public class TrainDBResultFromListData extends VerdictSingleResult {
     }
   }
 
-  @Override
   public Object getValue(int index) {
     if (result.isPresent() == false) {
       throw new RuntimeException("An empty result is accessed.");
     } else {
       return result.get().get(cursor).get(index);
     }
-  }
-
-  public boolean wasNull() {
-    return lastValueRead == null;
   }
 
   public boolean next() {

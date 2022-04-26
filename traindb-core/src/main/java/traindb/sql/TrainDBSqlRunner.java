@@ -15,7 +15,7 @@
 package traindb.sql;
 
 import java.util.List;
-import org.verdictdb.VerdictSingleResult;
+import traindb.engine.TrainDBListResultSet;
 
 public interface TrainDBSqlRunner {
 
@@ -34,18 +34,18 @@ public interface TrainDBSqlRunner {
 
   void dropSynopsis(String synopsisName) throws Exception;
 
-  VerdictSingleResult showModels() throws Exception;
+  TrainDBListResultSet showModels() throws Exception;
 
-  VerdictSingleResult showModelInstances() throws Exception;
+  TrainDBListResultSet showModelInstances() throws Exception;
 
-  VerdictSingleResult showSynopses() throws Exception;
+  TrainDBListResultSet showSynopses() throws Exception;
 
-  VerdictSingleResult showSchemas() throws Exception;
+  TrainDBListResultSet showSchemas() throws Exception;
 
-  VerdictSingleResult showTables() throws Exception;
+  TrainDBListResultSet showTables() throws Exception;
 
   void useSchema(String schemaName) throws Exception;
 
-  VerdictSingleResult describeTable(String schemaName, String tableName) throws Exception;
+  TrainDBListResultSet describeTable(String schemaName, String tableName) throws Exception;
 }
 

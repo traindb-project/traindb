@@ -28,7 +28,6 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.json.simple.JSONObject;
-import org.verdictdb.VerdictSingleResult;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
@@ -334,7 +333,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public VerdictSingleResult showModels() throws Exception {
+  public TrainDBListResultSet showModels() throws Exception {
     List<String> header = Arrays.asList("model", "type", "location", "class", "uri");
     List<List<Object>> modelInfo = new ArrayList<>();
 
@@ -343,12 +342,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModel.getClassName(), mModel.getUri()));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, modelInfo);
-    return result;
+    return new TrainDBListResultSet(header, modelInfo);
   }
 
   @Override
-  public VerdictSingleResult showModelInstances() throws Exception {
+  public TrainDBListResultSet showModelInstances() throws Exception {
     List<String> header = Arrays.asList("model", "model_instance", "schema", "table", "columns");
     List<List<Object>> modelInstanceInfo = new ArrayList<>();
 
@@ -358,12 +356,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModelInstance.getColumnNames().toString()));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, modelInstanceInfo);
-    return result;
+    return new TrainDBListResultSet(header, modelInstanceInfo);
   }
 
   @Override
-  public VerdictSingleResult showSynopses() throws Exception {
+  public TrainDBListResultSet showSynopses() throws Exception {
     List<String> header = Arrays.asList("synopsis", "model_instance", "schema", "table", "columns");
     List<List<Object>> synopsisInfo = new ArrayList<>();
 
@@ -374,12 +371,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModelInstance.getColumnNames()));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, synopsisInfo);
-    return result;
+    return new TrainDBListResultSet(header, synopsisInfo);
   }
 
   @Override
-  public VerdictSingleResult showSchemas() throws Exception {
+  public TrainDBListResultSet showSchemas() throws Exception {
     List<String> header = Arrays.asList("schema");
     List<List<Object>> schemaInfo = new ArrayList<>();
     ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
@@ -388,12 +384,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       schemaInfo.add(Arrays.asList(rows.getString(1)));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, schemaInfo);
-    return result;
+    return new TrainDBListResultSet(header, schemaInfo);
   }
 
   @Override
-  public VerdictSingleResult showTables() throws Exception {
+  public TrainDBListResultSet showTables() throws Exception {
     List<String> header = Arrays.asList("table");
     List<List<Object>> tableInfo = new ArrayList<>();
 
@@ -404,8 +399,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       tableInfo.add(Arrays.asList(rs.getString(3)));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, tableInfo);
-    return result;
+    return new TrainDBListResultSet(header, tableInfo);
   }
 
   @Override
@@ -418,7 +412,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public VerdictSingleResult describeTable(String schemaName, String tableName) throws Exception {
+  public TrainDBListResultSet describeTable(String schemaName, String tableName) throws Exception {
     List<String> header = Arrays.asList("column name", "column type");
     List<List<Object>> columnInfo = new ArrayList<>();
     if (schemaName == null) {
@@ -430,7 +424,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       columnInfo.add(Arrays.asList(rs.getString(4), rs.getString(6)));
     }
 
-    VerdictSingleResult result = new TrainDBResultFromListData(header, columnInfo);
-    return result;
+    return new TrainDBListResultSet(header, columnInfo);
   }
 }

@@ -21,9 +21,8 @@ import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
-import org.verdictdb.VerdictSingleResult;
-import org.verdictdb.coordinator.VerdictSingleResultFromDbmsQueryResult;
 import traindb.common.TrainDBLogger;
+import traindb.engine.TrainDBListResultSet;
 
 public final class TrainDBSql {
 
@@ -38,7 +37,7 @@ public final class TrainDBSql {
     TrainDBErrorListener trainDBErrorListener = new TrainDBErrorListener();
 
     // remove default console output printing error listener
-    // to suppress syntax error messages for TrainDB (such input query is passed to VerdictDB)
+    // to suppress syntax error messages for TrainDB SQL Parser
     lexer.removeErrorListener(ConsoleErrorListener.INSTANCE);
     lexer.addErrorListener(trainDBErrorListener);
     parser.removeErrorListener(ConsoleErrorListener.INSTANCE);
@@ -52,7 +51,7 @@ public final class TrainDBSql {
     return lsnr.getSqlCommands();
   }
 
-  public static VerdictSingleResult run(TrainDBSqlCommand command, TrainDBSqlRunner runner)
+  public static TrainDBListResultSet run(TrainDBSqlCommand command, TrainDBSqlRunner runner)
       throws Exception {
     switch (command.getType()) {
       case CREATE_MODEL:
@@ -110,7 +109,7 @@ public final class TrainDBSql {
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
-    return VerdictSingleResultFromDbmsQueryResult.empty();
+    return TrainDBListResultSet.empty();
   }
 
   private static class Listener extends TrainDBSqlBaseListener {
