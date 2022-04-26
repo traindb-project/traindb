@@ -26,7 +26,6 @@ import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.util.Collection;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -91,8 +90,7 @@ import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import org.verdictdb.sqlsyntax.SqlSyntax;
-import org.verdictdb.sqlsyntax.SqlSyntaxList;
+import traindb.adapter.SourceDatabaseProductList;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.JDOCatalogStore;
@@ -223,18 +221,13 @@ public abstract class TrainDBConnectionImpl
   }
 
   private static String getJdbcDriverClassName(String jdbcConnectionString) {
-    SqlSyntax syntax = SqlSyntaxList.getSyntaxFromConnectionString(jdbcConnectionString);
-    if (syntax == null) {
-      return null;
-    }
-    Collection<String> driverClassNames = syntax.getCandidateJDBCDriverClassNames();
-    for (String className : driverClassNames) {
-      try {
-        Class.forName(className);
-        return className;
-      } catch (ClassNotFoundException e) {
-        /* do nothing */
-      }
+    String driverClassName = SourceDatabaseProductList.getJdbcDriverClassName(
+        jdbcConnectionString.split(":")[1]);
+    try {
+      Class.forName(driverClassName);
+      return driverClassName;
+    } catch (ClassNotFoundException e) {
+      /* do nothing */
     }
     return null;
   }
