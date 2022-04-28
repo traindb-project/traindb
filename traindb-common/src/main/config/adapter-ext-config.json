@@ -1,0 +1,6 @@
+[
+  {
+    "jdbc.protocol": "kairos",
+    "jdbc.driver.class": "kr.co.realtimetech.kairos.jdbc.kairosDriver"
+  }
+]

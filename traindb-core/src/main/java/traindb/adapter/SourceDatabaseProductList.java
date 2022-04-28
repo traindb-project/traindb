@@ -16,18 +16,40 @@
 
 package traindb.adapter;
 
+import java.io.FileReader;
+import java.net.URL;
 import java.util.Map;
 import java.util.TreeMap;
+import org.apache.calcite.util.Sources;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 
 public class SourceDatabaseProductList {
 
-  static Map<String, String> nameToDriverClass = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+  final static Map<String, String> nameToDriverClass = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);
+  final static String ADAPTER_EXTENSION_CONFIG_FILENAME = "adapter-ext-config.json";
 
   static {
     nameToDriverClass.put("mysql", "com.mysql.cj.jdbc.Driver");
     nameToDriverClass.put("postgresql", "org.postgresql.Driver");
-    nameToDriverClass.put("kairos", "org.postgresql.Driver");
-    nameToDriverClass.put("tibero", "com.tmax.tibero.jdbc.Driver");
+
+    JSONParser parser = new JSONParser();
+    JSONArray adapterExtInfo = null;
+    try {
+      URL url = SourceDatabaseProductList.class.getClassLoader().getResource(
+          ADAPTER_EXTENSION_CONFIG_FILENAME);
+      adapterExtInfo = (JSONArray) parser.parse(new FileReader(Sources.of(url).file()));
+    } catch (Exception e) {
+      // ignore
+    }
+
+    for (Object obj : adapterExtInfo) {
+      JSONObject infoObj = (JSONObject) obj;
+      String protocol = (String) infoObj.get("jdbc.protocol");
+      String driverClass = (String) infoObj.get("jdbc.driver.class");
+      nameToDriverClass.put(protocol, driverClass);
+    }
   }
 
   public static String getJdbcDriverClassName(String protocol) {

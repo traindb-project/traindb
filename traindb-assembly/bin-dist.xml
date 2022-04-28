@@ -94,6 +94,11 @@ limitations under the License.
             <outputDirectory>conf</outputDirectory>
             <destName>traindb.properties</destName>
         </file>
+        <file>
+            <source>../traindb-common/src/main/config/adapter-ext-config.json</source>
+            <outputDirectory>conf</outputDirectory>
+            <destName>adapter-ext-config.json</destName>
+        </file>
     </files>
 
     <dependencySets>
