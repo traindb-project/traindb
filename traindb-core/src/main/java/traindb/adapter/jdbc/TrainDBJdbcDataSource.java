@@ -26,6 +26,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.SqlDialect;
+import traindb.adapter.TrainDBSqlDialect;
 import traindb.common.TrainDBLogger;
 import traindb.schema.TrainDBDataSource;
 
@@ -52,20 +53,25 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
     ResultSet resultSet = null;
     try {
       connection = dataSource.getConnection();
-      resultSet = connection.getMetaData().getCatalogs();
-      while (resultSet.next()) {
-        final String schemaName = requireNonNull(
-            resultSet.getString(1),
-            () -> "got null schemaName from the database");
-
+      if (dialect instanceof TrainDBSqlDialect &&
+          !((TrainDBSqlDialect) dialect).supportCatalogs()) {
+        String schemaName = connection.getMetaData().getUserName();
         builder.put(schemaName, new TrainDBJdbcSchema(schemaName, this));
+      } else {
+        resultSet = connection.getMetaData().getCatalogs();
+        while (resultSet.next()) {
+          final String schemaName = requireNonNull(
+              resultSet.getString(1),
+              () -> "got null schemaName from the database");
+          builder.put(schemaName, new TrainDBJdbcSchema(schemaName, this));
+        }
       }
+      setSubSchemaMap(builder.build());
     } catch (SQLException e) {
       throw new RuntimeException(e);
     } finally {
       JdbcUtils.close(connection, null, resultSet);
     }
-    setSubSchemaMap(builder.build());
   }
 
   /**

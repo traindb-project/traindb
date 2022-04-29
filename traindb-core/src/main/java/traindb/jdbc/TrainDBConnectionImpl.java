@@ -90,7 +90,7 @@ import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import traindb.adapter.SourceDatabaseProductList;
+import traindb.adapter.SourceDbmsProducts;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.JDOCatalogStore;
@@ -175,7 +175,7 @@ public abstract class TrainDBConnectionImpl
     BasicDataSource dataSource = new BasicDataSource();
     dataSource.setUrl(url);
     dataSource.setDriverClassName(getJdbcDriverClassName(url));
-    dataSource.setValidationQuery("SELECT 1");
+    dataSource.setValidationQuery("SELECT 1 FROM DUAL");
     dataSource.setUsername(info.getProperty("user"));
     dataSource.setPassword(info.getProperty("password"));
     return dataSource;
@@ -221,7 +221,7 @@ public abstract class TrainDBConnectionImpl
   }
 
   private static String getJdbcDriverClassName(String jdbcConnectionString) {
-    String driverClassName = SourceDatabaseProductList.getJdbcDriverClassName(
+    String driverClassName = SourceDbmsProducts.getJdbcDriverClassName(
         jdbcConnectionString.split(":")[1]);
     try {
       Class.forName(driverClassName);

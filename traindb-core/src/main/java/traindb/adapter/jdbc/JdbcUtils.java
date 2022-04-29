@@ -18,6 +18,7 @@ import com.google.common.cache.CacheBuilder;
 import com.google.common.cache.CacheLoader;
 import com.google.common.cache.LoadingCache;
 import com.google.common.primitives.Ints;
+import java.lang.reflect.Constructor;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
@@ -43,6 +44,8 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.adapter.SourceDbmsProducts;
+import traindb.adapter.TrainDBSqlDialect;
 
 /**
  * Utilities for the JDBC provider.
@@ -94,12 +97,21 @@ final class JdbcUtils {
       try {
         connection = dataSource.getConnection();
         DatabaseMetaData metaData = connection.getMetaData();
-        SqlDialect dialect = SqlDialectFactoryImpl.INSTANCE.create(metaData);
+        String sqlDialectClass =
+            SourceDbmsProducts.getSqlDialectClassName(metaData.getURL().split(":")[1]);
+        SqlDialect dialect;
+        if (sqlDialectClass != null) {
+          Constructor<?> constructor = Class.forName(sqlDialectClass).getDeclaredConstructor();
+          TrainDBSqlDialect extDialect = (TrainDBSqlDialect) constructor.newInstance();
+          dialect = extDialect.getDefaultSqlDialect();
+        } else {
+          dialect = SqlDialectFactoryImpl.INSTANCE.create(metaData);
+        }
         map0.put(dataSource, dialect);
         connection.close();
         connection = null;
         return dialect;
-      } catch (SQLException e) {
+      } catch (Exception e) {
         throw new RuntimeException(e);
       } finally {
         if (connection != null) {
