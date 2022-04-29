@@ -71,11 +71,8 @@ limitations under the License.
             </includes>
         </fileSet>
         <fileSet>
-            <directory>.</directory>
+            <directory>../traindb-project/src/main/resources/lib</directory>
             <outputDirectory>share/traindb/ext</outputDirectory>
-            <excludes>
-                <exclude>**/*</exclude>
-            </excludes>
         </fileSet>
         <fileSet>
             <directory>../traindb-model/src/main/python</directory>
