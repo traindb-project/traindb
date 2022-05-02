@@ -29,13 +29,13 @@ $ mvn package
 Then, you can find traindb-x.y.z-SNAPSHOT.tar.gz in traindb-assembly/target directory.
 
 ```console
-$ tar xvfz traindb-assembly/target/traindb-0.1.0-SNAPSHOT.tar.gz
+$ tar xvfz traindb-assembly/target/traindb-x.y.z-SNAPSHOT.tar.gz
 ```
 
 To use ML models, you need to checkout models.\
 For python environment setup, see README in our [traindb-model](https://github.com/traindb-project/traindb-model) repository.
 ``` console
-$ cd traindb-assembly/target/traindb-0.1.0-SNAPSHOT
+$ cd traindb-assembly/target/traindb-x.y.z-SNAPSHOT
 $ svn co https://github.com/traindb-project/traindb-model/trunk/models
 ```
 
@@ -47,7 +47,7 @@ Now, you can execute SQL statements using the command line interface.\
 You need to put JDBC driver for your DBMS into the directory included in CLASSPATH.
 
 ```console
-$ cd traindb-assembly/target/traindb-0.1.0-SNAPSHOT
+$ cd traindb-assembly/target/traindb-x.y.z-SNAPSHOT
 $ bin/trsql
 sqlline> !connect jdbc:traindb:<dbms>://<host>
 Enter username for jdbc:traindb:<dbms>://localhost: <username> 
