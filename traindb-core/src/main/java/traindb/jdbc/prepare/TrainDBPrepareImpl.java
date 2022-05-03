@@ -18,7 +18,6 @@ import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
-import org.apache.calcite.adapter.enumerable.EnumerableRules;
 import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
@@ -94,7 +93,6 @@ import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
-import org.apache.calcite.sql.SqlUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
 import org.apache.calcite.sql.parser.SqlParser;
@@ -117,7 +115,6 @@ import org.apache.calcite.util.Util;
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
-import com.google.common.collect.ImmutableSet;
 
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -131,7 +128,6 @@ import java.util.HashMap;
 import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
@@ -141,37 +137,15 @@ import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 import static java.util.Objects.requireNonNull;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
-  @Deprecated // to be removed before 2.0
-  public static final boolean ENABLE_ENUMERABLE =
-      CalciteSystemProperty.ENABLE_ENUMERABLE.value();
-
-  @Deprecated // to be removed before 2.0
-  public static final boolean ENABLE_STREAM =
-      CalciteSystemProperty.ENABLE_STREAM.value();
-
-  @Deprecated // to be removed before 2.0
-  public static final List<RelOptRule> ENUMERABLE_RULES =
-      EnumerableRules.ENUMERABLE_RULES;
-
   /** Whether the bindable convention should be the root convention of any
    * plan. If not, enumerable convention is the default. */
   public final boolean enableBindable = Hook.ENABLE_BINDABLE.get(false);
-
-  private static final Set<String> SIMPLE_SQLS =
-      ImmutableSet.of(
-          "SELECT 1",
-          "select 1",
-          "SELECT 1 FROM DUAL",
-          "select 1 from dual",
-          "values 1",
-          "VALUES 1");
 
   public TrainDBPrepareImpl() {
   }
@@ -496,9 +470,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       Query<T> query,
       Type elementType,
       long maxRowCount) {
-    if (SIMPLE_SQLS.contains(query.sql)) {
-      return simplePrepare(context, castNonNull(query.sql));
-    }
     final JavaTypeFactory typeFactory = context.getTypeFactory();
     TrainDBCatalogReader catalogReader =
         new TrainDBCatalogReader(
@@ -525,36 +496,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       }
     }
     throw exception;
-  }
-
-  /** Quickly prepares a simple SQL statement, circumventing the usual
-   * preparation process. */
-  private static <T> CalciteSignature<T> simplePrepare(Context context, String sql) {
-    final JavaTypeFactory typeFactory = context.getTypeFactory();
-    final RelDataType x =
-        typeFactory.builder()
-            .add(SqlUtil.deriveAliasFromOrdinal(0), SqlTypeName.INTEGER)
-            .build();
-    @SuppressWarnings("unchecked")
-    final List<T> list = (List) ImmutableList.of(1);
-    final List<String> origin = null;
-    final List<@Nullable List<String>> origins =
-        Collections.nCopies(x.getFieldCount(), origin);
-    final List<ColumnMetaData> columns =
-        getColumnMetaDataList(typeFactory, x, x, origins);
-    final Meta.CursorFactory cursorFactory =
-        Meta.CursorFactory.deduce(columns, null);
-    return new CalciteSignature<>(
-        sql,
-        ImmutableList.of(),
-        ImmutableMap.of(),
-        x,
-        columns,
-        cursorFactory,
-        context.getRootSchema(),
-        ImmutableList.of(),
-        -1, dataContext -> Linq4j.asEnumerable(list),
-        Meta.StatementType.SELECT);
   }
 
   /**
