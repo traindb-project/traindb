@@ -41,7 +41,7 @@ TRAINDB_ROOT_LOGGER_APPENDER=${TRAINDB_ROOT_LOGGER_APPENDER:-console}
 TRAINDB_OPTS="$TRAINDB_OPTS -Dtraindb.rootLogger.level=$TRAINDB_ROOT_LOGGER_LEVEL"
 TRAINDB_OPTS="$TRAINDB_OPTS -Dtraindb.rootLogger.appender=$TRAINDB_ROOT_LOGGER_APPENDER"
 
-exec "$JAVA" -cp $CLASSPATH $TRAINDB_OPTS -Dnode.environment=traindb traindb.engine.TrainDBServer "$@" > "$log" 2>&1 < /dev/null &
+exec "$JAVA" -cp $CLASSPATH $TRAINDB_OPTS traindb.engine.TrainDBServer "$@" > "$log" 2>&1 < /dev/null &
 echo $! > "$pid"
 sleep 1
 head "$log"

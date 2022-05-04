@@ -14,52 +14,48 @@
 
 package traindb.engine;
 
-import com.google.common.collect.ImmutableList;
-import com.google.inject.Injector;
-import com.google.inject.Module;
-import io.airlift.bootstrap.Bootstrap;
-import io.airlift.event.client.EventModule;
-import io.airlift.http.server.HttpServerModule;
-import io.airlift.jaxrs.JaxrsModule;
-import io.airlift.json.JsonModule;
-import io.airlift.log.Logger;
-import io.airlift.node.NodeModule;
 import java.util.Properties;
+import org.apache.hadoop.conf.Configuration;
+import org.apache.hadoop.service.CompositeService;
+import org.apache.hadoop.util.ShutdownHookManager;
+import org.apache.hadoop.util.StringUtils;
 import traindb.common.TrainDBConfiguration;
+import traindb.common.TrainDBLogger;
 
 
-public class TrainDBServer implements Runnable {
+public class TrainDBServer extends CompositeService {
+  public static final int SHUTDOWN_HOOK_PRIORITY = 30;
 
-  public static void main(String[] args) {
-    new TrainDBServer().run();
-  }
+  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBServer.class);
 
   public TrainDBServer() {
+    super(TrainDBServer.class.getName());
   }
 
   @Override
-  public void run() {
-    Logger log = Logger.get(TrainDBServer.class);
+  protected void serviceInit(Configuration conf) throws Exception {
+    super.serviceInit(conf);
+  }
 
-    ImmutableList.Builder<Module> modules = ImmutableList.builder();
-    modules.add(
-        new TrainDBServiceModule(),
-        new NodeModule(),
-        new HttpServerModule(),
-        new EventModule(),
-        new JsonModule(),
-        new JaxrsModule()
-    );
+  @Override
+  public String getName() {
+    return "TrainDBServer";
+  }
 
-    Bootstrap app = new Bootstrap(modules.build());
+  private void initAndStart(Configuration conf) {
+    CompositeServiceShutdownHook hook = new CompositeServiceShutdownHook(this);
+    ShutdownHookManager.get().addShutdownHook(hook, SHUTDOWN_HOOK_PRIORITY);
+
+    init(conf);
+    start();
+  }
+
+  public static void main(String[] args) {
+    StringUtils.startupShutdownMessage(TrainDBServer.class, args, LOG);
+    TrainDBServer master = new TrainDBServer();
+
     TrainDBConfiguration conf = new TrainDBConfiguration(new Properties());
-    try {
-      Injector injector = app.initialize();
-
-      log.info("TrainDBServer started.");
-    } catch (Throwable e) {
-      log.error(e);
-      System.exit(1);
-    }
+    conf.loadConfiguration();
+    master.initAndStart(conf.asHadoopConfiguration());
   }
 }

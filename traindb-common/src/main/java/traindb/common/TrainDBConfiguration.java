@@ -16,9 +16,11 @@ package traindb.common;
 
 import java.io.File;
 import java.io.InputStream;
+import java.util.Enumeration;
 import java.util.Properties;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.hadoop.conf.Configuration;
 
 public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
   private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBConfiguration.class);
@@ -73,5 +75,15 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
   @Override
   public Casing unquotedCasing() {
     return Casing.TO_LOWER;
+  }
+
+  public Configuration asHadoopConfiguration() {
+    Configuration hadoopConf = new Configuration();
+    Enumeration<?> propsEnum = props.propertyNames();
+    while (propsEnum.hasMoreElements()) {
+      String key = propsEnum.nextElement().toString();
+      hadoopConf.set(key, props.getProperty(key));
+    }
+    return hadoopConf;
   }
 }
