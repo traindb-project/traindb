@@ -19,8 +19,11 @@ import org.apache.hadoop.conf.Configuration;
 import org.apache.hadoop.service.CompositeService;
 import org.apache.hadoop.util.ShutdownHookManager;
 import org.apache.hadoop.util.StringUtils;
+import traindb.catalog.CatalogStore;
+import traindb.catalog.JDOCatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
+import traindb.schema.SchemaManager;
 
 
 public class TrainDBServer extends CompositeService {
@@ -34,6 +37,20 @@ public class TrainDBServer extends CompositeService {
 
   @Override
   protected void serviceInit(Configuration conf) throws Exception {
+    CatalogStore catalogStore = new JDOCatalogStore();
+    Properties catProps = new Properties();
+    catProps.putAll(conf.getPropsWithPrefix(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX));
+    catalogStore.start(catProps);
+    CatalogService catalogService = new CatalogService(catalogStore);
+    addService(catalogService);
+
+    SchemaManager schemaManager = SchemaManager.getInstance(catalogStore);
+    addService(schemaManager);
+
+    SessionFactory sessFactory = new SessionFactory(catalogStore, schemaManager);
+    SessionServer sessServer = new SessionServer(sessFactory);
+    addService(sessServer);
+
     super.serviceInit(conf);
   }
 

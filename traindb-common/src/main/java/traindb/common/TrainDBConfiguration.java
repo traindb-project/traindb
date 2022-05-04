@@ -26,6 +26,7 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
   private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBConfiguration.class);
 
   public static final String CATALOG_STORE_PROPERTY_PREFIX = "catalog.store.";
+  public static final String SERVER_PROPERTY_PREFIX = "traindb.server.";
 
   private final String TRAINDB_CONFIG_FILENAME = "traindb.properties";
   private Properties props;

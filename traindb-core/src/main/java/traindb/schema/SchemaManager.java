@@ -26,6 +26,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.hadoop.service.AbstractService;
 import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBLogger;
@@ -34,7 +35,7 @@ import traindb.common.TrainDBLogger;
 /**
  * Constructs in-memory schema from metadata in CatalogStore.
  */
-public final class SchemaManager {
+public final class SchemaManager extends AbstractService {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(SchemaManager.class);
   private static SchemaManager singletonInstance;
   private final CatalogStore catalogStore;
@@ -51,12 +52,25 @@ public final class SchemaManager {
   private SchemaPlus rootSchema;
 
   private SchemaManager(CatalogStore catalogStore) {
+    super(SchemaManager.class.getName());
     this.catalogStore = catalogStore;
     rootSchema = Frameworks.createRootSchema(false);
     traindbDataSource = null;
     dataSourceMap = new HashMap<>();
     schemaMap = new HashMap<>();
     tableMap = new HashMap<>();
+  }
+
+  @Override
+  protected void serviceStart() throws Exception {
+    super.serviceStart();
+  }
+
+  @Override
+  protected void serviceStop() throws Exception {
+    LOG.info("stop service - " + getName());
+    singletonInstance = null;
+    super.serviceStop();
   }
 
   public static SchemaManager getInstance(CatalogStore catalogStore) {
