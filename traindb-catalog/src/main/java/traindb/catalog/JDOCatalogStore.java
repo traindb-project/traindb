@@ -18,28 +18,28 @@ import java.util.Properties;
 import javax.jdo.JDOHelper;
 import javax.jdo.PersistenceManagerFactory;
 import traindb.common.TrainDBConfiguration;
-import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogStore implements CatalogStore {
-
   private static PersistenceManagerFactory pmf;
-  private final TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
 
   @Override
   public void start(Properties conf) {
     Properties props = new Properties();
     props.setProperty("javax.jdo.PersistenceManagerFactoryClass",
         "org.datanucleus.api.jdo.JDOPersistenceManagerFactory");
+
     props.setProperty("datanucleus.ConnectionDriverName",
-        conf.getProperty("traindb.metastore.driver", "org.sqlite.JDBC"));
+        conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "driver",
+                         "org.sqlite.JDBC"));
     props.setProperty("datanucleus.ConnectionURL",
-        conf.getProperty("traindb.metastore.uri", "jdbc:sqlite://"
-            + TrainDBConfiguration.getTrainDBPrefixPath() + "/traindb_metastore.db"));
-    props.setProperty(
-        "datanucleus.ConnectionUserName", conf.getProperty("traindb.metastore.username", ""));
-    props.setProperty(
-        "datanucleus.ConnectionPassword", conf.getProperty("traindb.metastore.password", ""));
-    // FIXME implement connection pooling
+        conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "uri",
+                         "jdbc:sqlite://" + TrainDBConfiguration.getTrainDBPrefixPath() +
+                         "/traindb_catalog_store.db"));
+    props.setProperty("datanucleus.ConnectionUserName",
+        conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "username", ""));
+    props.setProperty("datanucleus.ConnectionPassword",
+        conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "password", ""));
+
     props.setProperty("datanucleus.connectionPoolingType", "None");
     props.setProperty("datanucleus.schema.autoCreateAll", "true");
 

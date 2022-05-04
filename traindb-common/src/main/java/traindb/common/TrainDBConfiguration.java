@@ -21,7 +21,9 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
 
 public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
-  private final TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
+  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBConfiguration.class);
+
+  public static final String CATALOG_STORE_PROPERTY_PREFIX = "catalog.store.";
 
   private final String TRAINDB_CONFIG_FILENAME = "traindb.properties";
   private Properties props;
