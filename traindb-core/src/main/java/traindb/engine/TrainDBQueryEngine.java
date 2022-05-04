@@ -46,13 +46,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private TrainDBConnectionImpl conn;
   private CatalogContext catalogContext;
   private SchemaManager schemaManager;
-  private TrainDBConfiguration conf;
 
-  public TrainDBQueryEngine(TrainDBConnectionImpl conn, TrainDBConfiguration cfg) {
+  public TrainDBQueryEngine(TrainDBConnectionImpl conn) {
     this.conn = conn;
     this.catalogContext = conn.getCatalogContext();
     this.schemaManager = conn.getSchemaManager();
-    this.conf = cfg;
   }
 
   @Override
@@ -203,7 +201,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MModel mModel = catalogContext.getModel(modelName);
 
     // train ML model
-    ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "train",
+    ProcessBuilder pb = new ProcessBuilder("python",
+        TrainDBConfiguration.getModelRunnerPath(), "train",
         mModel.getClassName(), TrainDBConfiguration.absoluteUri(mModel.getUri()),
         dataFilename, metadataFilename, outputPath);
     pb.inheritIO();
@@ -297,7 +296,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String outputPath = instancePath + '/' + synopsisName + ".csv";
 
     // generate synopsis from ML model
-    ProcessBuilder pb = new ProcessBuilder("python", conf.getModelRunnerPath(), "synopsis",
+    ProcessBuilder pb = new ProcessBuilder("python",
+        TrainDBConfiguration.getModelRunnerPath(), "synopsis",
         mModel.getClassName(), TrainDBConfiguration.absoluteUri(mModel.getUri()),
         instancePath, String.valueOf(limitNumber), outputPath);
     pb.inheritIO();

@@ -630,8 +630,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
       if (commands != null && commands.size() > 0) {
         try {
-          TrainDBQueryEngine engine = new TrainDBQueryEngine(
-              conn, (TrainDBConfiguration) context.config());
+          TrainDBQueryEngine engine = new TrainDBQueryEngine(conn);
           return convertResultToSignature(context, query.sql,
               TrainDBSql.run(commands.get(0), engine));
         } catch (Exception e) {
