@@ -14,6 +14,23 @@
 
 package traindb.jdbc.prepare;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
+import static org.apache.calcite.util.Static.RESOURCE;
+
+import com.google.common.base.Supplier;
+import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
+import java.lang.reflect.Type;
+import java.math.BigDecimal;
+import java.sql.DatabaseMetaData;
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.Collections;
+import java.util.HashMap;
+import java.util.LinkedHashMap;
+import java.util.List;
+import java.util.Map;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
@@ -24,14 +41,12 @@ import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.config.CalciteConnectionConfig;
-import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
 import org.apache.calcite.linq4j.Linq4j;
-import org.apache.calcite.linq4j.Nullness;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
@@ -49,18 +64,15 @@ import org.apache.calcite.linq4j.tree.PseudoField;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptPlanner;
-import org.apache.calcite.plan.RelOptRule;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -111,24 +123,7 @@ import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
-
-import com.google.common.base.Supplier;
-import com.google.common.collect.ImmutableList;
-import com.google.common.collect.ImmutableMap;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
-
-import java.lang.reflect.Type;
-import java.math.BigDecimal;
-import java.sql.DatabaseMetaData;
-import java.sql.Types;
-import java.util.ArrayList;
-import java.util.Collections;
-import java.util.HashMap;
-import java.util.LinkedHashMap;
-import java.util.List;
-import java.util.Map;
-import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
@@ -136,12 +131,8 @@ import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
+import traindb.engine.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
-
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
-import static org.apache.calcite.util.Static.RESOURCE;
-
-import static java.util.Objects.requireNonNull;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
@@ -201,8 +192,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         enableBindable ? BindableConvention.INSTANCE
             : EnumerableConvention.INSTANCE;
     // Use the Volcano because it can handle the traits.
-    final VolcanoPlanner planner = new VolcanoPlanner();
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
+    final VolcanoPlanner planner = TrainDBPlanner.createPlanner();
 
     final SqlToRelConverter.Config config =
         SqlToRelConverter.config().withTrimUnusedFields(true)
@@ -424,32 +414,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (externalContext == null) {
       externalContext = Contexts.of(prepareContext.config());
     }
-    final VolcanoPlanner planner =
-        new VolcanoPlanner(costFactory, externalContext);
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    if (CalciteSystemProperty.ENABLE_COLLATION_TRAIT.value()) {
-      planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-    }
-    planner.setTopDownOpt(prepareContext.config().topDownOpt());
-    RelOptUtil.registerDefaultRules(planner,
-        prepareContext.config().materializationsEnabled(),
-        enableBindable);
-
-    final CalcitePrepare.SparkHandler spark = prepareContext.spark();
-    if (spark.enabled()) {
-      spark.registerRules(
-          new SparkHandler.RuleSetBuilder() {
-            @Override public void addRule(RelOptRule rule) {
-              // TODO:
-            }
-
-            @Override public void removeRule(RelOptRule rule) {
-              // TODO:
-            }
-          });
-    }
-    Hook.PLANNER.run(planner); // allow test to add or remove rules
-
+    final VolcanoPlanner planner = TrainDBPlanner.createPlanner(costFactory, externalContext);
     return planner;
   }
 
