@@ -14,10 +14,16 @@
 
 package traindb.sql.calcite;
 
+import java.util.ArrayList;
+import java.util.List;
+import org.apache.calcite.sql.SqlHint;
+import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlLiteral;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelect;
+import org.apache.calcite.sql.SqlSelectKeyword;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -41,6 +47,17 @@ public class TrainDBSqlSelect extends SqlSelect {
     super(pos, keywordList, selectList, from, where, groupBy, having, windowDecls, orderBy, offset,
           fetch, hints);
     this.traindbKeywordList = traindbKeywordList;
+    if (isKeywordPresent(TrainDBSqlSelectKeyword.APPROXIMATE)) {
+      List<SqlNode> hintList;
+      if (hints == null) {
+        hintList = new ArrayList<SqlNode>();
+      } else {
+        hintList = getHints().getList();
+      }
+      hintList.add(new SqlHint(pos, new SqlIdentifier("APPROXIMATE_AGGR", pos),
+          SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
+      setHints(new SqlNodeList(hintList, pos));
+    }
   }
 
   @Override
@@ -50,6 +67,21 @@ public class TrainDBSqlSelect extends SqlSelect {
 
   public SqlNodeList getKeywordList() {
     return traindbKeywordList;
+  }
+
+  public boolean isKeywordPresent(TrainDBSqlSelectKeyword targetKeyWord) {
+    return getModifierNode(targetKeyWord) != null;
+  }
+
+  public final @Nullable SqlNode getModifierNode(TrainDBSqlSelectKeyword modifier) {
+    for (SqlNode keyword : traindbKeywordList) {
+      TrainDBSqlSelectKeyword keyword2 =
+          ((SqlLiteral) keyword).symbolValue(TrainDBSqlSelectKeyword.class);
+      if (keyword2 == modifier) {
+        return keyword;
+      }
+    }
+    return null;
   }
 
 }

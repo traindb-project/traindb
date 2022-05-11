@@ -135,8 +135,10 @@ import traindb.engine.TrainDBQueryEngine;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
+import traindb.sql.calcite.TrainDBHintStrategyTable;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 import static java.util.Objects.requireNonNull;
@@ -203,7 +205,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
 
     final SqlToRelConverter.Config config =
-        SqlToRelConverter.config().withTrimUnusedFields(true);
+        SqlToRelConverter.config().withTrimUnusedFields(true)
+            .withHintStrategyTable(TrainDBHintStrategyTable.HINT_STRATEGY_TABLE);
 
     final TrainDBPreparingStmt preparingStmt =
         new TrainDBPreparingStmt(this, context, catalogReader, typeFactory,
@@ -1055,12 +1058,21 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
 
     @Override
-    public Prepare.PreparedResult prepareSql(SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass, SqlValidator validator, boolean needsValidation) {
-      this.init(runtimeContextClass);
-      SqlToRelConverter.Config config = SqlToRelConverter.config().withTrimUnusedFields(true).withExpand((Boolean)Nullness.castNonNull(THREAD_EXPAND.get())).withInSubQueryThreshold((Integer)Nullness.castNonNull(THREAD_INSUBQUERY_THRESHOLD.get())).withExplain(sqlQuery.getKind() == SqlKind.EXPLAIN);
+    public Prepare.PreparedResult prepareSql(
+        SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass,
+        SqlValidator validator, boolean needsValidation) {
+      init(runtimeContextClass);
+      SqlToRelConverter.Config config =
+          SqlToRelConverter.config()
+              .withExpand(castNonNull(THREAD_EXPAND.get()))
+              .withInSubQueryThreshold(castNonNull(THREAD_INSUBQUERY_THRESHOLD.get()))
+              .withHintStrategyTable(TrainDBHintStrategyTable.HINT_STRATEGY_TABLE)
+              .withExplain(sqlQuery.getKind() == SqlKind.EXPLAIN);
       Holder<SqlToRelConverter.Config> configHolder = Holder.of(config);
       Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.run(configHolder);
-      SqlToRelConverter sqlToRelConverter = this.getSqlToRelConverter(validator, this.catalogReader, (SqlToRelConverter.Config)configHolder.get());
+      SqlToRelConverter sqlToRelConverter =
+          getSqlToRelConverter(validator, this.catalogReader, configHolder.get());
+
       SqlExplain sqlExplain = null;
       if (sqlQuery.getKind() == SqlKind.EXPLAIN) {
         sqlExplain = (SqlExplain)sqlQuery;
@@ -1076,50 +1088,60 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
       RelDataType resultType = validator.getValidatedNodeType(sqlQuery);
       this.fieldOrigins = validator.getFieldOrigins(sqlQuery);
-
       assert this.fieldOrigins.size() == resultType.getFieldCount();
 
       this.parameterRowType = validator.getParameterRowType(sqlQuery);
+
+      // Display logical plans before view expansion, plugging in physical
+      // storage and decorrelation
       if (sqlExplain != null) {
         SqlExplain.Depth explainDepth = sqlExplain.getDepth();
         SqlExplainFormat format = sqlExplain.getFormat();
         SqlExplainLevel detailLevel = sqlExplain.getDetailLevel();
         switch(explainDepth) {
           case TYPE:
-            return this.createPreparedExplanation(resultType, this.parameterRowType, (RelRoot)null, format, detailLevel);
+            return createPreparedExplanation(resultType, this.parameterRowType, null,
+                format, detailLevel);
           case LOGICAL:
-            return this.createPreparedExplanation((RelDataType)null, this.parameterRowType, root, format, detailLevel);
+            return createPreparedExplanation(null, this.parameterRowType, root, format,
+                detailLevel);
+          default:
         }
       }
       LOG.debug(RelOptUtil.dumpPlan("Logical plan: ", root.rel, SqlExplainFormat.TEXT,
           SqlExplainLevel.ALL_ATTRIBUTES));
 
+      // Structured type flattening, view expansion, and plugging in physical storage.
       root = root.withRel(this.flattenTypes(root.rel, true));
+
       if (this.context.config().forceDecorrelate()) {
+        // Sub-query decorrelation.
         root = root.withRel(this.decorrelate(sqlToRelConverter, sqlQuery, root.rel));
       }
 
-      root = this.trimUnusedFields(root);
-      Hook.TRIMMED.run(root.rel);
       if (sqlExplain != null) {
         switch(sqlExplain.getDepth()) {
           case PHYSICAL:
           default:
             root = this.optimize(root, this.getMaterializations(), this.getLattices());
-            return this.createPreparedExplanation((RelDataType)null, this.parameterRowType, root, sqlExplain.getFormat(), sqlExplain.getDetailLevel());
+            return this.createPreparedExplanation(null, this.parameterRowType, root,
+                sqlExplain.getFormat(), sqlExplain.getDetailLevel());
         }
-      } else {
-        root = this.optimize(root, this.getMaterializations(), this.getLattices());
-        if (this.timingTracer != null) {
-          this.timingTracer.traceTime("end optimization");
-        }
-
-        if (!root.kind.belongsTo(SqlKind.DML)) {
-          root = root.withKind(sqlNodeOriginal.getKind());
-        }
-
-        return this.implement(root);
       }
+
+      root = this.optimize(root, this.getMaterializations(), this.getLattices());
+
+      if (this.timingTracer != null) {
+        this.timingTracer.traceTime("end optimization");
+      }
+
+      // For transformation from DML -> DML, use result of rewrite
+      // (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT),
+      // use original kind.
+      if (!root.kind.belongsTo(SqlKind.DML)) {
+        root = root.withKind(sqlNodeOriginal.getKind());
+      }
+      return this.implement(root);
     }
 
     @Override protected SqlToRelConverter getSqlToRelConverter(
