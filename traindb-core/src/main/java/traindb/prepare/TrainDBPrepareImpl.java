@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.jdbc.prepare;
+package traindb.prepare;
 
 import static java.util.Objects.requireNonNull;
 import static org.apache.calcite.linq4j.Nullness.castNonNull;

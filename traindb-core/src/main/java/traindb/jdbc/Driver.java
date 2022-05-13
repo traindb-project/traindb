@@ -40,7 +40,7 @@ import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.function.Function0;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import traindb.jdbc.prepare.TrainDBPrepareImpl;
+import traindb.prepare.TrainDBPrepareImpl;
 import traindb.schema.SchemaManager;
 
 public class Driver extends UnregisteredDriver {
