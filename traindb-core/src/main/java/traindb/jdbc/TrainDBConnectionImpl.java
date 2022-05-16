@@ -63,7 +63,6 @@ import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function0;
 import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.RelOptUtil;
@@ -74,7 +73,6 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.SchemaVersion;
 import org.apache.calcite.schema.Schemas;
-import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.schema.impl.LongSchemaVersion;
 import org.apache.calcite.server.CalciteServer;
 import org.apache.calcite.server.CalciteServerStatement;
@@ -85,7 +83,6 @@ import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql.validate.SqlValidatorWithHints;
 import org.apache.calcite.tools.RelRunner;
-import org.apache.calcite.util.BuiltInMethod;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
@@ -471,20 +468,6 @@ public abstract class TrainDBConnectionImpl
         throw new NoSuchStatementException(h);
       }
       return statement;
-    }
-  }
-
-  /** Schema that has no parents. */
-  static class RootSchema extends AbstractSchema {
-    RootSchema() {
-      super();
-    }
-
-    @Override public Expression getExpression(@Nullable SchemaPlus parentSchema,
-        String name) {
-      return Expressions.call(
-          DataContext.ROOT,
-          BuiltInMethod.DATA_CONTEXT_GET_ROOT_SCHEMA.method);
     }
   }
 
