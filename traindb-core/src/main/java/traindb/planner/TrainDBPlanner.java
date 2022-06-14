@@ -22,6 +22,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.planner.rules.TrainDBRules;
 
 public class TrainDBPlanner {
 
@@ -39,6 +40,9 @@ public class TrainDBPlanner {
   public static VolcanoPlanner createPlanner(@Nullable RelOptCostFactory costFactory,
                                              @Nullable Context externalContext) {
     VolcanoPlanner planner = new VolcanoPlanner(costFactory, externalContext);
+
+    // TrainDB rules
+    planner.addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
 
     RelOptUtil.registerDefaultRules(planner, true, Hook.ENABLE_BINDABLE.get(false));
     planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
