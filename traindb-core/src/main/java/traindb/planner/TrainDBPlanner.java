@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.engine;
+package traindb.planner;
 
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;

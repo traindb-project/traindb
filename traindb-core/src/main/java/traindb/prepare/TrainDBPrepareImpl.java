@@ -131,7 +131,7 @@ import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
-import traindb.engine.TrainDBPlanner;
+import traindb.planner.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
