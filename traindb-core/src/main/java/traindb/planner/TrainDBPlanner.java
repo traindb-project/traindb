@@ -22,35 +22,34 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.catalog.CatalogContext;
 import traindb.planner.rules.TrainDBRules;
 
-public class TrainDBPlanner {
+public class TrainDBPlanner extends VolcanoPlanner {
 
-  private TrainDBPlanner() {
+  private CatalogContext catalogContext;
+
+  public TrainDBPlanner(CatalogContext catalogContext) {
+    this(catalogContext, null, null);
   }
 
-  public static VolcanoPlanner createPlanner() {
-    return createPlanner(null, null);
+  public TrainDBPlanner(CatalogContext catalogContext,
+                        @Nullable RelOptCostFactory costFactory,
+                        @Nullable Context externalContext) {
+    super(costFactory, externalContext);
+    this.catalogContext = catalogContext;
+    initPlanner();
   }
 
-  public static VolcanoPlanner createPlanner(Context externalContext) {
-    return createPlanner(null, externalContext);
-  }
-
-  public static VolcanoPlanner createPlanner(@Nullable RelOptCostFactory costFactory,
-                                             @Nullable Context externalContext) {
-    VolcanoPlanner planner = new VolcanoPlanner(costFactory, externalContext);
-
+  public void initPlanner() {
     // TrainDB rules
-    planner.addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
+    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
 
-    RelOptUtil.registerDefaultRules(planner, true, Hook.ENABLE_BINDABLE.get(false));
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-    planner.setTopDownOpt(false);
+    RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
+    addRelTraitDef(ConventionTraitDef.INSTANCE);
+    addRelTraitDef(RelCollationTraitDef.INSTANCE);
+    setTopDownOpt(false);
 
-    Hook.PLANNER.run(planner); // allow test to add or remove rules
-
-    return planner;
+    Hook.PLANNER.run(this); // allow test to add or remove rules
   }
 }
