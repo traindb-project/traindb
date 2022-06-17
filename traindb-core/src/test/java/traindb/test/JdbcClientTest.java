@@ -184,6 +184,8 @@ public class JdbcClientTest {
     TestUtil.printResultSet(rs);
 
     stmt.execute("DROP SYNOPSIS sales_syn");
+    stmt.execute("DROP MODEL INSTANCE tgan");
+    stmt.execute("DROP MODEL tablegan");
 
     rs.close();
     stmt.close();
