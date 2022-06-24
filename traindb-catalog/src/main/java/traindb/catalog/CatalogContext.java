@@ -51,7 +51,7 @@ public interface CatalogContext {
 
   MSynopsis createSynopsis(String synopsisName, String modeInstanceName) throws CatalogException;
 
-  Collection<MSynopsis> getSynopses() throws CatalogException;
+  Collection<MSynopsis> getAllSynopses() throws CatalogException;
 
   boolean synopsisExists(String name) throws CatalogException;
 
