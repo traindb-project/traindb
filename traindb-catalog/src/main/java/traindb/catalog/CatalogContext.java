@@ -53,6 +53,8 @@ public interface CatalogContext {
 
   Collection<MSynopsis> getAllSynopses() throws CatalogException;
 
+  Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable) throws CatalogException;
+
   boolean synopsisExists(String name) throws CatalogException;
 
   MSynopsis getSynopsis(String name) throws CatalogException;

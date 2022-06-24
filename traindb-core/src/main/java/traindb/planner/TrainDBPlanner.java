@@ -14,6 +14,7 @@
 
 package traindb.planner;
 
+import java.util.Collection;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCostFactory;
@@ -23,6 +24,8 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogContext;
+import traindb.catalog.CatalogException;
+import traindb.catalog.pm.MSynopsis;
 import traindb.planner.rules.TrainDBRules;
 
 public class TrainDBPlanner extends VolcanoPlanner {
@@ -51,5 +54,14 @@ public class TrainDBPlanner extends VolcanoPlanner {
     setTopDownOpt(false);
 
     Hook.PLANNER.run(this); // allow test to add or remove rules
+  }
+
+  public Collection<MSynopsis> getAvailableSynopses(String baseSchema, String baseTable) {
+    try {
+      Collection<MSynopsis> synopses = catalogContext.getAllSynopses(baseSchema, baseTable);
+      // TODO check columns
+      return synopses;
+    } catch (CatalogException e) {}
+    return null;
   }
 }
