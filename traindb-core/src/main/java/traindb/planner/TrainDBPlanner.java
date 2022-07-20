@@ -15,9 +15,11 @@
 package traindb.planner;
 
 import java.util.Collection;
+import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -27,20 +29,24 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.rules.TrainDBRules;
+import traindb.prepare.TrainDBCatalogReader;
 
 public class TrainDBPlanner extends VolcanoPlanner {
 
   private CatalogContext catalogContext;
+  private TrainDBCatalogReader catalogReader;
 
-  public TrainDBPlanner(CatalogContext catalogContext) {
-    this(catalogContext, null, null);
+  public TrainDBPlanner(CatalogContext catalogContext, TrainDBCatalogReader catalogReader) {
+    this(catalogContext, catalogReader, null, null);
   }
 
   public TrainDBPlanner(CatalogContext catalogContext,
+                        TrainDBCatalogReader catalogReader,
                         @Nullable RelOptCostFactory costFactory,
                         @Nullable Context externalContext) {
     super(costFactory, externalContext);
     this.catalogContext = catalogContext;
+    this.catalogReader = catalogReader;
     initPlanner();
   }
 
@@ -63,5 +69,9 @@ public class TrainDBPlanner extends VolcanoPlanner {
       return synopses;
     } catch (CatalogException e) {}
     return null;
+  }
+
+  public RelOptTable getTable(List<String> names) {
+    return catalogReader.getTable(names);
   }
 }

@@ -196,7 +196,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     // Use the Volcano because it can handle the traits.
     CatalogContext catalogContext =
         ((TrainDBConnectionImpl.TrainDBContextImpl) context).getCatalogContext();
-    final VolcanoPlanner planner = new TrainDBPlanner(catalogContext);
+    final VolcanoPlanner planner = new TrainDBPlanner(catalogContext, catalogReader);
 
     final SqlToRelConverter.Config config =
         SqlToRelConverter.config().withTrimUnusedFields(true)
@@ -420,7 +420,15 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
     CatalogContext catalogContext =
         ((TrainDBConnectionImpl.TrainDBContextImpl) prepareContext).getCatalogContext();
-    final VolcanoPlanner planner = new TrainDBPlanner(catalogContext, costFactory, externalContext);
+
+    TrainDBCatalogReader catalogReader =
+        new TrainDBCatalogReader(
+            prepareContext.getRootSchema(),
+            prepareContext.getDefaultSchemaPath(),
+            prepareContext.getTypeFactory(),
+            prepareContext.config());
+    final VolcanoPlanner planner = new TrainDBPlanner(
+        catalogContext, catalogReader, costFactory, externalContext);
     return planner;
   }
 
