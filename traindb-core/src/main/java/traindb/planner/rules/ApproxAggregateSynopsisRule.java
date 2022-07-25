@@ -20,25 +20,33 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptRuleCall;
-import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.RelSubset;
+import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalAggregate;
+import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.TransformationRule;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexNode;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
+import traindb.adapter.jdbc.JdbcConvention;
+import traindb.adapter.jdbc.JdbcTableScan;
+import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.TrainDBPlanner;
 
 @Value.Enclosing
 public class ApproxAggregateSynopsisRule
-    extends RelRule<ApproxAggregateSynopsisRule.Config>
-    implements TransformationRule {
+        extends RelRule<ApproxAggregateSynopsisRule.Config>
+        implements TransformationRule {
 
   protected ApproxAggregateSynopsisRule(Config config) {
     super(config);
@@ -59,7 +67,7 @@ public class ApproxAggregateSynopsisRule
    */
   private List<TableScan> findAllTableScans(RelNode rel) {
     final Multimap<Class<? extends RelNode>, RelNode> nodes =
-        rel.getCluster().getMetadataQuery().getNodeTypes(rel);
+            rel.getCluster().getMetadataQuery().getNodeTypes(rel);
     final List<TableScan> usedTableScans = new ArrayList<>();
     if (nodes == null) {
       return usedTableScans;
@@ -112,31 +120,62 @@ public class ApproxAggregateSynopsisRule
 
     final Aggregate aggregate = call.rel(0);
     List<TableScan> tableScans = findAllTableScans(aggregate);
-    for (TableScan ts : tableScans) {
+    for (TableScan scan : tableScans) {
       // TODO check if the tablescan node includes aggregate columns
       //          and does not include non-aggregate columns
 
-      RelNode tsParent = getParent(aggregate, ts);
-      if (tsParent == null) {
+      RelNode parent = getParent(aggregate, scan);
+      if (parent == null) {
         continue;
       }
-      List<String> tqn = ts.getTable().getQualifiedName();
+      if (!(parent instanceof Filter || parent instanceof Project)) {
+        continue;
+      }
+      List<String> tqn = scan.getTable().getQualifiedName();
       String tableSchema = tqn.get(1);
       String tableName = tqn.get(2);
 
       Collection<MSynopsis> candidateSynopses =
-          planner.getAvailableSynopses(tableSchema, tableName);
-      for (MSynopsis synopses : candidateSynopses) {
+              planner.getAvailableSynopses(tableSchema, tableName);
+      if (candidateSynopses == null || candidateSynopses.isEmpty()) {
+        continue;
+      }
+      MSynopsis bestSynopsis = null;
+      for (MSynopsis synopsis : candidateSynopses) {
         // TODO choose a synopsis
+        bestSynopsis = synopsis;
+      }
 
-        List<String> synopsisNames = new ArrayList<>();
-        synopsisNames.add(tqn.get(0));
-        synopsisNames.add(tqn.get(1));
-        synopsisNames.add(synopses.getName());
+      List<String> synopsisNames = new ArrayList<>();
+      synopsisNames.add(tqn.get(0));
+      synopsisNames.add(tqn.get(1));
+      synopsisNames.add(bestSynopsis.getName());
 
-        RelOptTable synopsisTable = planner.getTable(synopsisNames);
+      RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames);
+      JdbcTableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
+              (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+      RelSubset subset = planner.register(newScan, null);
 
-        // TODO replace base table scan to synopsis table scan
+      if (parent instanceof Project) {
+        List<RexNode> projects = ((Project) parent).getProjects();
+        List<RexNode> newProjects = new ArrayList<>();
+        for (int i = 0; i < projects.size(); i++) {
+          RexInputRef inputRef = (RexInputRef) projects.get(i);
+          int newIndex = bestSynopsis.getModelInstance().getColumnNames()
+                  .indexOf(parent.getRowType().getFieldNames().get(i));
+          newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
+        }
+
+        LogicalProject newProject = new LogicalProject(
+                parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
+                subset, newProjects, parent.getRowType());
+
+        RelNode grandParent = getParent(aggregate, parent);
+        RelSubset newSubset = planner.register(newProject, null);
+        grandParent.replaceInput(0, newSubset);
+      }
+      else {
+        parent.replaceInput(0, subset);
       }
     }
   }
@@ -145,10 +184,10 @@ public class ApproxAggregateSynopsisRule
   @Value.Immutable(singleton = true)
   public interface Config extends RelRule.Config {
     Config DEFAULT = ImmutableApproxAggregateSynopsisRule.Config.of()
-        .withOperandSupplier(b ->
-            b.operand(LogicalAggregate.class)
-                .predicate(ApproxAggregateSynopsisRule::isApproximateAggregate)
-                .anyInputs());
+            .withOperandSupplier(b ->
+                    b.operand(LogicalAggregate.class)
+                            .predicate(ApproxAggregateSynopsisRule::isApproximateAggregate)
+                            .anyInputs());
 
     @Override default ApproxAggregateSynopsisRule toRule() {
       return new ApproxAggregateSynopsisRule(this);
