@@ -1,0 +1,110 @@
+# synopsis.iq
+!use instacart_small
+!set outputformat mysql
+!set maxwidth 300
+
+CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
+(0 rows modified)
+
+!update
+
+SHOW MODELS;
++----------+----------+----------+----------+--------------------+
+| model    | type     | location | class    | uri                |
++----------+----------+----------+----------+--------------------+
+| tablegan | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
++----------+----------+----------+----------+--------------------+
+(1 row)
+
+!ok
+
+TRAIN MODEL tablegan INSTANCE tgan ON instacart_small.order_products(reordered, add_to_cart_order);
+(0 rows modified)
+
+!update
+
+SHOW MODEL INSTANCES;
++----------+----------------+-----------------+----------------+--------------------------------+
+| model    | model_instance | schema          | table          | columns                        |
++----------+----------------+-----------------+----------------+--------------------------------+
+| tablegan | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] |
++----------+----------------+-----------------+----------------+--------------------------------+
+(1 row)
+
+!ok
+
+CREATE SYNOPSIS order_products_syn FROM MODEL INSTANCE tgan LIMIT 1000;
+(0 rows modified)
+
+!update
+
+SHOW SYNOPSES;
++--------------------+----------------+-----------------+----------------+--------------------------------+
+| synopsis           | model_instance | schema          | table          | columns                        |
++--------------------+----------------+-----------------+----------------+--------------------------------+
+| order_products_syn | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] |
++--------------------+----------------+-----------------+----------------+--------------------------------+
+(1 row)
+
+!ok
+
+SELECT count(*) as c2 FROM instacart_small.order_products_syn;
++------+
+| c2   |
++------+
+| 1000 |
++------+
+(1 row)
+
+!ok
+
+SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products;
+
+JdbcToEnumerableConverter
+  JdbcProject(average=[CAST(/(CASE(=($1, 0), null:INTEGER, $0), $1)):INTEGER])
+    JdbcAggregate(group=[{}], agg#0=[$SUM0($1)], agg#1=[COUNT()])
+      JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
+!plan
+
+DROP SYNOPSIS order_products_syn;
+(0 rows modified)
+
+!update
+
+SHOW SYNOPSES;
++
+ |
++
++
+(0 rows)
+
+!ok
+
+DROP MODEL INSTANCE tgan;
+(0 rows modified)
+
+!update
+
+SHOW MODEL INSTANCES;
++
+ |
++
++
+(0 rows)
+
+!ok
+
+DROP MODEL tablegan;
+(0 rows modified)
+
+!update
+
+SHOW MODELS;
++
+ |
++
++
+(0 rows)
+
+!ok
+
