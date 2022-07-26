@@ -14,39 +14,64 @@
 
 package traindb.planner;
 
+import java.util.Collection;
+import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.catalog.CatalogContext;
+import traindb.catalog.CatalogException;
+import traindb.catalog.pm.MSynopsis;
+import traindb.planner.rules.TrainDBRules;
+import traindb.prepare.TrainDBCatalogReader;
 
-public class TrainDBPlanner {
+public class TrainDBPlanner extends VolcanoPlanner {
 
-  private TrainDBPlanner() {
+  private CatalogContext catalogContext;
+  private TrainDBCatalogReader catalogReader;
+
+  public TrainDBPlanner(CatalogContext catalogContext, TrainDBCatalogReader catalogReader) {
+    this(catalogContext, catalogReader, null, null);
   }
 
-  public static VolcanoPlanner createPlanner() {
-    return createPlanner(null, null);
+  public TrainDBPlanner(CatalogContext catalogContext,
+                        TrainDBCatalogReader catalogReader,
+                        @Nullable RelOptCostFactory costFactory,
+                        @Nullable Context externalContext) {
+    super(costFactory, externalContext);
+    this.catalogContext = catalogContext;
+    this.catalogReader = catalogReader;
+    initPlanner();
   }
 
-  public static VolcanoPlanner createPlanner(Context externalContext) {
-    return createPlanner(null, externalContext);
+  public void initPlanner() {
+    // TrainDB rules
+    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
+
+    RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
+    addRelTraitDef(ConventionTraitDef.INSTANCE);
+    addRelTraitDef(RelCollationTraitDef.INSTANCE);
+    setTopDownOpt(false);
+
+    Hook.PLANNER.run(this); // allow test to add or remove rules
   }
 
-  public static VolcanoPlanner createPlanner(@Nullable RelOptCostFactory costFactory,
-                                             @Nullable Context externalContext) {
-    VolcanoPlanner planner = new VolcanoPlanner(costFactory, externalContext);
+  public Collection<MSynopsis> getAvailableSynopses(String baseSchema, String baseTable) {
+    try {
+      Collection<MSynopsis> synopses = catalogContext.getAllSynopses(baseSchema, baseTable);
+      // TODO check columns
+      return synopses;
+    } catch (CatalogException e) {}
+    return null;
+  }
 
-    RelOptUtil.registerDefaultRules(planner, true, Hook.ENABLE_BINDABLE.get(false));
-    planner.addRelTraitDef(ConventionTraitDef.INSTANCE);
-    planner.addRelTraitDef(RelCollationTraitDef.INSTANCE);
-    planner.setTopDownOpt(false);
-
-    Hook.PLANNER.run(planner); // allow test to add or remove rules
-
-    return planner;
+  public RelOptTable getTable(List<String> names) {
+    return catalogReader.getTable(names);
   }
 }

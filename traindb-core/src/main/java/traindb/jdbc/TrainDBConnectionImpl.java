@@ -651,6 +651,10 @@ public abstract class TrainDBConnectionImpl
       final boolean enable = config().spark();
       return CalcitePrepare.Dummy.getSparkHandler(enable);
     }
+
+    public CatalogContext getCatalogContext() {
+      return connection.getCatalogContext();
+    }
   }
 
   /** Implementation of {@link CalciteServerStatement}. */

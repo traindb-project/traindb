@@ -181,10 +181,25 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public Collection<MSynopsis> getSynopses() throws CatalogException {
+  public Collection<MSynopsis> getAllSynopses() throws CatalogException {
     try {
       Query query = pm.newQuery(MSynopsis.class);
       return (List<MSynopsis>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopses", e);
+    }
+  }
+
+  @Override
+  public Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MSynopsis.class);
+      query.setFilter(
+          "modelInstance.schemaName == baseSchema && modelInstance.tableName == baseTable");
+      query.declareParameters("String baseSchema, String baseTable");
+      Collection<MSynopsis> ret = (List<MSynopsis>) query.execute(baseSchema, baseTable);
+      return ret;
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get synopses", e);
     }

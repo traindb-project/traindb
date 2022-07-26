@@ -124,6 +124,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
@@ -191,8 +192,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     final Convention resultConvention =
         enableBindable ? BindableConvention.INSTANCE
             : EnumerableConvention.INSTANCE;
+
     // Use the Volcano because it can handle the traits.
-    final VolcanoPlanner planner = TrainDBPlanner.createPlanner();
+    CatalogContext catalogContext =
+        ((TrainDBConnectionImpl.TrainDBContextImpl) context).getCatalogContext();
+    final VolcanoPlanner planner = new TrainDBPlanner(catalogContext, catalogReader);
 
     final SqlToRelConverter.Config config =
         SqlToRelConverter.config().withTrimUnusedFields(true)
@@ -414,7 +418,17 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (externalContext == null) {
       externalContext = Contexts.of(prepareContext.config());
     }
-    final VolcanoPlanner planner = TrainDBPlanner.createPlanner(costFactory, externalContext);
+    CatalogContext catalogContext =
+        ((TrainDBConnectionImpl.TrainDBContextImpl) prepareContext).getCatalogContext();
+
+    TrainDBCatalogReader catalogReader =
+        new TrainDBCatalogReader(
+            prepareContext.getRootSchema(),
+            prepareContext.getDefaultSchemaPath(),
+            prepareContext.getTypeFactory(),
+            prepareContext.config());
+    final VolcanoPlanner planner = new TrainDBPlanner(
+        catalogContext, catalogReader, costFactory, externalContext);
     return planner;
   }
 

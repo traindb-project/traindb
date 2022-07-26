@@ -364,7 +364,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<String> header = Arrays.asList("synopsis", "model_instance", "schema", "table", "columns");
     List<List<Object>> synopsisInfo = new ArrayList<>();
 
-    for (MSynopsis mSynopsis : catalogContext.getSynopses()) {
+    for (MSynopsis mSynopsis : catalogContext.getAllSynopses()) {
       MModelInstance mModelInstance = mSynopsis.getModelInstance();
       synopsisInfo.add(Arrays.asList(mSynopsis.getName(), mModelInstance.getName(),
           mModelInstance.getSchemaName(), mModelInstance.getTableName(),

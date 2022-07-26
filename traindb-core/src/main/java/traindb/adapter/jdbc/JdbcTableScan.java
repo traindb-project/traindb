@@ -39,7 +39,7 @@ import static java.util.Objects.requireNonNull;
 public class JdbcTableScan extends TableScan implements JdbcRel {
   public final TrainDBJdbcTable jdbcTable;
 
-  protected JdbcTableScan(
+  public JdbcTableScan(
       RelOptCluster cluster,
       List<RelHint> hints,
       RelOptTable table,
