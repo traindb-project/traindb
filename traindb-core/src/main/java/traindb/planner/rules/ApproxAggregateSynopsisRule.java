@@ -131,9 +131,6 @@ public class ApproxAggregateSynopsisRule
     final Aggregate aggregate = call.rel(0);
     List<TableScan> tableScans = findAllTableScans(aggregate);
     for (TableScan scan : tableScans) {
-      // TODO check if the tablescan node includes aggregate columns
-      //          and does not include non-aggregate columns
-
       if (!isApproximateTableScan(scan)) {
         continue;
       }
@@ -142,7 +139,7 @@ public class ApproxAggregateSynopsisRule
       if (parent == null) {
         continue;
       }
-      if (!(parent instanceof Filter || parent instanceof Project)) {
+      if (!(parent instanceof Project)) {
         continue;
       }
       List<String> tqn = scan.getTable().getQualifiedName();
@@ -154,10 +151,30 @@ public class ApproxAggregateSynopsisRule
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
         continue;
       }
+
+      Project project = (Project) parent;
+      List<RexNode> projs = ((Project) parent).getProjects();
+      List<RexNode> newProjs = new ArrayList<>();
+
       MSynopsis bestSynopsis = null;
       for (MSynopsis synopsis : candidateSynopses) {
-        // TODO choose a synopsis
-        bestSynopsis = synopsis;
+        for (int i = 0; i < projs.size(); i++) {
+          RexInputRef inputRef = (RexInputRef) projs.get(i);
+          int newIndex = synopsis.getModelInstance().getColumnNames()
+              .indexOf(parent.getRowType().getFieldNames().get(i));
+          if (newIndex == -1) {
+            newProjs.clear();
+            break;
+          }
+          newProjs.add(new RexInputRef(newIndex, inputRef.getType()));
+        }
+        if (!newProjs.isEmpty()) {
+          // TODO choose a synopsis
+          bestSynopsis = synopsis;
+        }
+      }
+      if (bestSynopsis == null) {
+        continue;
       }
 
       List<String> synopsisNames = new ArrayList<>();
@@ -170,27 +187,13 @@ public class ApproxAggregateSynopsisRule
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
       RelSubset subset = planner.register(newScan, null);
 
-      if (parent instanceof Project) {
-        List<RexNode> projects = ((Project) parent).getProjects();
-        List<RexNode> newProjects = new ArrayList<>();
-        for (int i = 0; i < projects.size(); i++) {
-          RexInputRef inputRef = (RexInputRef) projects.get(i);
-          int newIndex = bestSynopsis.getModelInstance().getColumnNames()
-              .indexOf(parent.getRowType().getFieldNames().get(i));
-          newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
-        }
+      LogicalProject newProject = new LogicalProject(
+          parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
+          subset, newProjs, parent.getRowType());
 
-        LogicalProject newProject = new LogicalProject(
-            parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
-            subset, newProjects, parent.getRowType());
-
-        RelNode grandParent = getParent(aggregate, parent);
-        RelSubset newSubset = planner.register(newProject, null);
-        grandParent.replaceInput(0, newSubset);
-      }
-      else {
-        parent.replaceInput(0, subset);
-      }
+      RelNode grandParent = getParent(aggregate, parent);
+      RelSubset newSubset = planner.register(newProject, null);
+      grandParent.replaceInput(0, newSubset);
     }
   }
 

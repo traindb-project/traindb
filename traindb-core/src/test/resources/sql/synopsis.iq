@@ -66,6 +66,14 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
 !plan
 
+SELECT APPROXIMATE avg(order_id) as average FROM instacart_small.order_products;
+
+JdbcToEnumerableConverter
+  JdbcProject(average=[CAST(/(CASE(=($1, 0), null:INTEGER, $0), $1)):INTEGER])
+    JdbcAggregate(group=[{}], agg#0=[$SUM0($0)], agg#1=[COUNT()])
+      JdbcTableScan(table=[[traindb, instacart_small, order_products]])
+!plan
+
 DROP SYNOPSIS order_products_syn;
 (0 rows modified)
 
