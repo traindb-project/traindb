@@ -67,5 +67,5 @@ epoch 1 step 100 tensor(0.8791, grad_fn=<SubBackward0>) tensor(0.9682, grad_fn=<
 ...
 0: jdbc:traindb:<dbms>://<host>> CREATE SYNOPSIS <synopsis> FROM MODEL INSTANCE tgan LIMIT <# of rows to generate>;
 ...
-0: jdbc:traindb:<dbms>://<host>> SELECT avg(<column>) FROM <synopsis>;
+0: jdbc:traindb:<dbms>://<host>> SELECT APPROXIMATE avg(<column>) FROM <schema>.<table>;
 ```
