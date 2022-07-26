@@ -23,7 +23,7 @@ import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
 import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlSelect;
-import org.apache.calcite.sql.SqlSelectKeyword;
+import org.apache.calcite.sql.parser.Span;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -57,6 +57,11 @@ public class TrainDBSqlSelect extends SqlSelect {
       hintList.add(new SqlHint(pos, new SqlIdentifier("APPROXIMATE_AGGR", pos),
           SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
       setHints(new SqlNodeList(hintList, pos));
+
+      SqlParserPos fromPos = Span.of(from).end(from);
+      hintList.add(new SqlHint(fromPos, new SqlIdentifier("APPROXIMATE_AGGR_TABLE", fromPos),
+          SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
+      setHints(new SqlNodeList(hintList, fromPos));
     }
   }
 

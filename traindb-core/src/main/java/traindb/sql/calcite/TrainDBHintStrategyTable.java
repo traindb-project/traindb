@@ -27,6 +27,7 @@ public class TrainDBHintStrategyTable {
   static HintStrategyTable createHintStrategies(HintStrategyTable.Builder builder) {
     return builder
         .hintStrategy("APPROXIMATE_AGGR", HintPredicates.AGGREGATE)
+        .hintStrategy("APPROXIMATE_AGGR_TABLE", HintPredicates.TABLE_SCAN)
         .build();
   }
 }

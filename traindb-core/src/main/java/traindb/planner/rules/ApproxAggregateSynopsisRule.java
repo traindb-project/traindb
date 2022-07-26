@@ -45,8 +45,8 @@ import traindb.planner.TrainDBPlanner;
 
 @Value.Enclosing
 public class ApproxAggregateSynopsisRule
-        extends RelRule<ApproxAggregateSynopsisRule.Config>
-        implements TransformationRule {
+    extends RelRule<ApproxAggregateSynopsisRule.Config>
+    implements TransformationRule {
 
   protected ApproxAggregateSynopsisRule(Config config) {
     super(config);
@@ -62,12 +62,22 @@ public class ApproxAggregateSynopsisRule
     return false;
   }
 
+  private static boolean isApproximateTableScan(TableScan scan) {
+    List<RelHint> hints = scan.getHints();
+    for (RelHint hint : hints) {
+      if (hint.hintName.equals("APPROXIMATE_AGGR_TABLE")) {
+        return true;
+      }
+    }
+    return false;
+  }
+
   /**
    * Returns a list of all table scans used by this expression or its children.
    */
   private List<TableScan> findAllTableScans(RelNode rel) {
     final Multimap<Class<? extends RelNode>, RelNode> nodes =
-            rel.getCluster().getMetadataQuery().getNodeTypes(rel);
+        rel.getCluster().getMetadataQuery().getNodeTypes(rel);
     final List<TableScan> usedTableScans = new ArrayList<>();
     if (nodes == null) {
       return usedTableScans;
@@ -124,6 +134,10 @@ public class ApproxAggregateSynopsisRule
       // TODO check if the tablescan node includes aggregate columns
       //          and does not include non-aggregate columns
 
+      if (!isApproximateTableScan(scan)) {
+        continue;
+      }
+
       RelNode parent = getParent(aggregate, scan);
       if (parent == null) {
         continue;
@@ -136,7 +150,7 @@ public class ApproxAggregateSynopsisRule
       String tableName = tqn.get(2);
 
       Collection<MSynopsis> candidateSynopses =
-              planner.getAvailableSynopses(tableSchema, tableName);
+          planner.getAvailableSynopses(tableSchema, tableName);
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
         continue;
       }
@@ -153,7 +167,7 @@ public class ApproxAggregateSynopsisRule
 
       RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames);
       JdbcTableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-              (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
       RelSubset subset = planner.register(newScan, null);
 
       if (parent instanceof Project) {
@@ -162,13 +176,13 @@ public class ApproxAggregateSynopsisRule
         for (int i = 0; i < projects.size(); i++) {
           RexInputRef inputRef = (RexInputRef) projects.get(i);
           int newIndex = bestSynopsis.getModelInstance().getColumnNames()
-                  .indexOf(parent.getRowType().getFieldNames().get(i));
+              .indexOf(parent.getRowType().getFieldNames().get(i));
           newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
         }
 
         LogicalProject newProject = new LogicalProject(
-                parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
-                subset, newProjects, parent.getRowType());
+            parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
+            subset, newProjects, parent.getRowType());
 
         RelNode grandParent = getParent(aggregate, parent);
         RelSubset newSubset = planner.register(newProject, null);
@@ -184,10 +198,10 @@ public class ApproxAggregateSynopsisRule
   @Value.Immutable(singleton = true)
   public interface Config extends RelRule.Config {
     Config DEFAULT = ImmutableApproxAggregateSynopsisRule.Config.of()
-            .withOperandSupplier(b ->
-                    b.operand(LogicalAggregate.class)
-                            .predicate(ApproxAggregateSynopsisRule::isApproximateAggregate)
-                            .anyInputs());
+        .withOperandSupplier(b ->
+            b.operand(LogicalAggregate.class)
+                .predicate(ApproxAggregateSynopsisRule::isApproximateAggregate)
+                .anyInputs());
 
     @Override default ApproxAggregateSynopsisRule toRule() {
       return new ApproxAggregateSynopsisRule(this);
