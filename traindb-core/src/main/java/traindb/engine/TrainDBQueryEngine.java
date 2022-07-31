@@ -172,7 +172,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       String modelName, String modelInstanceName, String schemaName, String tableName,
       List<String> columnNames) throws Exception {
     if (catalogContext.modelInstanceExists(modelInstanceName)) {
-      throw new CatalogException("model instance '" + modelInstanceName + "' already exist");
+      throw new CatalogException("model instance '" + modelInstanceName + "' already exists");
     }
     if (schemaName == null) {
       schemaName = conn.getSchema();

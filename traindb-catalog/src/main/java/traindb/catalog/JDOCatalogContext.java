@@ -149,10 +149,8 @@ public final class JDOCatalogContext implements CatalogContext {
   public MModelInstance getModelInstance(String name) throws CatalogException {
     try {
       Query query = pm.newQuery(MModelInstance.class);
-      if (name != null) {
-        query.setFilter("name == name");
-      }
-      query.declareParameters("String name");
+      query.setFilter("name == modelInstanceName");
+      query.declareParameters("String modelInstanceName");
       query.setUnique(true);
 
       return (MModelInstance) query.execute(name);
