@@ -19,6 +19,7 @@ public class TrainDBRules {
   private TrainDBRules() {
   }
 
-  public static final ApproxAggregateSynopsisRule APPROX_AGGREGATE_SYNOPSIS =
-      ApproxAggregateSynopsisRule.Config.DEFAULT.toRule();
+  public static final ApproxAggregateSynopsisProjectScanRule
+      APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN =
+      ApproxAggregateSynopsisProjectScanRule.Config.DEFAULT.toRule();
 }
