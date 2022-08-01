@@ -14,28 +14,22 @@
 
 package traindb.planner.rules;
 
-import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.logical.LogicalAggregate;
 import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.checkerframework.checker.nullness.qual.Nullable;
 import org.immutables.value.Value;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
@@ -52,75 +46,6 @@ public class ApproxAggregateSynopsisRule
     super(config);
   }
 
-  private static boolean isApproximateAggregate(Aggregate aggregate) {
-    List<RelHint> hints = aggregate.getHints();
-    for (RelHint hint : hints) {
-      if (hint.hintName.equals("APPROXIMATE_AGGR")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  private static boolean isApproximateTableScan(TableScan scan) {
-    List<RelHint> hints = scan.getHints();
-    for (RelHint hint : hints) {
-      if (hint.hintName.equals("APPROXIMATE_AGGR_TABLE")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
-  /**
-   * Returns a list of all table scans used by this expression or its children.
-   */
-  private List<TableScan> findAllTableScans(RelNode rel) {
-    final Multimap<Class<? extends RelNode>, RelNode> nodes =
-        rel.getCluster().getMetadataQuery().getNodeTypes(rel);
-    final List<TableScan> usedTableScans = new ArrayList<>();
-    if (nodes == null) {
-      return usedTableScans;
-    }
-    for (Map.Entry<Class<? extends RelNode>, Collection<RelNode>> e : nodes.asMap().entrySet()) {
-      if (TableScan.class.isAssignableFrom(e.getKey())) {
-        for (RelNode node : e.getValue()) {
-          usedTableScans.add((TableScan) node);
-        }
-      }
-    }
-    return usedTableScans;
-  }
-
-  /**
-   * Returns the parent of the target node under input ancestor node.
-   */
-  private RelNode getParent(RelNode ancestor, final RelNode target) {
-    if (ancestor == target) {
-      return null;
-    }
-    final List<RelNode> parentNodes = new ArrayList<>();
-    new RelVisitor() {
-      @Override public void visit(RelNode node, int ordinal, @Nullable RelNode parent) {
-        if (node == target) {
-          parentNodes.add(parent);
-        }
-        for (RelNode input : node.getInputs()) {
-          if (input instanceof RelSubset) {
-            visit(((RelSubset) input).getBestOrOriginal(), ordinal, node);
-          }
-          else {
-            visit(input, ordinal, node);
-          }
-        }
-      }
-    }.go(ancestor);
-    if (parentNodes.size() == 1) {
-      return parentNodes.get(0);
-    }
-    return null;
-  }
-
   //~ Methods ----------------------------------------------------------------
   @Override public void onMatch(RelOptRuleCall call) {
     if (!(call.getPlanner() instanceof TrainDBPlanner)) {
@@ -129,13 +54,13 @@ public class ApproxAggregateSynopsisRule
     final TrainDBPlanner planner = (TrainDBPlanner) call.getPlanner();
 
     final Aggregate aggregate = call.rel(0);
-    List<TableScan> tableScans = findAllTableScans(aggregate);
+    List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
     for (TableScan scan : tableScans) {
-      if (!isApproximateTableScan(scan)) {
+      if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
         continue;
       }
 
-      RelNode parent = getParent(aggregate, scan);
+      RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
       if (parent == null) {
         continue;
       }
@@ -191,7 +116,7 @@ public class ApproxAggregateSynopsisRule
           parent.getCluster(), parent.getTraitSet(), ((Project) parent).getHints(),
           subset, newProjs, parent.getRowType());
 
-      RelNode grandParent = getParent(aggregate, parent);
+      RelNode grandParent = ApproxAggregateUtil.getParent(aggregate, parent);
       RelSubset newSubset = planner.register(newProject, null);
       grandParent.replaceInput(0, newSubset);
     }
@@ -203,7 +128,7 @@ public class ApproxAggregateSynopsisRule
     Config DEFAULT = ImmutableApproxAggregateSynopsisRule.Config.of()
         .withOperandSupplier(b ->
             b.operand(LogicalAggregate.class)
-                .predicate(ApproxAggregateSynopsisRule::isApproximateAggregate)
+                .predicate(ApproxAggregateUtil::isApproximateAggregate)
                 .anyInputs());
 
     @Override default ApproxAggregateSynopsisRule toRule() {
