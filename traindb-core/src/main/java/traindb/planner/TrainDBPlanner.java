@@ -51,6 +51,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
   }
 
   public void initPlanner() {
+    setNoneConventionHasInfiniteCost(false);
+
     // TrainDB rules
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
 
@@ -72,6 +74,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
   }
 
   public RelOptTable getTable(List<String> names) {
-    return catalogReader.getTable(names);
+    return catalogReader.getTable(names, null);
+  }
+
+  public RelOptTable getTable(List<String> names, @Nullable Double rowCount) {
+    return catalogReader.getTable(names, rowCount);
   }
 }

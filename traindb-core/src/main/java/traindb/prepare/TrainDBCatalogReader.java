@@ -104,6 +104,11 @@ public class TrainDBCatalogReader extends CalciteCatalogReader {
   }
 
   @Override public Prepare.@Nullable PreparingTable getTable(final List<String> names) {
+    return getTable(names, null);
+  }
+
+  public Prepare.@Nullable PreparingTable getTable(final List<String> names,
+                                                   @Nullable Double rowCount) {
     // First look in the default schema, if any.
     // If not found, look in the root schema.
     CalciteSchema.TableEntry entry = SqlValidatorUtil.getTableEntry(this, names);
@@ -116,8 +121,7 @@ public class TrainDBCatalogReader extends CalciteCatalogReader {
           return relOptTable;
         }
       }
-      return RelOptTableImpl.create(this,
-          table.getRowType(typeFactory), entry, null);
+      return RelOptTableImpl.create(this, table.getRowType(typeFactory), entry, rowCount);
     }
     return null;
   }
