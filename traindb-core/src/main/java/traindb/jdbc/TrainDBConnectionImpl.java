@@ -172,7 +172,7 @@ public abstract class TrainDBConnectionImpl
     BasicDataSource dataSource = new BasicDataSource();
     dataSource.setUrl(url);
     dataSource.setDriverClassName(getJdbcDriverClassName(url));
-    dataSource.setValidationQuery("SELECT 1 FROM DUAL");
+    dataSource.setValidationQuery("SELECT 1");
     dataSource.setUsername(info.getProperty("user"));
     dataSource.setPassword(info.getProperty("password"));
     return dataSource;
