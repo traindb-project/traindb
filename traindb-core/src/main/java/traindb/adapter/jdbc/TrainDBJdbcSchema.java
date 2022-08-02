@@ -44,6 +44,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
     final ImmutableMap.Builder<String, Table> builder = ImmutableMap.builder();
     Connection connection = null;
     ResultSet resultSet = null;
+
     try {
       TrainDBJdbcDataSource dataSource = (TrainDBJdbcDataSource) getDataSource();
       connection = dataSource.getDataSource().getConnection();
@@ -53,7 +54,18 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         final String catalogName = resultSet.getString(1);
         final String schemaName = resultSet.getString(2);
         final String tableName = resultSet.getString(3);
-        final String tableTypeName = resultSet.getString(4).replace(" ", "_");
+
+        // original code
+        //final String tableTypeName = resultSet.getString(4).replace(" ", "_");
+
+        // -----> for postgres code start
+        String tableTypeName = resultSet.getString(4);
+
+        if ( tableTypeName == null || tableTypeName.length() == 0 )
+          tableTypeName = "TABLE";
+        else
+          tableTypeName = resultSet.getString(4).replace(" ", "_");
+        // -----> for postgres code end
 
         MetaImpl.MetaTable tableDef =
             new MetaImpl.MetaTable(catalogName, schemaName, tableName, tableTypeName);
