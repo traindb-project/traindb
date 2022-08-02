@@ -47,5 +47,7 @@ public interface TrainDBSqlRunner {
   void useSchema(String schemaName) throws Exception;
 
   TrainDBListResultSet describeTable(String schemaName, String tableName) throws Exception;
+
+  void bypassDdlStmt(String stmt) throws Exception;
 }
 

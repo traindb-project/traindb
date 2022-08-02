@@ -24,6 +24,7 @@ traindbStmts
     | showStmt
     | useSchema
     | describeTable
+    | bypassDdlStmt
     ;
 
 createModel
@@ -100,6 +101,10 @@ describeTable
     : ( K_DESCRIBE | K_DESC ) tableName
     ;
 
+bypassDdlStmt
+    : K_BYPASS ddlString
+    ;
+
 schemaName
     : IDENTIFIER
     ;
@@ -124,6 +129,10 @@ limitNumber
     : NUMERIC_LITERAL
     ;
 
+ddlString
+    : ( . | WHITESPACES )+
+    ;
+
 error
     : UNEXPECTED_CHAR
         {
@@ -132,6 +141,7 @@ error
     ;
 
 K_AS : A S ;
+K_BYPASS : B Y P A S S ;
 K_CREATE : C R E A T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;

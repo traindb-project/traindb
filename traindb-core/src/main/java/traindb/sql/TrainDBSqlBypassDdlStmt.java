@@ -14,24 +14,19 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlBypassDdlStmt extends TrainDBSqlCommand {
+  private final String stmt;
 
-  public enum Type {
-    CREATE_MODEL,
-    DROP_MODEL,
-    SHOW_MODELS,
-    SHOW_MODEL_INSTANCES,
-    TRAIN_MODEL_INSTANCE,
-    DROP_MODEL_INSTANCE,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    SHOW_TABLES,
-    USE_SCHEMA,
-    DESCRIBE_TABLE,
-    BYPASS_DDL_STMT,
-    OTHER
+  TrainDBSqlBypassDdlStmt(String stmt) {
+    this.stmt = stmt;
+  }
+
+  String getStatement() {
+    return stmt;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.BYPASS_DDL_STMT;
   }
 }

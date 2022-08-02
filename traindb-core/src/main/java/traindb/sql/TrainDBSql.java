@@ -20,6 +20,7 @@ import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
+import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
@@ -106,6 +107,10 @@ public final class TrainDBSql {
       case DESCRIBE_TABLE:
         TrainDBSqlDescribeTable describeTable = (TrainDBSqlDescribeTable) command;
         return runner.describeTable(describeTable.getSchemaName(), describeTable.getTableName());
+      case BYPASS_DDL_STMT:
+        TrainDBSqlBypassDdlStmt bypassDdlStmt = (TrainDBSqlBypassDdlStmt) command;
+        runner.bypassDdlStmt(bypassDdlStmt.getStatement());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -229,6 +234,15 @@ public final class TrainDBSql {
       }
       String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlDescribeTable(schemaName, tableName));
+    }
+
+    @Override
+    public void exitBypassDdlStmt(TrainDBSqlParser.BypassDdlStmtContext ctx) {
+      int start = ctx.ddlString().getStart().getStartIndex();
+      int stop = ctx.getStop().getStopIndex();
+      String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
+      LOG.debug("BYPASS DDL: stmt=" + stmt);
+      commands.add(new TrainDBSqlBypassDdlStmt(stmt));
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {

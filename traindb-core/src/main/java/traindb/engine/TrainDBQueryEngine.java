@@ -426,4 +426,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     return new TrainDBListResultSet(header, columnInfo);
   }
+
+  @Override
+  public void bypassDdlStmt(String stmt) throws Exception {
+    conn.executeInternal(stmt);
+    conn.refreshRootSchema();
+  }
 }
