@@ -172,7 +172,16 @@ public abstract class TrainDBConnectionImpl
     BasicDataSource dataSource = new BasicDataSource();
     dataSource.setUrl(url);
     dataSource.setDriverClassName(getJdbcDriverClassName(url));
-    dataSource.setValidationQuery("SELECT 1");
+
+    // postgres --> select 1
+    // mysql    --> select 1 or select 1 from dual
+    // kairos   --> select 1 from dual
+    String db_query = url.split(":")[1];
+    if ( db_query.equals("postgresql") )
+        dataSource.setValidationQuery("SELECT 1");
+    else
+        dataSource.setValidationQuery("SELECT 1 FROM DUAL");
+
     dataSource.setUsername(info.getProperty("user"));
     dataSource.setPassword(info.getProperty("password"));
     return dataSource;
