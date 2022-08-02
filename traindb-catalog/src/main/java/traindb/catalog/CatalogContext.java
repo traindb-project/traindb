@@ -37,7 +37,7 @@ public interface CatalogContext {
 
   MModelInstance trainModelInstance(
       String modelName, String modelInstanceName, String schemaName, String tableName,
-      List<String> columnNames) throws CatalogException;
+      List<String> columnNames, Long baseTableRows, Long trainedRows) throws CatalogException;
 
   void dropModelInstance(String name) throws CatalogException;
 
@@ -49,7 +49,8 @@ public interface CatalogContext {
 
   Path getModelInstancePath(String modelName, String modelInstanceName);
 
-  MSynopsis createSynopsis(String synopsisName, String modeInstanceName) throws CatalogException;
+  MSynopsis createSynopsis(String synopsisName, String modeInstanceName, Integer rows, Double ratio)
+      throws CatalogException;
 
   Collection<MSynopsis> getAllSynopses() throws CatalogException;
 

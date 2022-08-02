@@ -28,6 +28,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
@@ -209,8 +210,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Process process = pb.start();
     process.waitFor();
 
+    String trainInfoFilename = outputPath + "/train_info.json";
+    JSONParser jsonParser = new JSONParser();
+    JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(new FileReader(trainInfoFilename));
+    Long base_table_rows = (Long) jsonTrainInfo.get("base_table_rows");
+    Long trained_rows = (Long) jsonTrainInfo.get("trained_rows");
+
     catalogContext.trainModelInstance(
-        modelName, modelInstanceName, schemaName, tableName, columnNames);
+        modelName, modelInstanceName, schemaName, tableName, columnNames,
+        base_table_rows, trained_rows);
   }
 
   @Override
@@ -307,7 +315,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     createSynopsisTable(synopsisName, mModelInstance);
     loadSynopsisIntoTable(synopsisName, mModelInstance, outputPath);
 
-    catalogContext.createSynopsis(synopsisName, modelInstanceName);
+    double ratio = (double) limitNumber / (double) mModelInstance.getBaseTableRows();
+    catalogContext.createSynopsis(synopsisName, modelInstanceName, limitNumber, ratio);
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {

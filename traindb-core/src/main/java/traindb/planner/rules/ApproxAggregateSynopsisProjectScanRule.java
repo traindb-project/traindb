@@ -23,11 +23,9 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.logical.LogicalProject;
 import org.apache.calcite.rel.rules.TransformationRule;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.tools.RelBuilder;
 import org.immutables.value.Value;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcRules;
@@ -40,6 +38,8 @@ import traindb.planner.TrainDBPlanner;
 public class ApproxAggregateSynopsisProjectScanRule
     extends RelRule<ApproxAggregateSynopsisProjectScanRule.Config>
     implements TransformationRule {
+
+  public static final double DEFAULT_SYNOPSIS_SIZE_RATIO = 0.01;
 
   protected ApproxAggregateSynopsisProjectScanRule(Config config) {
     super(config);
@@ -93,9 +93,11 @@ public class ApproxAggregateSynopsisProjectScanRule
     synopsisNames.add(tqn.get(1));
     synopsisNames.add(bestSynopsis.getName());
 
-    double SYNOPSIS_SIZE_RATIO = 0.01; // FIXME: this information should be taken from catalog
-    RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(
-        synopsisNames, scan.getTable().getRowCount() * SYNOPSIS_SIZE_RATIO);
+    double ratio = bestSynopsis.getRatio();
+    if (ratio == 0d) {
+      ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
+    }
+    RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
     TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
         (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
     RelSubset subset = planner.register(newScan, null);

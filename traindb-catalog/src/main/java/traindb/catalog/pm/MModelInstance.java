@@ -21,6 +21,7 @@ import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 import javax.jdo.annotations.Unique;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
@@ -46,15 +47,24 @@ public final class MModelInstance {
   private String tableName;
 
   @Persistent
+  private long baseTableRows;
+
+  @Persistent
+  private long trainedRows;
+
+  @Persistent
   private List<String> columns;
 
-  public MModelInstance(MModel model, String modelInstanceName, String schemaName,
-                        String tableName, List<String> columns) {
+  public MModelInstance(
+      MModel model, String modelInstanceName, String schemaName, String tableName,
+      List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows) {
     this.model = model;
     this.name = modelInstanceName;
     this.schemaName = schemaName;
     this.tableName = tableName;
     this.columns = columns;
+    this.baseTableRows = (baseTableRows == null) ? 0 : baseTableRows;
+    this.trainedRows = (trainedRows == null) ? 0 : trainedRows;
   }
 
   public String getName() {
@@ -75,5 +85,13 @@ public final class MModelInstance {
 
   public List<String> getColumnNames() {
     return columns;
+  }
+
+  public long getBaseTableRows() {
+    return baseTableRows;
+  }
+
+  public long getTrainedRows() {
+    return trainedRows;
   }
 }

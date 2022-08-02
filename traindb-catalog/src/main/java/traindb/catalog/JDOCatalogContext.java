@@ -21,6 +21,7 @@ import java.util.List;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
@@ -100,10 +101,12 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MModelInstance trainModelInstance(
       String modelName, String modelInstanceName, String schemaName, String tableName,
-      List<String> columnNames) throws CatalogException {
+      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows)
+      throws CatalogException {
     try {
       MModelInstance mModelInstance = new MModelInstance(
-        getModel(modelName), modelInstanceName, schemaName, tableName, columnNames);
+          getModel(modelName), modelInstanceName, schemaName, tableName, columnNames,
+          baseTableRows, trainedRows);
       pm.makePersistent(mModelInstance);
       return mModelInstance;
     } catch (RuntimeException e) {
@@ -166,10 +169,11 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MSynopsis createSynopsis(String synopsisName, String modelInstanceName)
-      throws CatalogException {
+  public MSynopsis createSynopsis(String synopsisName, String modelInstanceName, Integer rows,
+                                  @Nullable Double ratio) throws CatalogException {
     try {
-      MSynopsis mSynopsis = new MSynopsis(synopsisName, getModelInstance(modelInstanceName));
+      MSynopsis mSynopsis = new MSynopsis(
+          synopsisName, rows, ratio, getModelInstance(modelInstanceName));
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
