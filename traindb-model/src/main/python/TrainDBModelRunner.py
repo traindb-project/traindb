@@ -13,6 +13,8 @@
 """
 
 import importlib
+import json
+import os
 
 class TrainDBModelRunner():
 
@@ -28,6 +30,11 @@ class TrainDBModelRunner():
     model = getattr(mod, model_class)(*args, **kwargs)
     model.train(real_data, table_metadata)
     model.save(instance_path)
+
+    train_info = {}
+    train_info['base_table_rows'] = len(real_data.index)
+    train_info['trained_rows'] = len(real_data.index)
+    return json.dumps(train_info)
 
   def generate_synopsis(self, model_class, model_path, instance_path, row_count):
     mod = self._load_module(model_class, model_path)
@@ -63,7 +70,9 @@ if args.cmd == 'train':
   data_file = pd.read_csv(args.data_file)
   with open(args.metadata_file) as metadata_file:
     table_metadata = json.load(metadata_file)
-  runner.train_model(args.model_class, args.model_uri, data_file, table_metadata, args.instance_path)
+  json_train_info = runner.train_model(args.model_class, args.model_uri, data_file, table_metadata, args.instance_path)
+  with open(os.path.join(args.instance_path, 'train_info.json'), 'w') as f:
+    f.write(json_train_info)
 elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.model_class, args.model_uri, args.instance_path, args.row_count)
   syn_data.to_csv(args.output_file, index=False)

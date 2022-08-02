@@ -17,8 +17,10 @@ package traindb.engine;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
+import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
+import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.PreparedStatement;
@@ -28,6 +30,7 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
@@ -209,8 +212,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Process process = pb.start();
     process.waitFor();
 
+    String trainInfoFilename = outputPath + "/train_info.json";
+    JSONParser jsonParser = new JSONParser();
+    JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(new FileReader(trainInfoFilename));
+    Long base_table_rows = (Long) jsonTrainInfo.get("base_table_rows");
+    Long trained_rows = (Long) jsonTrainInfo.get("trained_rows");
+
     catalogContext.trainModelInstance(
-        modelName, modelInstanceName, schemaName, tableName, columnNames);
+        modelName, modelInstanceName, schemaName, tableName, columnNames,
+        base_table_rows, trained_rows);
   }
 
   @Override
