@@ -356,13 +356,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showModelInstances() throws Exception {
-    List<String> header = Arrays.asList("model", "model_instance", "schema", "table", "columns");
+    List<String> header = Arrays.asList("model", "model_instance", "schema", "table", "columns",
+        "base_table_rows", "trained_rows");
     List<List<Object>> modelInstanceInfo = new ArrayList<>();
 
     for (MModelInstance mModelInstance : catalogContext.getModelInstances()) {
       modelInstanceInfo.add(Arrays.asList(mModelInstance.getModel().getName(),
           mModelInstance.getName(), mModelInstance.getSchemaName(), mModelInstance.getTableName(),
-          mModelInstance.getColumnNames().toString()));
+          mModelInstance.getColumnNames().toString(), mModelInstance.getBaseTableRows(),
+          mModelInstance.getTrainedRows()));
     }
 
     return new TrainDBListResultSet(header, modelInstanceInfo);
@@ -370,14 +372,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showSynopses() throws Exception {
-    List<String> header = Arrays.asList("synopsis", "model_instance", "schema", "table", "columns");
+    List<String> header = Arrays.asList("synopsis", "model_instance", "schema", "table", "columns",
+        "rows", "ratio");
     List<List<Object>> synopsisInfo = new ArrayList<>();
 
     for (MSynopsis mSynopsis : catalogContext.getAllSynopses()) {
       MModelInstance mModelInstance = mSynopsis.getModelInstance();
       synopsisInfo.add(Arrays.asList(mSynopsis.getName(), mModelInstance.getName(),
           mModelInstance.getSchemaName(), mModelInstance.getTableName(),
-          mModelInstance.getColumnNames()));
+          mModelInstance.getColumnNames(), mSynopsis.getRows(),
+          String.format("%.8f", mSynopsis.getRatio())));
     }
 
     return new TrainDBListResultSet(header, synopsisInfo);
