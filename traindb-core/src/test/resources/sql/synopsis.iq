@@ -74,14 +74,14 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products]])
 !plan
 
-SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products WHERE reordered = 1;
-
-JdbcToEnumerableConverter
-  JdbcProject(average=[CAST(/(CASE(=($1, 0), null:INTEGER, $0), $1)):INTEGER])
-    JdbcAggregate(group=[{}], agg#0=[$SUM0($1)], agg#1=[COUNT()])
-      JdbcFilter(condition=[=($0, 1)])
-        JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
-!plan
+#SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products WHERE reordered = 1;
+#
+#JdbcToEnumerableConverter
+#  JdbcProject(average=[CAST(/(CASE(=($1, 0), null:INTEGER, $0), $1)):INTEGER])
+#    JdbcAggregate(group=[{}], agg#0=[$SUM0($1)], agg#1=[COUNT()])
+#      JdbcFilter(condition=[=($0, 1)])
+#        JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
+#!plan
 
 DROP SYNOPSIS order_products_syn;
 (0 rows modified)

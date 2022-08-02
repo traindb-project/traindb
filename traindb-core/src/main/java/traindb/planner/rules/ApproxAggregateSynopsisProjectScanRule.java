@@ -21,6 +21,8 @@ import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.RelOptTableImpl;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.TransformationRule;
@@ -28,7 +30,6 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.immutables.value.Value;
 import traindb.adapter.jdbc.JdbcConvention;
-import traindb.adapter.jdbc.JdbcRules;
 import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.pm.MSynopsis;
@@ -52,60 +53,73 @@ public class ApproxAggregateSynopsisProjectScanRule
     }
     final TrainDBPlanner planner = (TrainDBPlanner) call.getPlanner();
 
-    final Project project = call.rel(0);
-    final TableScan scan = call.rel(1);
+    final Aggregate aggregate = call.rel(0);
+    List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
+    for (TableScan scan : tableScans) {
+      if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
+        continue;
+      }
 
-    List<String> tqn = scan.getTable().getQualifiedName();
-    String tableSchema = tqn.get(1);
-    String tableName = tqn.get(2);
+      RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
+      if (parent == null || !(parent instanceof Project)) {
+        continue;
+      }
 
-    Collection<MSynopsis> candidateSynopses = planner.getAvailableSynopses(tableSchema, tableName);
-    if (candidateSynopses == null || candidateSynopses.isEmpty()) {
-      return;
-    }
+      List<String> tqn = scan.getTable().getQualifiedName();
+      String tableSchema = tqn.get(1);
+      String tableName = tqn.get(2);
 
-    List<RexNode> projs = project.getProjects();
-    List<RexNode> newProjs = new ArrayList<>();
+      Collection<MSynopsis> candidateSynopses =
+          planner.getAvailableSynopses(tableSchema, tableName);
+      if (candidateSynopses == null || candidateSynopses.isEmpty()) {
+        return;
+      }
 
-    MSynopsis bestSynopsis = null;
-    for (MSynopsis synopsis : candidateSynopses) {
-      for (int i = 0; i < projs.size(); i++) {
-        RexInputRef inputRef = (RexInputRef) projs.get(i);
-        int newIndex = synopsis.getModelInstance().getColumnNames()
-            .indexOf(project.getRowType().getFieldNames().get(i));
-        if (newIndex == -1) {
-          newProjs.clear();
-          break;
+      Project project = (Project) parent;
+      List<RexNode> projs = project.getProjects();
+      List<RexNode> newProjs = new ArrayList<>();
+
+      MSynopsis bestSynopsis = null;
+      for (MSynopsis synopsis : candidateSynopses) {
+        for (int i = 0; i < projs.size(); i++) {
+          RexInputRef inputRef = (RexInputRef) projs.get(i);
+          int newIndex = synopsis.getModelInstance().getColumnNames()
+              .indexOf(project.getRowType().getFieldNames().get(i));
+          if (newIndex == -1) {
+            newProjs.clear();
+            break;
+          }
+          newProjs.add(new RexInputRef(newIndex, inputRef.getType()));
         }
-        newProjs.add(new RexInputRef(newIndex, inputRef.getType()));
+        if (!newProjs.isEmpty()) {
+          // TODO choose a synopsis
+          bestSynopsis = synopsis;
+        }
       }
-      if (!newProjs.isEmpty()) {
-        // TODO choose a synopsis
-        bestSynopsis = synopsis;
+      if (bestSynopsis == null) {
+        return;
       }
+
+      List<String> synopsisNames = new ArrayList<>();
+      synopsisNames.add(tqn.get(0));
+      synopsisNames.add(tqn.get(1));
+      synopsisNames.add(bestSynopsis.getName());
+
+      double ratio = bestSynopsis.getRatio();
+      if (ratio == 0d) {
+        ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
+      }
+      RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
+      TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
+          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+      RelSubset subset = planner.register(newScan, null);
+
+      Project newProject = project.copy(
+          project.getTraitSet(), subset, newProjs, project.getRowType());
+      RelNode grandParent = ApproxAggregateUtil.getParent(aggregate, parent);
+      RelSubset newSubset = planner.register(newProject, null);
+      grandParent.replaceInput(0, newSubset);
     }
-    if (bestSynopsis == null) {
-      return;
-    }
-
-    List<String> synopsisNames = new ArrayList<>();
-    synopsisNames.add(tqn.get(0));
-    synopsisNames.add(tqn.get(1));
-    synopsisNames.add(bestSynopsis.getName());
-
-    double ratio = bestSynopsis.getRatio();
-    if (ratio == 0d) {
-      ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
-    }
-    RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
-    TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-        (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
-    RelSubset subset = planner.register(newScan, null);
-
-    JdbcRules.JdbcProject newProject = new JdbcRules.JdbcProject(
-        project.getCluster(), project.getTraitSet(), subset, newProjs, project.getRowType());
-
-    call.transformTo(newProject);
   }
 
   /** Rule configuration. */
@@ -113,10 +127,9 @@ public class ApproxAggregateSynopsisProjectScanRule
   public interface Config extends RelRule.Config {
     Config DEFAULT = ImmutableApproxAggregateSynopsisProjectScanRule.Config.of()
         .withOperandSupplier(b0 ->
-            b0.operand(Project.class).oneInput(b1 ->
-                b1.operand(TableScan.class)
-                .predicate(ApproxAggregateUtil::isApproximateTableScan)
-                .noInputs()));
+            b0.operand(Aggregate.class)
+                .predicate(ApproxAggregateUtil::isApproximateAggregate)
+                .anyInputs());
 
     @Override default ApproxAggregateSynopsisProjectScanRule toRule() {
       return new ApproxAggregateSynopsisProjectScanRule(this);
