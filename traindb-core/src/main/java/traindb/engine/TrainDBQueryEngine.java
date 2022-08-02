@@ -17,10 +17,8 @@ package traindb.engine;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import com.opencsv.CSVWriter;
-import java.io.BufferedReader;
 import java.io.FileReader;
 import java.io.FileWriter;
-import java.io.InputStreamReader;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.sql.PreparedStatement;
@@ -317,7 +315,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     createSynopsisTable(synopsisName, mModelInstance);
     loadSynopsisIntoTable(synopsisName, mModelInstance, outputPath);
 
-    catalogContext.createSynopsis(synopsisName, modelInstanceName);
+    double ratio = (double) limitNumber / (double) mModelInstance.getBaseTableRows();
+    catalogContext.createSynopsis(synopsisName, modelInstanceName, limitNumber, ratio);
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {
