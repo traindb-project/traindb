@@ -74,6 +74,14 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products]])
 !plan
 
+SELECT APPROXIMATE sum(reordered) FROM instacart_small.order_products;
+
+JdbcToEnumerableConverter
+  JdbcProject(EXPR$0=[CAST(*(1384.617:DECIMAL(7, 3), $0)):INTEGER])
+    JdbcAggregate(group=[{}], EXPR$0=[SUM($0)])
+      JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
+!plan
+
 #SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products WHERE reordered = 1;
 #
 #JdbcToEnumerableConverter

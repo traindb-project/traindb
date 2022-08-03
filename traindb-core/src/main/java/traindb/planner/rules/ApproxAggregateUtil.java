@@ -16,6 +16,7 @@ package traindb.planner.rules;
 
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
@@ -23,11 +24,23 @@ import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelVisitor;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class ApproxAggregateUtil {
+
+  private static final List<String> approxAggregateFuncList = Arrays.asList(
+      "AVG",
+      "SUM",
+      "COUNT"
+  );
+
+  private static final List<String> scalingAggregateFuncList = Arrays.asList(
+      "SUM",
+      "COUNT"
+  );
 
   public static boolean isApproximateAggregate(Aggregate aggregate) {
     List<RelHint> hints = aggregate.getHints();
@@ -47,6 +60,19 @@ public class ApproxAggregateUtil {
       }
     }
     return false;
+  }
+
+  public static boolean hasApproxAggregateFunctionsOnly(Aggregate aggregate) {
+    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+      if (!approxAggregateFuncList.contains(aggCall.getAggregation().getName())) {
+        return false;
+      }
+    }
+    return true;
+  }
+
+  public static boolean isScalingAggregateFunction(String aggFuncName) {
+    return scalingAggregateFuncList.contains(aggFuncName);
   }
 
   /**
@@ -98,3 +124,4 @@ public class ApproxAggregateUtil {
     return null;
   }
 }
+
