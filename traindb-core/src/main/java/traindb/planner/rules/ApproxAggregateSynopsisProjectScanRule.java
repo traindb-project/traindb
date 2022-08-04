@@ -14,20 +14,25 @@
 
 package traindb.planner.rules;
 
+import java.math.BigDecimal;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
-import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.rules.TransformationRule;
+import org.apache.calcite.rel.rules.SubstitutionRule;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.sql.fun.SqlStdOperatorTable;
+import org.apache.calcite.tools.RelBuilder;
 import org.immutables.value.Value;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
@@ -38,12 +43,16 @@ import traindb.planner.TrainDBPlanner;
 @Value.Enclosing
 public class ApproxAggregateSynopsisProjectScanRule
     extends RelRule<ApproxAggregateSynopsisProjectScanRule.Config>
-    implements TransformationRule {
+    implements SubstitutionRule {
 
   public static final double DEFAULT_SYNOPSIS_SIZE_RATIO = 0.01;
 
   protected ApproxAggregateSynopsisProjectScanRule(Config config) {
     super(config);
+  }
+
+  @Override public boolean autoPruneOld() {
+    return true;
   }
 
   //~ Methods ----------------------------------------------------------------
@@ -52,6 +61,7 @@ public class ApproxAggregateSynopsisProjectScanRule
       return;
     }
     final TrainDBPlanner planner = (TrainDBPlanner) call.getPlanner();
+    final RelBuilder relBuilder = call.builder();
 
     final Aggregate aggregate = call.rel(0);
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
@@ -62,6 +72,9 @@ public class ApproxAggregateSynopsisProjectScanRule
 
       RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
       if (parent == null || !(parent instanceof Project)) {
+        continue;
+      }
+      if (ApproxAggregateUtil.getParent(aggregate, parent) != aggregate) {
         continue;
       }
 
@@ -76,22 +89,22 @@ public class ApproxAggregateSynopsisProjectScanRule
       }
 
       Project project = (Project) parent;
-      List<RexNode> projs = project.getProjects();
-      List<RexNode> newProjs = new ArrayList<>();
+      List<RexNode> oldProjects = project.getProjects();
+      List<RexNode> newProjects = new ArrayList<>();
 
       MSynopsis bestSynopsis = null;
       for (MSynopsis synopsis : candidateSynopses) {
-        for (int i = 0; i < projs.size(); i++) {
-          RexInputRef inputRef = (RexInputRef) projs.get(i);
+        for (int i = 0; i < oldProjects.size(); i++) {
+          RexInputRef inputRef = (RexInputRef) oldProjects.get(i);
           int newIndex = synopsis.getModelInstance().getColumnNames()
               .indexOf(project.getRowType().getFieldNames().get(i));
           if (newIndex == -1) {
-            newProjs.clear();
+            newProjects.clear();
             break;
           }
-          newProjs.add(new RexInputRef(newIndex, inputRef.getType()));
+          newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
         }
-        if (!newProjs.isEmpty()) {
+        if (!newProjects.isEmpty()) {
           // TODO choose a synopsis
           bestSynopsis = synopsis;
         }
@@ -112,13 +125,38 @@ public class ApproxAggregateSynopsisProjectScanRule
       RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
-      RelSubset subset = planner.register(newScan, null);
 
-      Project newProject = project.copy(
-          project.getTraitSet(), subset, newProjs, project.getRowType());
-      RelNode grandParent = ApproxAggregateUtil.getParent(aggregate, parent);
-      RelSubset newSubset = planner.register(newProject, null);
-      grandParent.replaceInput(0, newSubset);
+      List<RexNode> aggProjects = new ArrayList<>();
+      final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
+      for (int key : aggregate.getGroupSet()) {
+        final RexInputRef ref = rexBuilder.makeInputRef(aggregate, key);
+        aggProjects.add(ref);
+      }
+
+      double scaleFactor = 1.0 / ratio;
+      List<AggregateCall> aggCalls = aggregate.getAggCallList();
+      RelDataType rowType = aggregate.getRowType();
+      for (AggregateCall aggCall : aggCalls) {
+        RexNode expr;
+        String aggFuncName = aggCall.getAggregation().getName();
+        if (ApproxAggregateUtil.isScalingAggregateFunction(aggFuncName)) {
+          expr = rexBuilder.makeCast(aggCall.getType(),
+              rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
+                  rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
+                  rexBuilder.makeInputRef(aggregate, aggProjects.size())));
+        }
+        else {
+          expr = rexBuilder.makeInputRef(aggregate, aggProjects.size());
+        }
+        aggProjects.add(expr);
+      }
+
+      RelNode node = relBuilder.push(newScan)
+          .project(newProjects, project.getRowType().getFieldNames())
+          .aggregate(relBuilder.groupKey(aggregate.getGroupSet()), aggCalls)
+          .project(aggProjects, rowType.getFieldNames())
+          .build();
+      call.transformTo(node);
     }
   }
 
@@ -129,6 +167,7 @@ public class ApproxAggregateSynopsisProjectScanRule
         .withOperandSupplier(b0 ->
             b0.operand(Aggregate.class)
                 .predicate(ApproxAggregateUtil::isApproximateAggregate)
+                .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
                 .anyInputs());
 
     @Override default ApproxAggregateSynopsisProjectScanRule toRule() {
