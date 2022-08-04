@@ -33,13 +33,15 @@ public class ApproxAggregateUtil {
 
   private static final List<String> approxAggregateFuncList = Arrays.asList(
       "AVG",
+      "COUNT",
+      "STDDEV",
       "SUM",
-      "COUNT"
+      "VARIANCE"
   );
 
   private static final List<String> scalingAggregateFuncList = Arrays.asList(
-      "SUM",
-      "COUNT"
+      "COUNT",
+      "SUM"
   );
 
   public static boolean isApproximateAggregate(Aggregate aggregate) {
