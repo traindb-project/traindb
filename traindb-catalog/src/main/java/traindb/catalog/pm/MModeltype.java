@@ -51,8 +51,8 @@ public final class MModeltype {
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
   private String uri;
 
-  @Persistent(mappedBy = "model", dependentElement = "true")
-  private Collection<MModelInstance> modelInstances;
+  @Persistent(mappedBy = "modeltype", dependentElement = "true")
+  private Collection<MModel> model;
 
   public MModeltype(String name, String type, String location, String className, String uri) {
     this.name = name;
@@ -82,7 +82,7 @@ public final class MModeltype {
     return uri;
   }
 
-  public Collection<MModelInstance> getModelInstances() {
-    return new ArrayList<MModelInstance>(modelInstances);
+  public Collection<MModel> getModel() {
+    return new ArrayList<MModel>(model);
   }
 }

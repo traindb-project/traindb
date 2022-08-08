@@ -17,8 +17,8 @@ grammar TrainDBSql;
 traindbStmts
     : createModeltype
     | dropModeltype
-    | trainModelInstance
-    | dropModelInstance
+    | trainModel
+    | dropModel
     | createSynopsis
     | dropSynopsis
     | showStmt
@@ -35,12 +35,12 @@ dropModeltype
     : K_DROP K_MODELTYPE modeltypeName
     ;
 
-trainModelInstance
-    : K_TRAIN K_MODEL modeltypeName K_INSTANCE modelInstanceName K_ON tableName '(' columnNameList ')'
+trainModel
+    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')'
     ;
 
-dropModelInstance
-    : K_DROP K_MODEL K_INSTANCE modelInstanceName
+dropModel
+    : K_DROP K_MODEL modelName
     ;
 
 modeltypeName
@@ -75,18 +75,18 @@ showStmt
 
 showTargets
     : K_MODELTYPES  # ShowModeltypes
-    | K_MODEL K_INSTANCES  # ShowModelInstances
+    | K_MODELS  # ShowModels
     | K_SYNOPSES  # ShowSynopses
     | K_SCHEMAS  # ShowSchemas
     | K_TABLES  # ShowTables
     ;
 
-modelInstanceName
+modelName
     : IDENTIFIER
     ;
 
 createSynopsis
-    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL K_INSTANCE modelInstanceName K_LIMIT limitNumber
+    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitNumber
     ;
 
 dropSynopsis
@@ -151,8 +151,6 @@ K_FOR : F O R ;
 K_FROM : F R O M ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
-K_INSTANCE : I N S T A N C E ;
-K_INSTANCES : I N S T A N C E S ;
 K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
@@ -167,7 +165,6 @@ K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TABLES : T A B L E S ;
 K_TRAIN : T R A I N ;
-K_TYPE : T Y P E ;
 K_USE : U S E ;
 
 IDENTIFIER

@@ -177,14 +177,14 @@ public class JdbcClientTest {
     TestUtil.executeIgnore(stmt, "DROP MODELTYPE tablegan");
 
     stmt.execute("CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' in 'models/TableGAN.py'");
-    stmt.execute("TRAIN MODEL tablegan INSTANCE tgan ON myschema.sales(product, price, productid)");
-    stmt.execute("CREATE SYNOPSIS sales_syn FROM MODEL INSTANCE tgan LIMIT 1000");
+    stmt.execute("TRAIN MODEL tgan MODELTYPE tablegan ON myschema.sales(product, price, productid)");
+    stmt.execute("CREATE SYNOPSIS sales_syn FROM MODEL tgan LIMIT 1000");
 
     ResultSet rs = stmt.executeQuery("SELECT count(*) FROM myschema.sales_syn");
     TestUtil.printResultSet(rs);
 
     stmt.execute("DROP SYNOPSIS sales_syn");
-    stmt.execute("DROP MODEL INSTANCE tgan");
+    stmt.execute("DROP MODEL tgan");
     stmt.execute("DROP MODELTYPE tablegan");
 
     rs.close();

@@ -30,14 +30,14 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
-  static class ModelInstances extends TrainDBSqlShowCommand {
-    ModelInstances() {
+  static class Models extends TrainDBSqlShowCommand {
+    Models() {
       super();
     }
 
     @Override
     public Type getType() {
-      return Type.SHOW_MODEL_INSTANCES;
+      return Type.SHOW_MODELS;
     }
   }
 

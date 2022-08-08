@@ -25,7 +25,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MModelInstance {
+public final class MModel {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
@@ -36,7 +36,7 @@ public final class MModelInstance {
   private String name;
 
   @Persistent(dependent = "false")
-  private MModeltype model;
+  private MModeltype modeltype;
 
   @Persistent
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
@@ -55,11 +55,11 @@ public final class MModelInstance {
   @Persistent
   private List<String> columns;
 
-  public MModelInstance(
-      MModeltype model, String modelInstanceName, String schemaName, String tableName,
+  public MModel(
+      MModeltype modeltype, String modelName, String schemaName, String tableName,
       List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows) {
-    this.model = model;
-    this.name = modelInstanceName;
+    this.modeltype = modeltype;
+    this.name = modelName;
     this.schemaName = schemaName;
     this.tableName = tableName;
     this.columns = columns;
@@ -71,8 +71,8 @@ public final class MModelInstance {
     return name;
   }
 
-  public MModeltype getModel() {
-    return model;
+  public MModeltype getModeltype() {
+    return modeltype;
   }
 
   public String getSchemaName() {

@@ -40,13 +40,13 @@ public final class MSynopsis {
   private double ratio;
 
   @Persistent(dependent = "false")
-  private MModelInstance modelInstance;
+  private MModel model;
 
-  public MSynopsis(String name, Integer rows, Double ratio, MModelInstance modelInstance) {
+  public MSynopsis(String name, Integer rows, Double ratio, MModel model) {
     this.name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
-    this.modelInstance = modelInstance;
+    this.model = model;
   }
 
   public String getName() {
@@ -61,7 +61,7 @@ public final class MSynopsis {
     return ratio;
   }
 
-  public MModelInstance getModelInstance() {
-    return modelInstance;
+  public MModel getModel() {
+    return model;
   }
 }

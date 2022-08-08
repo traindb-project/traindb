@@ -18,32 +18,32 @@ SHOW MODELTYPES;
 
 !ok
 
-TRAIN MODEL tablegan INSTANCE tgan ON instacart_small.order_products(reordered, add_to_cart_order);
+TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
 (0 rows modified)
 
 !update
 
-SHOW MODEL INSTANCES;
-+-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| modeltype | model_instance | schema          | table          | columns                        | base_table_rows | trained_rows |
-+-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| tablegan  | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      |
-+-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
+SHOW MODELS;
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+
+| model | modeltype | schema          | table          | columns                        | base_table_rows | trained_rows |
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+
+| tgan  | tablegan  | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      |
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+
 (1 row)
 
 !ok
 
-CREATE SYNOPSIS order_products_syn FROM MODEL INSTANCE tgan LIMIT 1000;
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
 (0 rows modified)
 
 !update
 
 SHOW SYNOPSES;
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
-| synopsis           | model_instance | schema          | table          | columns                        | rows | ratio      |
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
-| order_products_syn | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
+| synopsis           | model | schema          | table          | columns                        | rows | ratio      |
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
+| order_products_syn | tgan  | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
 (1 row)
 
 !ok
@@ -105,12 +105,12 @@ SHOW SYNOPSES;
 
 !ok
 
-DROP MODEL INSTANCE tgan;
+DROP MODEL tgan;
 (0 rows modified)
 
 !update
 
-SHOW MODEL INSTANCES;
+SHOW MODELS;
 +
  |
 +

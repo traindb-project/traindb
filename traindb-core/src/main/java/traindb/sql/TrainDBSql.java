@@ -62,30 +62,30 @@ public final class TrainDBSql {
             createModeltype.getUri());
         break;
       case DROP_MODELTYPE:
-        TrainDBSqlDropModeltype dropModel = (TrainDBSqlDropModeltype) command;
-        runner.dropModeltype(dropModel.getName());
+        TrainDBSqlDropModeltype dropModeltype = (TrainDBSqlDropModeltype) command;
+        runner.dropModeltype(dropModeltype.getName());
         break;
       case SHOW_MODELTYPES:
-        TrainDBSqlShowCommand showModels = (TrainDBSqlShowCommand) command;
+        TrainDBSqlShowCommand showModeltypes = (TrainDBSqlShowCommand) command;
         return runner.showModeltypes();
-      case SHOW_MODEL_INSTANCES:
-        TrainDBSqlShowCommand showModelInstances = (TrainDBSqlShowCommand) command;
-        return runner.showModelInstances();
-      case TRAIN_MODEL_INSTANCE:
-        TrainDBSqlTrainModelInstance trainModelInstance = (TrainDBSqlTrainModelInstance) command;
-        runner.trainModelInstance(
-            trainModelInstance.getModelName(), trainModelInstance.getModelInstanceName(),
-            trainModelInstance.getSchemaName(), trainModelInstance.getTableName(),
-            trainModelInstance.getColumnNames());
+      case SHOW_MODELS:
+        TrainDBSqlShowCommand showModels = (TrainDBSqlShowCommand) command;
+        return runner.showModels();
+      case TRAIN_MODEL:
+        TrainDBSqlTrainModel trainModel = (TrainDBSqlTrainModel) command;
+        runner.trainModel(
+            trainModel.getModeltypeName(), trainModel.getModelName(),
+            trainModel.getSchemaName(), trainModel.getTableName(),
+            trainModel.getColumnNames());
         break;
-      case DROP_MODEL_INSTANCE:
-        TrainDBSqlDropModelInstance dropModelInstance = (TrainDBSqlDropModelInstance) command;
-        runner.dropModelInstance(dropModelInstance.getModelInstanceName());
+      case DROP_MODEL:
+        TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
+        runner.dropModel(dropModel.getModelName());
         break;
       case CREATE_SYNOPSIS:
         TrainDBSqlCreateSynopsis createSynopsis = (TrainDBSqlCreateSynopsis) command;
         runner.createSynopsis(createSynopsis.getSynopsisName(),
-            createSynopsis.getModelInstanceName(), createSynopsis.getLimitNumber());
+            createSynopsis.getModelName(), createSynopsis.getLimitNumber());
         break;
       case DROP_SYNOPSIS:
         TrainDBSqlDropSynopsis dropSynopsis = (TrainDBSqlDropSynopsis) command;
@@ -160,14 +160,14 @@ public final class TrainDBSql {
     }
 
     @Override
-    public void exitShowModelInstances(TrainDBSqlParser.ShowModelInstancesContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.ModelInstances());
+    public void exitShowModels(TrainDBSqlParser.ShowModelsContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Models());
     }
 
     @Override
-    public void exitTrainModelInstance(TrainDBSqlParser.TrainModelInstanceContext ctx) {
+    public void exitTrainModel(TrainDBSqlParser.TrainModelContext ctx) {
+      String modelName = ctx.modelName().getText();
       String modeltypeName = ctx.modeltypeName().getText();
-      String modelInstanceName = ctx.modelInstanceName().getText();
       String schemaName = ctx.tableName().schemaName().getText();
       String tableName = ctx.tableName().tableIdentifier.getText();
 
@@ -176,25 +176,26 @@ public final class TrainDBSql {
         columnNames.add(columnName.getText());
       }
 
-      commands.add(new TrainDBSqlTrainModelInstance(
-          modeltypeName, modelInstanceName, schemaName, tableName, columnNames));
+      LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
+      commands.add(new TrainDBSqlTrainModel(
+          modeltypeName, modelName, schemaName, tableName, columnNames));
     }
 
     @Override
-    public void exitDropModelInstance(TrainDBSqlParser.DropModelInstanceContext ctx) {
-      String modelInstanceName = ctx.modelInstanceName().getText();
-      LOG.debug("DROP MODEL INSTANCE: name=" + modelInstanceName);
-      commands.add(new TrainDBSqlDropModelInstance(modelInstanceName));
+    public void exitDropModel(TrainDBSqlParser.DropModelContext ctx) {
+      String modelName = ctx.modelName().getText();
+      LOG.debug("DROP MODEL: name=" + modelName);
+      commands.add(new TrainDBSqlDropModel(modelName));
     }
 
     @Override
     public void exitCreateSynopsis(TrainDBSqlParser.CreateSynopsisContext ctx) {
       String synopsisName = ctx.synopsisName().getText();
-      String modelInstanceName = ctx.modelInstanceName().getText();
+      String modelName = ctx.modelName().getText();
       int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
-      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " instance=" + modelInstanceName
+      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
           + " limit=" + limitNumber);
-      commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelInstanceName, limitNumber));
+      commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, limitNumber));
     }
 
     @Override

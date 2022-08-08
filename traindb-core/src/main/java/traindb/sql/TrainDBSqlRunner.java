@@ -24,19 +24,18 @@ public interface TrainDBSqlRunner {
 
   void dropModeltype(String name) throws Exception;
 
-  void trainModelInstance(String modeltypeName, String modelInstanceName, String schemaName,
-                          String tableName, List<String> columnNames) throws Exception;
+  void trainModel(String modeltypeName, String modelName, String schemaName,
+                  String tableName, List<String> columnNames) throws Exception;
 
-  void dropModelInstance(String modelInstanceName) throws Exception;
+  void dropModel(String modelName) throws Exception;
 
-  void createSynopsis(String synopsisName, String modelInstanceName, int limitNumber)
-      throws Exception;
+  void createSynopsis(String synopsisName, String modelName, int limitNumber) throws Exception;
 
   void dropSynopsis(String synopsisName) throws Exception;
 
   TrainDBListResultSet showModeltypes() throws Exception;
 
-  TrainDBListResultSet showModelInstances() throws Exception;
+  TrainDBListResultSet showModels() throws Exception;
 
   TrainDBListResultSet showSynopses() throws Exception;
 

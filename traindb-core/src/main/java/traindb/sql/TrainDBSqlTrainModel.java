@@ -16,28 +16,28 @@ package traindb.sql;
 
 import java.util.List;
 
-class TrainDBSqlTrainModelInstance extends TrainDBSqlCommand {
+class TrainDBSqlTrainModel extends TrainDBSqlCommand {
+  private final String modeltypeName;
   private final String modelName;
-  private final String modelInstanceName;
   private final String schemaName;
   private final String tableName;
   private final List<String> columnNames;
 
-  TrainDBSqlTrainModelInstance(String modelName, String modelInstanceName, String schemaName,
-                               String tableName, List<String> columnNames) {
+  TrainDBSqlTrainModel(String modeltypeName, String modelName, String schemaName,
+                       String tableName, List<String> columnNames) {
+    this.modeltypeName = modeltypeName;
     this.modelName = modelName;
-    this.modelInstanceName = modelInstanceName;
     this.schemaName = schemaName;
     this.tableName = tableName;
     this.columnNames = columnNames;
   }
 
-  String getModelName() {
-    return modelName;
+  String getModeltypeName() {
+    return modeltypeName;
   }
 
-  String getModelInstanceName() {
-    return modelInstanceName;
+  String getModelName() {
+    return modelName;
   }
 
   String getSchemaName() {
@@ -54,6 +54,6 @@ class TrainDBSqlTrainModelInstance extends TrainDBSqlCommand {
 
   @Override
   public Type getType() {
-    return Type.TRAIN_MODEL_INSTANCE;
+    return Type.TRAIN_MODEL;
   }
 }
