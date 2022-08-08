@@ -15,8 +15,8 @@
 grammar TrainDBSql;
 
 traindbStmts
-    : createModel
-    | dropModel
+    : createModeltype
+    | dropModeltype
     | trainModelInstance
     | dropModelInstance
     | createSynopsis
@@ -27,45 +27,45 @@ traindbStmts
     | bypassDdlStmt
     ;
 
-createModel
-    : K_CREATE K_MODEL modelName K_TYPE modelType modelSpecClause
+createModeltype
+    : K_CREATE K_MODELTYPE modeltypeName K_FOR modeltypeCategory K_AS modeltypeSpecClause
     ;
 
-dropModel
-    : K_DROP K_MODEL modelName
+dropModeltype
+    : K_DROP K_MODELTYPE modeltypeName
     ;
 
 trainModelInstance
-    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON tableName '(' columnNameList ')'
+    : K_TRAIN K_MODEL modeltypeName K_INSTANCE modelInstanceName K_ON tableName '(' columnNameList ')'
     ;
 
 dropModelInstance
     : K_DROP K_MODEL K_INSTANCE modelInstanceName
     ;
 
-modelName
+modeltypeName
     : IDENTIFIER
     ;
 
-modelType
+modeltypeCategory
     : K_INFERENCE
     | K_SYNOPSIS
     ;
 
-modelSpecClause
-    : modelLocation K_AS modelClassName K_IN modelUri
+modeltypeSpecClause
+    : modeltypeLocation K_CLASS modeltypeClassName K_IN modeltypeUri
     ;
 
-modelLocation
+modeltypeLocation
     : K_LOCAL
     | K_REMOTE
     ;
 
-modelClassName
+modeltypeClassName
     : STRING_LITERAL
     ;
 
-modelUri
+modeltypeUri
     : STRING_LITERAL
     ;
 
@@ -74,7 +74,7 @@ showStmt
     ;
 
 showTargets
-    : K_MODELS  # ShowModels
+    : K_MODELTYPES  # ShowModeltypes
     | K_MODEL K_INSTANCES  # ShowModelInstances
     | K_SYNOPSES  # ShowSynopses
     | K_SCHEMAS  # ShowSchemas
@@ -142,10 +142,12 @@ error
 
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
+K_CLASS : C L A S S ;
 K_CREATE : C R E A T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
+K_FOR : F O R ;
 K_FROM : F R O M ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
@@ -155,6 +157,8 @@ K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
+K_MODELTYPE : M O D E L T Y P E ;
+K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
 K_REMOTE : R E M O T E ;
 K_SCHEMAS : S C H E M A S ;

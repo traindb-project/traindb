@@ -18,9 +18,9 @@ public abstract class TrainDBSqlCommand {
   public abstract Type getType();
 
   public enum Type {
-    CREATE_MODEL,
-    DROP_MODEL,
-    SHOW_MODELS,
+    CREATE_MODELTYPE,
+    DROP_MODELTYPE,
+    SHOW_MODELTYPES,
     SHOW_MODEL_INSTANCES,
     TRAIN_MODEL_INSTANCE,
     DROP_MODEL_INSTANCE,

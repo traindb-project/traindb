@@ -17,26 +17,26 @@ package traindb.catalog;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {
 
   /* Model */
-  boolean modelExists(String name) throws CatalogException;
+  boolean modeltypeExists(String name) throws CatalogException;
 
-  MModel getModel(String name) throws CatalogException;
+  MModeltype getModeltype(String name) throws CatalogException;
 
-  Collection<MModel> getModels() throws CatalogException;
+  Collection<MModeltype> getModeltypes() throws CatalogException;
 
-  MModel createModel(String name, String type, String location, String className, String uri)
-      throws CatalogException;
+  MModeltype createModeltype(String name, String type, String location, String className,
+                             String uri) throws CatalogException;
 
-  void dropModel(String name) throws CatalogException;
+  void dropModeltype(String name) throws CatalogException;
 
   MModelInstance trainModelInstance(
-      String modelName, String modelInstanceName, String schemaName, String tableName,
+      String modeltypeName, String modelInstanceName, String schemaName, String tableName,
       List<String> columnNames, Long baseTableRows, Long trainedRows) throws CatalogException;
 
   void dropModelInstance(String name) throws CatalogException;
@@ -47,7 +47,7 @@ public interface CatalogContext {
 
   MModelInstance getModelInstance(String name) throws CatalogException;
 
-  Path getModelInstancePath(String modelName, String modelInstanceName);
+  Path getModelInstancePath(String modeltypeName, String modelInstanceName);
 
   MSynopsis createSynopsis(String synopsisName, String modeInstanceName, Integer rows, Double ratio)
       throws CatalogException;

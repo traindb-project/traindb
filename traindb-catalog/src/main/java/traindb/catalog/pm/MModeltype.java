@@ -25,7 +25,7 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MModel {
+public final class MModeltype {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
@@ -54,7 +54,7 @@ public final class MModel {
   @Persistent(mappedBy = "model", dependentElement = "true")
   private Collection<MModelInstance> modelInstances;
 
-  public MModel(String name, String type, String location, String className, String uri) {
+  public MModeltype(String name, String type, String location, String className, String uri) {
     this.name = name;
     this.type = type;
     this.location = location;

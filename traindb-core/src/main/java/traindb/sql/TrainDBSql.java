@@ -55,19 +55,19 @@ public final class TrainDBSql {
   public static TrainDBListResultSet run(TrainDBSqlCommand command, TrainDBSqlRunner runner)
       throws Exception {
     switch (command.getType()) {
-      case CREATE_MODEL:
-        TrainDBSqlCreateModel createModel = (TrainDBSqlCreateModel) command;
-        runner.createModel(createModel.getModelName(), createModel.getModelType(),
-            createModel.getModelLocation(), createModel.getModelClassName(),
-            createModel.getModelUri());
+      case CREATE_MODELTYPE:
+        TrainDBSqlCreateModeltype createModeltype = (TrainDBSqlCreateModeltype) command;
+        runner.createModeltype(createModeltype.getName(), createModeltype.getCategory(),
+            createModeltype.getLocation(), createModeltype.getClassName(),
+            createModeltype.getUri());
         break;
-      case DROP_MODEL:
-        TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
-        runner.dropModel(dropModel.getModelName());
+      case DROP_MODELTYPE:
+        TrainDBSqlDropModeltype dropModel = (TrainDBSqlDropModeltype) command;
+        runner.dropModeltype(dropModel.getName());
         break;
-      case SHOW_MODELS:
+      case SHOW_MODELTYPES:
         TrainDBSqlShowCommand showModels = (TrainDBSqlShowCommand) command;
-        return runner.showModels();
+        return runner.showModeltypes();
       case SHOW_MODEL_INSTANCES:
         TrainDBSqlShowCommand showModelInstances = (TrainDBSqlShowCommand) command;
         return runner.showModelInstances();
@@ -136,28 +136,27 @@ public final class TrainDBSql {
     }
 
     @Override
-    public void exitCreateModel(TrainDBSqlParser.CreateModelContext ctx) {
-      String modelName = ctx.modelName().getText();
-      String modelType = ctx.modelType().getText();
-      String modelLocation = ctx.modelSpecClause().modelLocation().getText();
-      String modelClassName = ctx.modelSpecClause().modelClassName().getText();
-      String modelUri = ctx.modelSpecClause().modelUri().getText();
-      LOG.debug("CREATE MODEL: name=" + modelName + " type=" + modelType
-          + " location=" + modelLocation + " class=" + modelClassName + " uri=" + modelUri);
-      commands.add(new TrainDBSqlCreateModel(
-          modelName, modelType, modelLocation, modelClassName, modelUri));
+    public void exitCreateModeltype(TrainDBSqlParser.CreateModeltypeContext ctx) {
+      String name = ctx.modeltypeName().getText();
+      String category = ctx.modeltypeCategory().getText();
+      String location = ctx.modeltypeSpecClause().modeltypeLocation().getText();
+      String className = ctx.modeltypeSpecClause().modeltypeClassName().getText();
+      String uri = ctx.modeltypeSpecClause().modeltypeUri().getText();
+      LOG.debug("CREATE MODELTYPE: name=" + name + " category=" + category
+          + " location=" + location + " class=" + className  + " uri=" + uri);
+      commands.add(new TrainDBSqlCreateModeltype(name, category, location, className , uri));
     }
 
     @Override
-    public void exitDropModel(TrainDBSqlParser.DropModelContext ctx) {
-      String modelName = ctx.modelName().getText();
-      LOG.debug("DROP MODEL: name=" + modelName);
-      commands.add(new TrainDBSqlDropModel(modelName));
+    public void exitDropModeltype(TrainDBSqlParser.DropModeltypeContext ctx) {
+      String name = ctx.modeltypeName().getText();
+      LOG.debug("DROP MODELTYPE: name=" + name);
+      commands.add(new TrainDBSqlDropModeltype(name));
     }
 
     @Override
-    public void exitShowModels(TrainDBSqlParser.ShowModelsContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Models());
+    public void exitShowModeltypes(TrainDBSqlParser.ShowModeltypesContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Modeltypes());
     }
 
     @Override
@@ -167,7 +166,7 @@ public final class TrainDBSql {
 
     @Override
     public void exitTrainModelInstance(TrainDBSqlParser.TrainModelInstanceContext ctx) {
-      String modelName = ctx.modelName().getText();
+      String modeltypeName = ctx.modeltypeName().getText();
       String modelInstanceName = ctx.modelInstanceName().getText();
       String schemaName = ctx.tableName().schemaName().getText();
       String tableName = ctx.tableName().tableIdentifier.getText();
@@ -178,7 +177,7 @@ public final class TrainDBSql {
       }
 
       commands.add(new TrainDBSqlTrainModelInstance(
-          modelName, modelInstanceName, schemaName, tableName, columnNames));
+          modeltypeName, modelInstanceName, schemaName, tableName, columnNames));
     }
 
     @Override

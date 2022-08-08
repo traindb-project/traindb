@@ -14,19 +14,19 @@
 
 package traindb.sql;
 
-class TrainDBSqlDropModel extends TrainDBSqlCommand {
-  private final String modelName;
+class TrainDBSqlDropModeltype extends TrainDBSqlCommand {
+  private final String name;
 
-  TrainDBSqlDropModel(String modelName) {
-    this.modelName = modelName;
+  TrainDBSqlDropModeltype(String name) {
+    this.name = name;
   }
 
-  String getModelName() {
-    return modelName;
+  String getName() {
+    return name;
   }
 
   @Override
   public Type getType() {
-    return Type.DROP_MODEL;
+    return Type.DROP_MODELTYPE;
   }
 }

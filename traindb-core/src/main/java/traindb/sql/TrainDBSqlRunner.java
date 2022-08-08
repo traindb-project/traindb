@@ -19,12 +19,12 @@ import traindb.engine.TrainDBListResultSet;
 
 public interface TrainDBSqlRunner {
 
-  void createModel(String modelName, String modelType, String modelLocation, String modelClassName,
-                   String modelUri) throws Exception;
+  void createModeltype(String name, String category, String location, String className, String uri)
+      throws Exception;
 
-  void dropModel(String modelName) throws Exception;
+  void dropModeltype(String name) throws Exception;
 
-  void trainModelInstance(String modelName, String modelInstanceName, String schemaName,
+  void trainModelInstance(String modeltypeName, String modelInstanceName, String schemaName,
                           String tableName, List<String> columnNames) throws Exception;
 
   void dropModelInstance(String modelInstanceName) throws Exception;
@@ -34,7 +34,7 @@ public interface TrainDBSqlRunner {
 
   void dropSynopsis(String synopsisName) throws Exception;
 
-  TrainDBListResultSet showModels() throws Exception;
+  TrainDBListResultSet showModeltypes() throws Exception;
 
   TrainDBListResultSet showModelInstances() throws Exception;
 

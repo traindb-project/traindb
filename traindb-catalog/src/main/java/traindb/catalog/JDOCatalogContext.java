@@ -22,7 +22,7 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 import org.checkerframework.checker.nullness.qual.Nullable;
-import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
@@ -38,55 +38,55 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean modelExists(String name) throws CatalogException {
-    return getModel(name) != null;
+  public boolean modeltypeExists(String name) throws CatalogException {
+    return getModeltype(name) != null;
   }
 
   @Override
-  public MModel getModel(String name) throws CatalogException {
+  public MModeltype getModeltype(String name) throws CatalogException {
     try {
-      Query query = pm.newQuery(MModel.class);
-      query.setFilter("name == modelName");
-      query.declareParameters("String modelName");
+      Query query = pm.newQuery(MModeltype.class);
+      query.setFilter("name == modeltypeName");
+      query.declareParameters("String modeltypeName");
       query.setUnique(true);
 
-      return (MModel) query.execute(name);
+      return (MModeltype) query.execute(name);
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model '" + name + "'", e);
+      throw new CatalogException("failed to get modeltype '" + name + "'", e);
     }
   }
 
   @Override
-  public Collection<MModel> getModels() throws CatalogException {
+  public Collection<MModeltype> getModeltypes() throws CatalogException {
     try {
-      Query query = pm.newQuery(MModel.class);
-      return (List<MModel>) query.execute();
+      Query query = pm.newQuery(MModeltype.class);
+      return (List<MModeltype>) query.execute();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get models", e);
+      throw new CatalogException("failed to get modeltypes", e);
     }
   }
 
   @Override
-  public MModel createModel(String name, String type, String location, String className, String uri)
+  public MModeltype createModeltype(String name, String type, String location, String className, String uri)
       throws CatalogException {
     try {
-      MModel mModel = new MModel(name, type, location, className, uri);
-      pm.makePersistent(mModel);
-      return mModel;
+      MModeltype mModeltype = new MModeltype(name, type, location, className, uri);
+      pm.makePersistent(mModeltype);
+      return mModeltype;
     } catch (RuntimeException e) {
       e.printStackTrace();
-      throw new CatalogException("failed to create model '" + name + "'", e);
+      throw new CatalogException("failed to create modeltype '" + name + "'", e);
     }
 
   }
 
   @Override
-  public void dropModel(String name) throws CatalogException {
+  public void dropModeltype(String name) throws CatalogException {
     Transaction tx = pm.currentTransaction();
     try {
       tx.begin();
 
-      pm.deletePersistent(getModel(name));
+      pm.deletePersistent(getModeltype(name));
 
       tx.commit();
     } catch (RuntimeException e) {
@@ -100,12 +100,12 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public MModelInstance trainModelInstance(
-      String modelName, String modelInstanceName, String schemaName, String tableName,
+      String modeltypeName, String modelInstanceName, String schemaName, String tableName,
       List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows)
       throws CatalogException {
     try {
       MModelInstance mModelInstance = new MModelInstance(
-          getModel(modelName), modelInstanceName, schemaName, tableName, columnNames,
+          getModeltype(modeltypeName), modelInstanceName, schemaName, tableName, columnNames,
           baseTableRows, trainedRows);
       pm.makePersistent(mModelInstance);
       return mModelInstance;
@@ -163,9 +163,9 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public Path getModelInstancePath(String modelName, String modelInstanceName) {
+  public Path getModelInstancePath(String modeltypeName, String modelInstanceName) {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
-                     modelName, modelInstanceName);
+                     modeltypeName, modelInstanceName);
   }
 
   @Override

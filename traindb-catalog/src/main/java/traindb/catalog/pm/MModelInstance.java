@@ -36,7 +36,7 @@ public final class MModelInstance {
   private String name;
 
   @Persistent(dependent = "false")
-  private MModel model;
+  private MModeltype model;
 
   @Persistent
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
@@ -56,7 +56,7 @@ public final class MModelInstance {
   private List<String> columns;
 
   public MModelInstance(
-      MModel model, String modelInstanceName, String schemaName, String tableName,
+      MModeltype model, String modelInstanceName, String schemaName, String tableName,
       List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows) {
     this.model = model;
     this.name = modelInstanceName;
@@ -71,7 +71,7 @@ public final class MModelInstance {
     return name;
   }
 
-  public MModel getModel() {
+  public MModeltype getModel() {
     return model;
   }
 

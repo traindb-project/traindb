@@ -3,17 +3,17 @@
 !set outputformat mysql
 !set maxwidth 300
 
-CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
+CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' IN 'models/TableGAN.py';
 (0 rows modified)
 
 !update
 
-SHOW MODELS;
-+----------+----------+----------+----------+--------------------+
-| model    | type     | location | class    | uri                |
-+----------+----------+----------+----------+--------------------+
-| tablegan | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
-+----------+----------+----------+----------+--------------------+
+SHOW MODELTYPES;
++-----------+----------+----------+----------+--------------------+
+| modeltype | category | location | class    | uri                |
++-----------+----------+----------+----------+--------------------+
+| tablegan  | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
++-----------+----------+----------+----------+--------------------+
 (1 row)
 
 !ok
@@ -24,11 +24,11 @@ TRAIN MODEL tablegan INSTANCE tgan ON instacart_small.order_products(reordered, 
 !update
 
 SHOW MODEL INSTANCES;
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| model    | model_instance | schema          | table          | columns                        | base_table_rows | trained_rows |
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| tablegan | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      |
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
++-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
+| modeltype | model_instance | schema          | table          | columns                        | base_table_rows | trained_rows |
++-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
+| tablegan  | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      |
++-----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
 (1 row)
 
 !ok
@@ -119,12 +119,12 @@ SHOW MODEL INSTANCES;
 
 !ok
 
-DROP MODEL tablegan;
+DROP MODELTYPE tablegan;
 (0 rows modified)
 
 !update
 
-SHOW MODELS;
+SHOW MODELTYPES;
 +
  |
 +
