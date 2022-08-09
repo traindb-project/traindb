@@ -24,9 +24,9 @@ import traindb.catalog.pm.MSynopsis;
 public interface CatalogContext {
 
   /* Model */
-  boolean modeltypeExists(String name) throws CatalogException;
+  boolean modeltypeExists(String name);
 
-  MModeltype getModeltype(String name) throws CatalogException;
+  MModeltype getModeltype(String name);
 
   Collection<MModeltype> getModeltypes() throws CatalogException;
 
@@ -43,9 +43,9 @@ public interface CatalogContext {
 
   Collection<MModel> getModels() throws CatalogException;
 
-  boolean modelExists(String name) throws CatalogException;
+  boolean modelExists(String name);
 
-  MModel getModel(String name) throws CatalogException;
+  MModel getModel(String name);
 
   Path getModelPath(String modeltypeName, String modelName);
 
@@ -56,9 +56,9 @@ public interface CatalogContext {
 
   Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable) throws CatalogException;
 
-  boolean synopsisExists(String name) throws CatalogException;
+  boolean synopsisExists(String name);
 
-  MSynopsis getSynopsis(String name) throws CatalogException;
+  MSynopsis getSynopsis(String name);
 
   void dropSynopsis(String name) throws CatalogException;
 

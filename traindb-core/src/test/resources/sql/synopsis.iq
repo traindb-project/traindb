@@ -18,6 +18,16 @@ SHOW MODELTYPES;
 
 !ok
 
+CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' IN 'models/TableGAN.py';
+
+modeltype 'tablegan' already exists
+!error
+
+TRAIN MODEL tgan MODELTYPE tablegan_error ON instacart_small.order_products(reordered, add_to_cart_order);
+
+modeltype 'tablegan_error' does not exist
+!error
+
 TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
 (0 rows modified)
 
@@ -33,6 +43,16 @@ SHOW MODELS;
 
 !ok
 
+TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
+
+model 'tgan' already exists
+!error
+
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan_error LIMIT 1000;
+
+model 'tgan_error' does not exist
+!error
+
 CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
 (0 rows modified)
 
@@ -47,6 +67,11 @@ SHOW SYNOPSES;
 (1 row)
 
 !ok
+
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
+
+synopsis 'order_products_syn' already exists
+!error
 
 SELECT count(*) as c2 FROM instacart_small.order_products_syn;
 +------+

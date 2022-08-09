@@ -35,6 +35,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
+import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
@@ -172,6 +173,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
       List<String> columnNames) throws Exception {
+    if (!catalogContext.modeltypeExists(modeltypeName)) {
+      throw new CatalogException("modeltype '" + modeltypeName + "' does not exist");
+    }
     if (catalogContext.modelExists(modelName)) {
       throw new CatalogException("model '" + modelName + "' already exists");
     }
@@ -209,6 +213,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     pb.inheritIO();
     Process process = pb.start();
     process.waitFor();
+
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to train model " + modelName);
+    }
 
     String trainInfoFilename = outputPath + "/train_info.json";
     JSONParser jsonParser = new JSONParser();
@@ -294,6 +302,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void createSynopsis(String synopsisName, String modelName, int limitNumber)
       throws Exception {
+    if (catalogContext.synopsisExists(synopsisName)) {
+      throw new CatalogException("synopsis '" + synopsisName + "' already exists");
+    }
     if (!catalogContext.modelExists(modelName)) {
       throw new CatalogException("model '" + modelName + "' does not exist");
     }
@@ -312,11 +323,18 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Process process = pb.start();
     process.waitFor();
 
-    createSynopsisTable(synopsisName, mModel);
-    loadSynopsisIntoTable(synopsisName, mModel, outputPath);
-
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to create synopsis " + synopsisName);
+    }
     double ratio = (double) limitNumber / (double) mModel.getBaseTableRows();
     catalogContext.createSynopsis(synopsisName, modelName, limitNumber, ratio);
+    try {
+      createSynopsisTable(synopsisName, mModel);
+      loadSynopsisIntoTable(synopsisName, mModel, outputPath);
+    } catch (Exception e) {
+      dropSynopsisTable(synopsisName);
+      throw new TrainDBException("failed to create synopsis " + synopsisName);
+    }
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {

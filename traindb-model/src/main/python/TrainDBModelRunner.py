@@ -47,6 +47,7 @@ class TrainDBModelRunner():
 import argparse
 import pandas as pd
 import json
+import sys
 
 root_parser = argparse.ArgumentParser(description='TrainDB Model Runner')
 subparsers = root_parser.add_subparsers(dest='cmd')
@@ -73,8 +74,10 @@ if args.cmd == 'train':
   json_train_info = runner.train_model(args.modeltype_class, args.modeltype_uri, data_file, table_metadata, args.model_path)
   with open(os.path.join(args.model_path, 'train_info.json'), 'w') as f:
     f.write(json_train_info)
+  sys.exit(0)
 elif args.cmd == 'synopsis':
   syn_data = runner.generate_synopsis(args.modeltype_class, args.modeltype_uri, args.model_path, args.row_count)
   syn_data.to_csv(args.output_file, index=False)
+  sys.exit(0)
 else:
   root_parser.print_help()

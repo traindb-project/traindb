@@ -38,12 +38,12 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean modeltypeExists(String name) throws CatalogException {
+  public boolean modeltypeExists(String name) {
     return getModeltype(name) != null;
   }
 
   @Override
-  public MModeltype getModeltype(String name) throws CatalogException {
+  public @Nullable MModeltype getModeltype(String name) {
     try {
       Query query = pm.newQuery(MModeltype.class);
       query.setFilter("name == modeltypeName");
@@ -51,9 +51,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MModeltype) query.execute(name);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get modeltype '" + name + "'", e);
-    }
+    } catch (RuntimeException e) { }
+    return null;
   }
 
   @Override
@@ -67,17 +66,15 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MModeltype createModeltype(String name, String type, String location, String className, String uri)
-      throws CatalogException {
+  public MModeltype createModeltype(String name, String type, String location, String className,
+                                    String uri) throws CatalogException {
     try {
       MModeltype mModeltype = new MModeltype(name, type, location, className, uri);
       pm.makePersistent(mModeltype);
       return mModeltype;
     } catch (RuntimeException e) {
-      e.printStackTrace();
       throw new CatalogException("failed to create modeltype '" + name + "'", e);
     }
-
   }
 
   @Override
@@ -110,7 +107,6 @@ public final class JDOCatalogContext implements CatalogContext {
       pm.makePersistent(mModel);
       return mModel;
     } catch (RuntimeException e) {
-      e.printStackTrace();
       throw new CatalogException("failed to train model '" + modelName + "'", e);
     }
   }
@@ -144,12 +140,12 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean modelExists(String name) throws CatalogException {
+  public boolean modelExists(String name) {
     return getModel(name) != null;
   }
 
   @Override
-  public MModel getModel(String name) throws CatalogException {
+  public @Nullable MModel getModel(String name) {
     try {
       Query query = pm.newQuery(MModel.class);
       query.setFilter("name == modelName");
@@ -157,9 +153,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MModel) query.execute(name);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model '" + name + "'", e);
-    }
+    } catch (RuntimeException e) { }
+    return null;
   }
 
   @Override
@@ -176,7 +171,6 @@ public final class JDOCatalogContext implements CatalogContext {
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
-      e.printStackTrace();
       throw new CatalogException("failed to create synopsis '" + synopsisName + "'", e);
     }
   }
@@ -206,12 +200,12 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean synopsisExists(String name) throws CatalogException {
+  public boolean synopsisExists(String name) {
     return getSynopsis(name) != null;
   }
 
   @Override
-  public MSynopsis getSynopsis(String name) throws CatalogException {
+  public @Nullable MSynopsis getSynopsis(String name) {
     try {
       Query query = pm.newQuery(MSynopsis.class);
       query.setFilter("name == synopsisName");
@@ -219,9 +213,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MSynopsis) query.execute(name);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get synopsis '" + name + "'", e);
-    }
+    } catch (RuntimeException e) { }
+    return null;
   }
 
   @Override
