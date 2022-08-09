@@ -15,7 +15,9 @@
 package traindb.sql;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import org.antlr.v4.runtime.ANTLRInputStream;
 import org.antlr.v4.runtime.CommonTokenStream;
 import org.antlr.v4.runtime.ConsoleErrorListener;
@@ -76,7 +78,7 @@ public final class TrainDBSql {
         runner.trainModel(
             trainModel.getModeltypeName(), trainModel.getModelName(),
             trainModel.getSchemaName(), trainModel.getTableName(),
-            trainModel.getColumnNames());
+            trainModel.getColumnNames(), trainModel.getTrainOptions());
         break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
@@ -176,9 +178,27 @@ public final class TrainDBSql {
         columnNames.add(columnName.getText());
       }
 
+      Map<String, Object> trainOptions = new HashMap<>();
+      if (ctx.trainModelOptionsClause() != null) {
+        for (TrainDBSqlParser.OptionKeyValueContext optionKeyValue
+            : ctx.trainModelOptionsClause().optionKeyValueList().optionKeyValue()) {
+          Object value;
+          if (optionKeyValue.optionValue().STRING_LITERAL() == null) {
+            if (optionKeyValue.optionValue().getText().contains(".")) {
+              value = Double.valueOf(optionKeyValue.optionValue().getText());
+            } else {
+              value = Integer.valueOf(optionKeyValue.optionValue().getText());
+            }
+          } else {
+            value = optionKeyValue.optionValue().getText();
+          }
+          trainOptions.put(optionKeyValue.optionKey().getText(), value);
+        }
+      }
+
       LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
       commands.add(new TrainDBSqlTrainModel(
-          modeltypeName, modelName, schemaName, tableName, columnNames));
+          modeltypeName, modelName, schemaName, tableName, columnNames, trainOptions));
     }
 
     @Override

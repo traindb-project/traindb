@@ -27,6 +27,7 @@ import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
+import java.util.Map;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.catalog.CatalogContext;
@@ -72,8 +73,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.dropModeltype(name);
   }
 
-  private JSONObject getTableMetadata(String schemaName, String tableName,
-                                      List<String> columnNames) throws Exception {
+  private JSONObject getTableMetadata(String schemaName, String tableName, List<String> columnNames,
+                                      Map<String, Object> trainOptions) throws Exception {
     // query to get table metadata
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
@@ -146,6 +147,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     root.put("schema", schemaName);
     root.put("table", tableName);
 
+    JSONObject options = new JSONObject();
+    options.putAll(trainOptions);
+    root.put("options", options);
+
     return root;
   }
 
@@ -172,7 +177,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames) throws Exception {
+      List<String> columnNames, Map<String, Object> trainOptions) throws Exception {
     if (!catalogContext.modeltypeExists(modeltypeName)) {
       throw new CatalogException("modeltype '" + modeltypeName + "' does not exist");
     }
@@ -183,7 +188,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       schemaName = conn.getSchema();
     }
 
-    JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames);
+    JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames, trainOptions);
     Path modelPath = catalogContext.getModelPath(modeltypeName, modelName);
     Files.createDirectories(modelPath);
     String outputPath = modelPath.toString();
@@ -226,7 +231,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     catalogContext.trainModel(
         modeltypeName, modelName, schemaName, tableName, columnNames,
-        base_table_rows, trained_rows);
+        base_table_rows, trained_rows, tableMetadata.get("options").toString());
   }
 
   @Override
@@ -375,14 +380,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showModels() throws Exception {
     List<String> header = Arrays.asList("model", "modeltype", "schema", "table", "columns",
-        "base_table_rows", "trained_rows");
+        "base_table_rows", "trained_rows", "options");
     List<List<Object>> modelInfo = new ArrayList<>();
 
     for (MModel mModel : catalogContext.getModels()) {
       modelInfo.add(Arrays.asList(mModel.getName(), mModel.getModeltype().getName(),
           mModel.getSchemaName(), mModel.getTableName(),
           mModel.getColumnNames().toString(), mModel.getBaseTableRows(),
-          mModel.getTrainedRows()));
+          mModel.getTrainedRows(), mModel.getOptions()));
     }
 
     return new TrainDBListResultSet(header, modelInfo);

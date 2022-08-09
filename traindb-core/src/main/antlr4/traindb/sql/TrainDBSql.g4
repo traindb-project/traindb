@@ -36,7 +36,7 @@ dropModeltype
     ;
 
 trainModel
-    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')'
+    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')' trainModelOptionsClause?
     ;
 
 dropModel
@@ -67,6 +67,27 @@ modeltypeClassName
 
 modeltypeUri
     : STRING_LITERAL
+    ;
+
+trainModelOptionsClause
+    : K_OPTIONS '(' optionKeyValueList ')'
+    ;
+
+optionKeyValueList
+    : optionKeyValue ( ',' optionKeyValue )*
+    ;
+
+optionKeyValue
+    : optionKey '=' optionValue
+    ;
+
+optionKey
+    : STRING_LITERAL
+    ;
+
+optionValue
+    : STRING_LITERAL
+    | NUMERIC_LITERAL
     ;
 
 showStmt
@@ -158,6 +179,7 @@ K_MODELS : M O D E L S ;
 K_MODELTYPE : M O D E L T Y P E ;
 K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
+K_OPTIONS : O P T I O N S ;
 K_REMOTE : R E M O T E ;
 K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;

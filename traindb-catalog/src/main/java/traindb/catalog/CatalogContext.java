@@ -37,7 +37,8 @@ public interface CatalogContext {
 
   MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, Long baseTableRows, Long trainedRows) throws CatalogException;
+      List<String> columnNames, Long baseTableRows, Long trainedRows, String options)
+      throws CatalogException;
 
   void dropModel(String name) throws CatalogException;
 

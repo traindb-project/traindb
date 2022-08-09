@@ -87,7 +87,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
       tx.commit();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to drop model '" + name + "'", e);
+      throw new CatalogException("failed to drop modeltype '" + name + "'", e);
     } finally {
       if (tx.isActive()) {
         tx.rollback();
@@ -98,12 +98,12 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows)
-      throws CatalogException {
+      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows,
+      String options) throws CatalogException {
     try {
       MModel mModel = new MModel(
           getModeltype(modeltypeName), modelName, schemaName, tableName, columnNames,
-          baseTableRows, trainedRows);
+          baseTableRows, trainedRows, options);
       pm.makePersistent(mModel);
       return mModel;
     } catch (RuntimeException e) {

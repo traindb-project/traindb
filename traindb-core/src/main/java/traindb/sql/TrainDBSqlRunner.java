@@ -15,6 +15,7 @@
 package traindb.sql;
 
 import java.util.List;
+import java.util.Map;
 import traindb.engine.TrainDBListResultSet;
 
 public interface TrainDBSqlRunner {
@@ -24,8 +25,8 @@ public interface TrainDBSqlRunner {
 
   void dropModeltype(String name) throws Exception;
 
-  void trainModel(String modeltypeName, String modelName, String schemaName,
-                  String tableName, List<String> columnNames) throws Exception;
+  void trainModel(String modeltypeName, String modelName, String schemaName, String tableName,
+                  List<String> columnNames, Map<String, Object> trainOptions) throws Exception;
 
   void dropModel(String modelName) throws Exception;
 

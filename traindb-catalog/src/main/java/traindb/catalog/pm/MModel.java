@@ -55,9 +55,13 @@ public final class MModel {
   @Persistent
   private List<String> columns;
 
+  @Persistent
+  private String options;
+
   public MModel(
       MModeltype modeltype, String modelName, String schemaName, String tableName,
-      List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows) {
+      List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows,
+      String options) {
     this.modeltype = modeltype;
     this.name = modelName;
     this.schemaName = schemaName;
@@ -65,6 +69,7 @@ public final class MModel {
     this.columns = columns;
     this.baseTableRows = (baseTableRows == null) ? 0 : baseTableRows;
     this.trainedRows = (trainedRows == null) ? 0 : trainedRows;
+    this.options = (options == null) ? "" : options;
   }
 
   public String getName() {
@@ -93,5 +98,9 @@ public final class MModel {
 
   public long getTrainedRows() {
     return trainedRows;
+  }
+
+  public String getOptions() {
+    return options;
   }
 }
