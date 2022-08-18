@@ -176,6 +176,7 @@ public abstract class TrainDBConnectionImpl
     // postgres --> select 1
     // mysql    --> select 1 or select 1 from dual
     // kairos   --> select 1 from dual
+    // tibero   --> select 1 from dual
     String db_query = url.split(":")[1];
     if ( db_query.equals("postgresql") )
         dataSource.setValidationQuery("SELECT 1");
