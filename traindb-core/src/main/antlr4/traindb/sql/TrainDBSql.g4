@@ -15,10 +15,10 @@
 grammar TrainDBSql;
 
 traindbStmts
-    : createModel
+    : createModeltype
+    | dropModeltype
+    | trainModel
     | dropModel
-    | trainModelInstance
-    | dropModelInstance
     | createSynopsis
     | dropSynopsis
     | showStmt
@@ -27,46 +27,67 @@ traindbStmts
     | bypassDdlStmt
     ;
 
-createModel
-    : K_CREATE K_MODEL modelName K_TYPE modelType modelSpecClause
+createModeltype
+    : K_CREATE K_MODELTYPE modeltypeName K_FOR modeltypeCategory K_AS modeltypeSpecClause
+    ;
+
+dropModeltype
+    : K_DROP K_MODELTYPE modeltypeName
+    ;
+
+trainModel
+    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')' trainModelOptionsClause?
     ;
 
 dropModel
     : K_DROP K_MODEL modelName
     ;
 
-trainModelInstance
-    : K_TRAIN K_MODEL modelName K_INSTANCE modelInstanceName K_ON tableName '(' columnNameList ')'
-    ;
-
-dropModelInstance
-    : K_DROP K_MODEL K_INSTANCE modelInstanceName
-    ;
-
-modelName
+modeltypeName
     : IDENTIFIER
     ;
 
-modelType
+modeltypeCategory
     : K_INFERENCE
     | K_SYNOPSIS
     ;
 
-modelSpecClause
-    : modelLocation K_AS modelClassName K_IN modelUri
+modeltypeSpecClause
+    : modeltypeLocation K_CLASS modeltypeClassName K_IN modeltypeUri
     ;
 
-modelLocation
+modeltypeLocation
     : K_LOCAL
     | K_REMOTE
     ;
 
-modelClassName
+modeltypeClassName
     : STRING_LITERAL
     ;
 
-modelUri
+modeltypeUri
     : STRING_LITERAL
+    ;
+
+trainModelOptionsClause
+    : K_OPTIONS '(' optionKeyValueList ')'
+    ;
+
+optionKeyValueList
+    : optionKeyValue ( ',' optionKeyValue )*
+    ;
+
+optionKeyValue
+    : optionKey '=' optionValue
+    ;
+
+optionKey
+    : STRING_LITERAL
+    ;
+
+optionValue
+    : STRING_LITERAL
+    | NUMERIC_LITERAL
     ;
 
 showStmt
@@ -74,19 +95,19 @@ showStmt
     ;
 
 showTargets
-    : K_MODELS  # ShowModels
-    | K_MODEL K_INSTANCES  # ShowModelInstances
+    : K_MODELTYPES  # ShowModeltypes
+    | K_MODELS  # ShowModels
     | K_SYNOPSES  # ShowSynopses
     | K_SCHEMAS  # ShowSchemas
     | K_TABLES  # ShowTables
     ;
 
-modelInstanceName
+modelName
     : IDENTIFIER
     ;
 
 createSynopsis
-    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL K_INSTANCE modelInstanceName K_LIMIT limitNumber
+    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitNumber
     ;
 
 dropSynopsis
@@ -142,20 +163,23 @@ error
 
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
+K_CLASS : C L A S S ;
 K_CREATE : C R E A T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
+K_FOR : F O R ;
 K_FROM : F R O M ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
-K_INSTANCE : I N S T A N C E ;
-K_INSTANCES : I N S T A N C E S ;
 K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
+K_MODELTYPE : M O D E L T Y P E ;
+K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
+K_OPTIONS : O P T I O N S ;
 K_REMOTE : R E M O T E ;
 K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
@@ -163,7 +187,6 @@ K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TABLES : T A B L E S ;
 K_TRAIN : T R A I N ;
-K_TYPE : T Y P E ;
 K_USE : U S E ;
 
 IDENTIFIER

@@ -14,14 +14,14 @@
 
 package traindb.catalog.pm;
 
-import java.util.ArrayList;
-import java.util.Collection;
+import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
 import javax.jdo.annotations.Unique;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
@@ -35,54 +35,72 @@ public final class MModel {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String name;
 
-  @Persistent
-  @Column(length = 10) // "synopsis" or "inference"
-  private String type;
+  @Persistent(dependent = "false")
+  private MModeltype modeltype;
 
   @Persistent
-  @Column(length = 7) // "local" or "remote"
-  private String location;
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String schemaName;
 
   @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String className;
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String tableName;
 
   @Persistent
-  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String uri;
+  private long baseTableRows;
 
-  @Persistent(mappedBy = "model", dependentElement = "true")
-  private Collection<MModelInstance> modelInstances;
+  @Persistent
+  private long trainedRows;
 
-  public MModel(String name, String type, String location, String className, String uri) {
-    this.name = name;
-    this.type = type;
-    this.location = location;
-    this.className = className;
-    this.uri = uri;
+  @Persistent
+  private List<String> columns;
+
+  @Persistent
+  private String options;
+
+  public MModel(
+      MModeltype modeltype, String modelName, String schemaName, String tableName,
+      List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows,
+      String options) {
+    this.modeltype = modeltype;
+    this.name = modelName;
+    this.schemaName = schemaName;
+    this.tableName = tableName;
+    this.columns = columns;
+    this.baseTableRows = (baseTableRows == null) ? 0 : baseTableRows;
+    this.trainedRows = (trainedRows == null) ? 0 : trainedRows;
+    this.options = (options == null) ? "" : options;
   }
 
   public String getName() {
     return name;
   }
 
-  public String getType() {
-    return type;
+  public MModeltype getModeltype() {
+    return modeltype;
   }
 
-  public String getLocation() {
-    return location;
+  public String getSchemaName() {
+    return schemaName;
   }
 
-  public String getClassName() {
-    return className;
+  public String getTableName() {
+    return tableName;
   }
 
-  public String getUri() {
-    return uri;
+  public List<String> getColumnNames() {
+    return columns;
   }
 
-  public Collection<MModelInstance> getModelInstances() {
-    return new ArrayList<MModelInstance>(modelInstances);
+  public long getBaseTableRows() {
+    return baseTableRows;
+  }
+
+  public long getTrainedRows() {
+    return trainedRows;
+  }
+
+  public String getOptions() {
+    return options;
   }
 }

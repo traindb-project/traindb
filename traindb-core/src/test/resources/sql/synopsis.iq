@@ -3,50 +3,75 @@
 !set outputformat mysql
 !set maxwidth 300
 
-CREATE MODEL tablegan TYPE SYNOPSIS LOCAL AS 'TableGAN' IN 'models/TableGAN.py';
+CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' IN 'models/TableGAN.py';
 (0 rows modified)
 
 !update
+
+SHOW MODELTYPES;
++-----------+----------+----------+----------+--------------------+
+| modeltype | category | location | class    | uri                |
++-----------+----------+----------+----------+--------------------+
+| tablegan  | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
++-----------+----------+----------+----------+--------------------+
+(1 row)
+
+!ok
+
+CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' IN 'models/TableGAN.py';
+
+modeltype 'tablegan' already exists
+!error
+
+TRAIN MODEL tgan MODELTYPE tablegan_error ON instacart_small.order_products(reordered, add_to_cart_order);
+
+modeltype 'tablegan_error' does not exist
+!error
+
+TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order) OPTIONS ( 'epochs'=1 );
+(0 rows modified)
+
+!update
+
+TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
+
+model 'tgan' already exists
+!error
 
 SHOW MODELS;
-+----------+----------+----------+----------+--------------------+
-| model    | type     | location | class    | uri                |
-+----------+----------+----------+----------+--------------------+
-| tablegan | SYNOPSIS | LOCAL    | TableGAN | models/TableGAN.py |
-+----------+----------+----------+----------+--------------------+
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+--------------+
+| model | modeltype | schema          | table          | columns                        | base_table_rows | trained_rows | options      |
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+--------------+
+| tgan  | tablegan  | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      | {"epochs":1} |
++-------+-----------+-----------------+----------------+--------------------------------+-----------------+--------------+--------------+
 (1 row)
 
 !ok
 
-TRAIN MODEL tablegan INSTANCE tgan ON instacart_small.order_products(reordered, add_to_cart_order);
-(0 rows modified)
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan_error LIMIT 1000;
 
-!update
+model 'tgan_error' does not exist
+!error
 
-SHOW MODEL INSTANCES;
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| model    | model_instance | schema          | table          | columns                        | base_table_rows | trained_rows |
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-| tablegan | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1384617         | 1384617      |
-+----------+----------------+-----------------+----------------+--------------------------------+-----------------+--------------+
-(1 row)
-
-!ok
-
-CREATE SYNOPSIS order_products_syn FROM MODEL INSTANCE tgan LIMIT 1000;
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
 (0 rows modified)
 
 !update
 
 SHOW SYNOPSES;
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
-| synopsis           | model_instance | schema          | table          | columns                        | rows | ratio      |
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
-| order_products_syn | tgan           | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
-+--------------------+----------------+-----------------+----------------+--------------------------------+------+------------+
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
+| synopsis           | model | schema          | table          | columns                        | rows | ratio      |
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
+| order_products_syn | tgan  | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
++--------------------+-------+-----------------+----------------+--------------------------------+------+------------+
 (1 row)
 
 !ok
+
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
+
+synopsis 'order_products_syn' already exists
+!error
 
 SELECT count(*) as c2 FROM instacart_small.order_products_syn;
 +------+
@@ -105,12 +130,12 @@ SHOW SYNOPSES;
 
 !ok
 
-DROP MODEL INSTANCE tgan;
+DROP MODEL tgan;
 (0 rows modified)
 
 !update
 
-SHOW MODEL INSTANCES;
+SHOW MODELS;
 +
  |
 +
@@ -119,12 +144,12 @@ SHOW MODEL INSTANCES;
 
 !ok
 
-DROP MODEL tablegan;
+DROP MODELTYPE tablegan;
 (0 rows modified)
 
 !update
 
-SHOW MODELS;
+SHOW MODELTYPES;
 +
  |
 +

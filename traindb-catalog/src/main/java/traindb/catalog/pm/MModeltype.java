@@ -14,6 +14,8 @@
 
 package traindb.catalog.pm;
 
+import java.util.ArrayList;
+import java.util.Collection;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -23,7 +25,7 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MSynopsis {
+public final class MModeltype {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
@@ -34,34 +36,53 @@ public final class MSynopsis {
   private String name;
 
   @Persistent
-  private int rows;
+  @Column(length = 10) // "synopsis" or "inference"
+  private String type;
 
   @Persistent
-  private double ratio;
+  @Column(length = 7) // "local" or "remote"
+  private String location;
 
-  @Persistent(dependent = "false")
-  private MModel model;
+  @Persistent
+  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
+  private String className;
 
-  public MSynopsis(String name, Integer rows, Double ratio, MModel model) {
+  @Persistent
+  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
+  private String uri;
+
+  @Persistent(mappedBy = "modeltype", dependentElement = "true")
+  private Collection<MModel> model;
+
+  public MModeltype(String name, String type, String location, String className, String uri) {
     this.name = name;
-    this.rows = rows;
-    this.ratio = (ratio == null) ? 0 : ratio;
-    this.model = model;
+    this.type = type;
+    this.location = location;
+    this.className = className;
+    this.uri = uri;
   }
 
   public String getName() {
     return name;
   }
 
-  public int getRows() {
-    return rows;
+  public String getType() {
+    return type;
   }
 
-  public double getRatio() {
-    return ratio;
+  public String getLocation() {
+    return location;
   }
 
-  public MModel getModel() {
-    return model;
+  public String getClassName() {
+    return className;
+  }
+
+  public String getUri() {
+    return uri;
+  }
+
+  public Collection<MModel> getModel() {
+    return new ArrayList<MModel>(model);
   }
 }

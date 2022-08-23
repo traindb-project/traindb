@@ -17,48 +17,49 @@ package traindb.catalog;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModel;
-import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {
 
   /* Model */
-  boolean modelExists(String name) throws CatalogException;
+  boolean modeltypeExists(String name);
 
-  MModel getModel(String name) throws CatalogException;
+  MModeltype getModeltype(String name);
 
-  Collection<MModel> getModels() throws CatalogException;
+  Collection<MModeltype> getModeltypes() throws CatalogException;
 
-  MModel createModel(String name, String type, String location, String className, String uri)
+  MModeltype createModeltype(String name, String type, String location, String className,
+                             String uri) throws CatalogException;
+
+  void dropModeltype(String name) throws CatalogException;
+
+  MModel trainModel(
+      String modeltypeName, String modelName, String schemaName, String tableName,
+      List<String> columnNames, Long baseTableRows, Long trainedRows, String options)
       throws CatalogException;
 
   void dropModel(String name) throws CatalogException;
 
-  MModelInstance trainModelInstance(
-      String modelName, String modelInstanceName, String schemaName, String tableName,
-      List<String> columnNames, Long baseTableRows, Long trainedRows) throws CatalogException;
+  Collection<MModel> getModels() throws CatalogException;
 
-  void dropModelInstance(String name) throws CatalogException;
+  boolean modelExists(String name);
 
-  Collection<MModelInstance> getModelInstances() throws CatalogException;
+  MModel getModel(String name);
 
-  boolean modelInstanceExists(String name) throws CatalogException;
+  Path getModelPath(String modeltypeName, String modelName);
 
-  MModelInstance getModelInstance(String name) throws CatalogException;
-
-  Path getModelInstancePath(String modelName, String modelInstanceName);
-
-  MSynopsis createSynopsis(String synopsisName, String modeInstanceName, Integer rows, Double ratio)
+  MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
       throws CatalogException;
 
   Collection<MSynopsis> getAllSynopses() throws CatalogException;
 
   Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable) throws CatalogException;
 
-  boolean synopsisExists(String name) throws CatalogException;
+  boolean synopsisExists(String name);
 
-  MSynopsis getSynopsis(String name) throws CatalogException;
+  MSynopsis getSynopsis(String name);
 
   void dropSynopsis(String name) throws CatalogException;
 

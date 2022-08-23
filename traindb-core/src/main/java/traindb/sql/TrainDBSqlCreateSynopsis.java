@@ -16,12 +16,12 @@ package traindb.sql;
 
 class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
   private final String synopsisName;
-  private final String modelInstanceName;
+  private final String modelName;
   private final int limitNumber;
 
-  TrainDBSqlCreateSynopsis(String synopsisName, String modelInstanceName, int limitNumber) {
+  TrainDBSqlCreateSynopsis(String synopsisName, String modelName, int limitNumber) {
     this.synopsisName = synopsisName;
-    this.modelInstanceName = modelInstanceName;
+    this.modelName = modelName;
     this.limitNumber = limitNumber;
   }
 
@@ -29,8 +29,8 @@ class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
     return synopsisName;
   }
 
-  String getModelInstanceName() {
-    return modelInstanceName;
+  String getModelName() {
+    return modelName;
   }
 
   int getLimitNumber() {

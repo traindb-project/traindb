@@ -22,8 +22,8 @@ import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModel;
-import traindb.catalog.pm.MModelInstance;
 import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
@@ -38,46 +38,77 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean modelExists(String name) throws CatalogException {
-    return getModel(name) != null;
+  public boolean modeltypeExists(String name) {
+    return getModeltype(name) != null;
   }
 
   @Override
-  public MModel getModel(String name) throws CatalogException {
+  public @Nullable MModeltype getModeltype(String name) {
     try {
-      Query query = pm.newQuery(MModel.class);
-      query.setFilter("name == modelName");
-      query.declareParameters("String modelName");
+      Query query = pm.newQuery(MModeltype.class);
+      query.setFilter("name == modeltypeName");
+      query.declareParameters("String modeltypeName");
       query.setUnique(true);
 
-      return (MModel) query.execute(name);
+      return (MModeltype) query.execute(name);
+    } catch (RuntimeException e) { }
+    return null;
+  }
+
+  @Override
+  public Collection<MModeltype> getModeltypes() throws CatalogException {
+    try {
+      Query query = pm.newQuery(MModeltype.class);
+      return (List<MModeltype>) query.execute();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model '" + name + "'", e);
+      throw new CatalogException("failed to get modeltypes", e);
     }
   }
 
   @Override
-  public Collection<MModel> getModels() throws CatalogException {
+  public MModeltype createModeltype(String name, String type, String location, String className,
+                                    String uri) throws CatalogException {
     try {
-      Query query = pm.newQuery(MModel.class);
-      return (List<MModel>) query.execute();
+      MModeltype mModeltype = new MModeltype(name, type, location, className, uri);
+      pm.makePersistent(mModeltype);
+      return mModeltype;
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get models", e);
+      throw new CatalogException("failed to create modeltype '" + name + "'", e);
     }
   }
 
   @Override
-  public MModel createModel(String name, String type, String location, String className, String uri)
-      throws CatalogException {
+  public void dropModeltype(String name) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
     try {
-      MModel mModel = new MModel(name, type, location, className, uri);
+      tx.begin();
+
+      pm.deletePersistent(getModeltype(name));
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to drop modeltype '" + name + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
+  public MModel trainModel(
+      String modeltypeName, String modelName, String schemaName, String tableName,
+      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows,
+      String options) throws CatalogException {
+    try {
+      MModel mModel = new MModel(
+          getModeltype(modeltypeName), modelName, schemaName, tableName, columnNames,
+          baseTableRows, trainedRows, options);
       pm.makePersistent(mModel);
       return mModel;
     } catch (RuntimeException e) {
-      e.printStackTrace();
-      throw new CatalogException("failed to create model '" + name + "'", e);
+      throw new CatalogException("failed to train model '" + modelName + "'", e);
     }
-
   }
 
   @Override
@@ -99,85 +130,47 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MModelInstance trainModelInstance(
-      String modelName, String modelInstanceName, String schemaName, String tableName,
-      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows)
-      throws CatalogException {
+  public Collection<MModel> getModels() throws CatalogException {
     try {
-      MModelInstance mModelInstance = new MModelInstance(
-          getModel(modelName), modelInstanceName, schemaName, tableName, columnNames,
-          baseTableRows, trainedRows);
-      pm.makePersistent(mModelInstance);
-      return mModelInstance;
+      Query query = pm.newQuery(MModel.class);
+      return (List<MModel>) query.execute();
     } catch (RuntimeException e) {
-      e.printStackTrace();
-      throw new CatalogException("failed to train model instance '" + modelInstanceName + "'", e);
+      throw new CatalogException("failed to get models", e);
     }
   }
 
   @Override
-  public void dropModelInstance(String name) throws CatalogException {
-    Transaction tx = pm.currentTransaction();
-    try {
-      tx.begin();
-
-      pm.deletePersistent(getModelInstance(name));
-
-      tx.commit();
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to drop model instance '" + name + "'", e);
-    } finally {
-      if (tx.isActive()) {
-        tx.rollback();
-      }
-    }
+  public boolean modelExists(String name) {
+    return getModel(name) != null;
   }
 
   @Override
-  public Collection<MModelInstance> getModelInstances() throws CatalogException {
+  public @Nullable MModel getModel(String name) {
     try {
-      Query query = pm.newQuery(MModelInstance.class);
-      return (List<MModelInstance>) query.execute();
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model instances", e);
-    }
-  }
-
-  @Override
-  public boolean modelInstanceExists(String name) throws CatalogException {
-    return getModelInstance(name) != null;
-  }
-
-  @Override
-  public MModelInstance getModelInstance(String name) throws CatalogException {
-    try {
-      Query query = pm.newQuery(MModelInstance.class);
-      query.setFilter("name == modelInstanceName");
-      query.declareParameters("String modelInstanceName");
+      Query query = pm.newQuery(MModel.class);
+      query.setFilter("name == modelName");
+      query.declareParameters("String modelName");
       query.setUnique(true);
 
-      return (MModelInstance) query.execute(name);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get model instance '" + name + "'", e);
-    }
+      return (MModel) query.execute(name);
+    } catch (RuntimeException e) { }
+    return null;
   }
 
   @Override
-  public Path getModelInstancePath(String modelName, String modelInstanceName) {
+  public Path getModelPath(String modeltypeName, String modelName) {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
-                     modelName, modelInstanceName);
+                     modeltypeName, modelName);
   }
 
   @Override
-  public MSynopsis createSynopsis(String synopsisName, String modelInstanceName, Integer rows,
+  public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
                                   @Nullable Double ratio) throws CatalogException {
     try {
-      MSynopsis mSynopsis = new MSynopsis(
-          synopsisName, rows, ratio, getModelInstance(modelInstanceName));
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, getModel(modelName));
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
-      e.printStackTrace();
       throw new CatalogException("failed to create synopsis '" + synopsisName + "'", e);
     }
   }
@@ -197,8 +190,7 @@ public final class JDOCatalogContext implements CatalogContext {
       throws CatalogException {
     try {
       Query query = pm.newQuery(MSynopsis.class);
-      query.setFilter(
-          "modelInstance.schemaName == baseSchema && modelInstance.tableName == baseTable");
+      query.setFilter("model.schemaName == baseSchema && model.tableName == baseTable");
       query.declareParameters("String baseSchema, String baseTable");
       Collection<MSynopsis> ret = (List<MSynopsis>) query.execute(baseSchema, baseTable);
       return ret;
@@ -208,12 +200,12 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public boolean synopsisExists(String name) throws CatalogException {
+  public boolean synopsisExists(String name) {
     return getSynopsis(name) != null;
   }
 
   @Override
-  public MSynopsis getSynopsis(String name) throws CatalogException {
+  public @Nullable MSynopsis getSynopsis(String name) {
     try {
       Query query = pm.newQuery(MSynopsis.class);
       query.setFilter("name == synopsisName");
@@ -221,9 +213,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MSynopsis) query.execute(name);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get synopsis '" + name + "'", e);
-    }
+    } catch (RuntimeException e) { }
+    return null;
   }
 
   @Override

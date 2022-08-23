@@ -96,7 +96,7 @@ public class ApproxAggregateSynopsisProjectScanRule
       for (MSynopsis synopsis : candidateSynopses) {
         for (int i = 0; i < oldProjects.size(); i++) {
           RexInputRef inputRef = (RexInputRef) oldProjects.get(i);
-          int newIndex = synopsis.getModelInstance().getColumnNames()
+          int newIndex = synopsis.getModel().getColumnNames()
               .indexOf(project.getRowType().getFieldNames().get(i));
           if (newIndex == -1) {
             newProjects.clear();

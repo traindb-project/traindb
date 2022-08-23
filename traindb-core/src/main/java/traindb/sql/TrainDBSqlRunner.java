@@ -15,28 +15,28 @@
 package traindb.sql;
 
 import java.util.List;
+import java.util.Map;
 import traindb.engine.TrainDBListResultSet;
 
 public interface TrainDBSqlRunner {
 
-  void createModel(String modelName, String modelType, String modelLocation, String modelClassName,
-                   String modelUri) throws Exception;
+  void createModeltype(String name, String category, String location, String className, String uri)
+      throws Exception;
+
+  void dropModeltype(String name) throws Exception;
+
+  void trainModel(String modeltypeName, String modelName, String schemaName, String tableName,
+                  List<String> columnNames, Map<String, Object> trainOptions) throws Exception;
 
   void dropModel(String modelName) throws Exception;
 
-  void trainModelInstance(String modelName, String modelInstanceName, String schemaName,
-                          String tableName, List<String> columnNames) throws Exception;
-
-  void dropModelInstance(String modelInstanceName) throws Exception;
-
-  void createSynopsis(String synopsisName, String modelInstanceName, int limitNumber)
-      throws Exception;
+  void createSynopsis(String synopsisName, String modelName, int limitNumber) throws Exception;
 
   void dropSynopsis(String synopsisName) throws Exception;
 
-  TrainDBListResultSet showModels() throws Exception;
+  TrainDBListResultSet showModeltypes() throws Exception;
 
-  TrainDBListResultSet showModelInstances() throws Exception;
+  TrainDBListResultSet showModels() throws Exception;
 
   TrainDBListResultSet showSynopses() throws Exception;
 
