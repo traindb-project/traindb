@@ -51,12 +51,14 @@ public class ApproxAggregateSynopsisProjectScanRule
     super(config);
   }
 
-  @Override public boolean autoPruneOld() {
+  @Override
+  public boolean autoPruneOld() {
     return true;
   }
 
   //~ Methods ----------------------------------------------------------------
-  @Override public void onMatch(RelOptRuleCall call) {
+  @Override
+  public void onMatch(RelOptRuleCall call) {
     if (!(call.getPlanner() instanceof TrainDBPlanner)) {
       return;
     }
@@ -144,8 +146,7 @@ public class ApproxAggregateSynopsisProjectScanRule
               rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
                   rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
                   rexBuilder.makeInputRef(aggregate, aggProjects.size())));
-        }
-        else {
+        } else {
           expr = rexBuilder.makeInputRef(aggregate, aggProjects.size());
         }
         aggProjects.add(expr);
@@ -160,7 +161,9 @@ public class ApproxAggregateSynopsisProjectScanRule
     }
   }
 
-  /** Rule configuration. */
+  /**
+   * Rule configuration.
+   */
   @Value.Immutable(singleton = true)
   public interface Config extends RelRule.Config {
     Config DEFAULT = ImmutableApproxAggregateSynopsisProjectScanRule.Config.of()
@@ -170,7 +173,8 @@ public class ApproxAggregateSynopsisProjectScanRule
                 .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
                 .anyInputs());
 
-    @Override default ApproxAggregateSynopsisProjectScanRule toRule() {
+    @Override
+    default ApproxAggregateSynopsisProjectScanRule toRule() {
       return new ApproxAggregateSynopsisProjectScanRule(this);
     }
   }

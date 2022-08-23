@@ -106,15 +106,15 @@ public class ApproxAggregateUtil {
     }
     final List<RelNode> parentNodes = new ArrayList<>();
     new RelVisitor() {
-      @Override public void visit(RelNode node, int ordinal, @Nullable RelNode parent) {
+      @Override
+      public void visit(RelNode node, int ordinal, @Nullable RelNode parent) {
         if (node == target) {
           parentNodes.add(parent);
         }
         for (RelNode input : node.getInputs()) {
           if (input instanceof RelSubset) {
             visit(((RelSubset) input).getBestOrOriginal(), ordinal, node);
-          }
-          else {
+          } else {
             visit(input, ordinal, node);
           }
         }

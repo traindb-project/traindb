@@ -33,8 +33,8 @@ public final class JDOCatalogStore implements CatalogStore {
                          "org.sqlite.JDBC"));
     props.setProperty("datanucleus.ConnectionURL",
         conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "uri",
-                         "jdbc:sqlite://" + TrainDBConfiguration.getTrainDBPrefixPath() +
-                         "/traindb_catalog_store.db"));
+                         "jdbc:sqlite://" + TrainDBConfiguration.getTrainDBPrefixPath()
+                         + "/traindb_catalog_store.db"));
     props.setProperty("datanucleus.ConnectionUserName",
         conf.getProperty(TrainDBConfiguration.CATALOG_STORE_PROPERTY_PREFIX + "username", ""));
     props.setProperty("datanucleus.ConnectionPassword",

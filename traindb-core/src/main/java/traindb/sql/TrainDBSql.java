@@ -146,7 +146,7 @@ public final class TrainDBSql {
       String uri = ctx.modeltypeSpecClause().modeltypeUri().getText();
       LOG.debug("CREATE MODELTYPE: name=" + name + " category=" + category
           + " location=" + location + " class=" + className  + " uri=" + uri);
-      commands.add(new TrainDBSqlCreateModeltype(name, category, location, className , uri));
+      commands.add(new TrainDBSqlCreateModeltype(name, category, location, className, uri));
     }
 
     @Override
@@ -170,8 +170,6 @@ public final class TrainDBSql {
     public void exitTrainModel(TrainDBSqlParser.TrainModelContext ctx) {
       String modelName = ctx.modelName().getText();
       String modeltypeName = ctx.modeltypeName().getText();
-      String schemaName = ctx.tableName().schemaName().getText();
-      String tableName = ctx.tableName().tableIdentifier.getText();
 
       List<String> columnNames = new ArrayList<>();
       for (TrainDBSqlParser.ColumnNameContext columnName : ctx.columnNameList().columnName()) {
@@ -195,8 +193,10 @@ public final class TrainDBSql {
           trainOptions.put(optionKeyValue.optionKey().getText(), value);
         }
       }
-
       LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
+
+      String schemaName = ctx.tableName().schemaName().getText();
+      String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlTrainModel(
           modeltypeName, modelName, schemaName, tableName, columnNames, trainOptions));
     }

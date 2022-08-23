@@ -27,7 +27,7 @@ public class SourceDbmsProducts {
 
   static Map<String, String> nameToDriverClass = null;
   static Map<String, String> nameToSqlDialectClass = null;
-  final static String ADAPTER_EXTENSION_CONFIG_FILENAME = "adapter-ext-config.json";
+  static final String ADAPTER_EXTENSION_CONFIG_FILENAME = "adapter-ext-config.json";
 
   private static void loadDbmsAdapterConfiguration() {
     nameToDriverClass = new TreeMap<>(String.CASE_INSENSITIVE_ORDER);

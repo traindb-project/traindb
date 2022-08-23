@@ -38,9 +38,9 @@ public class CatalogService extends AbstractService {
     props.clear();
     for (Map.Entry<String, String> e : conf) {
       String key = e.getKey();
-        if (key.startsWith("catalog.store.")) {
-            props.put(key, e.getValue());
-        }
+      if (key.startsWith("catalog.store.")) {
+        props.put(key, e.getValue());
+      }
     }
     super.serviceInit(conf);
   }

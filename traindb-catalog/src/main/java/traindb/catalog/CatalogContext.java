@@ -17,8 +17,8 @@ package traindb.catalog;
 import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
-import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {

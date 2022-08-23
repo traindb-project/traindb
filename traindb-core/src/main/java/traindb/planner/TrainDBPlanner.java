@@ -69,7 +69,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
       Collection<MSynopsis> synopses = catalogContext.getAllSynopses(baseSchema, baseTable);
       // TODO check columns
       return synopses;
-    } catch (CatalogException e) {}
+    } catch (CatalogException e) { }
     return null;
   }
 

@@ -14,6 +14,7 @@
  * See the License for the specific language governing permissions and
  * limitations under the License.
  */
+
 package traindb.sql.calcite;
 
 import static java.util.Objects.requireNonNull;
@@ -121,8 +122,9 @@ public class TrainDBSqlSelectOperator extends SqlOperator {
 
     for (int i = 0; i < select.getKeywordList().size(); i++) {
       final SqlLiteral keyword = (SqlLiteral) select.getKeywordList().get(i);
-      if (keyword.getValue() == TrainDBSqlSelectKeyword.APPROXIMATE) // FIXME temporary
+      if (keyword.getValue() == TrainDBSqlSelectKeyword.APPROXIMATE) { // FIXME temporary
         continue;
+      }
       keyword.unparse(writer, 0, 0);
     }
     writer.topN(select.getFetch(), select.getOffset());

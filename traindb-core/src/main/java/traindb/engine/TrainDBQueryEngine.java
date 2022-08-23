@@ -32,8 +32,8 @@ import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
-import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MModel;
+import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
@@ -226,12 +226,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String trainInfoFilename = outputPath + "/train_info.json";
     JSONParser jsonParser = new JSONParser();
     JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(new FileReader(trainInfoFilename));
-    Long base_table_rows = (Long) jsonTrainInfo.get("base_table_rows");
-    Long trained_rows = (Long) jsonTrainInfo.get("trained_rows");
+    Long baseTableRows = (Long) jsonTrainInfo.get("base_table_rows");
+    Long trainedRows = (Long) jsonTrainInfo.get("trained_rows");
 
     catalogContext.trainModel(
         modeltypeName, modelName, schemaName, tableName, columnNames,
-        base_table_rows, trained_rows, tableMetadata.get("options").toString());
+        baseTableRows, trainedRows, tableMetadata.get("options").toString());
   }
 
   @Override
