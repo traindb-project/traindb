@@ -55,6 +55,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
     // TrainDB rules
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN);
+    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_FILTER_SCAN);
 
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
     addRelTraitDef(ConventionTraitDef.INSTANCE);
