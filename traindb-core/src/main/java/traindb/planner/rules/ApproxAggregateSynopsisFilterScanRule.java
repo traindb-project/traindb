@@ -15,13 +15,24 @@
 package traindb.planner.rules;
 
 import com.google.common.collect.ImmutableList;
-import org.apache.calcite.plan.*;
+import java.math.BigDecimal;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
+import org.apache.calcite.plan.RelOptRuleCall;
+import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.*;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
+import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rex.*;
+import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
@@ -31,13 +42,11 @@ import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.TrainDBPlanner;
-import java.math.BigDecimal;
-import java.util.*;
 
 @Value.Enclosing
 public class ApproxAggregateSynopsisFilterScanRule
-        extends RelRule<ApproxAggregateSynopsisFilterScanRule.Config>
-        implements SubstitutionRule {
+    extends RelRule<ApproxAggregateSynopsisFilterScanRule.Config>
+    implements SubstitutionRule {
 
   public static final double DEFAULT_SYNOPSIS_SIZE_RATIO = 0.01;
 
@@ -45,12 +54,14 @@ public class ApproxAggregateSynopsisFilterScanRule
     super(config);
   }
 
-  @Override public boolean autoPruneOld() {
+  @Override
+  public boolean autoPruneOld() {
     return true;
   }
 
   //~ Methods ----------------------------------------------------------------
-  @Override public void onMatch(RelOptRuleCall call) {
+  @Override
+  public void onMatch(RelOptRuleCall call) {
     if (!(call.getPlanner() instanceof TrainDBPlanner)) {
       return;
     }
@@ -77,7 +88,7 @@ public class ApproxAggregateSynopsisFilterScanRule
       String tableName = tqn.get(2);
 
       Collection<MSynopsis> candidateSynopses =
-              planner.getAvailableSynopses(tableSchema, tableName);
+          planner.getAvailableSynopses(tableSchema, tableName);
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
         return;
       }
@@ -90,7 +101,7 @@ public class ApproxAggregateSynopsisFilterScanRule
         targets.clear();
         for (int i = 0; i < filter.getRowType().getFieldNames().size(); i++) {
           int newIndex = synopsis.getModel().getColumnNames()
-                  .indexOf(filter.getRowType().getFieldNames().get(i));
+              .indexOf(filter.getRowType().getFieldNames().get(i));
 
           targets.add(newIndex);
         }
@@ -103,7 +114,7 @@ public class ApproxAggregateSynopsisFilterScanRule
         return;
       }
 
-      final Mappings.TargetMapping  mapping = Mappings.source(targets, targets.size());
+      final Mappings.TargetMapping mapping = Mappings.source(targets, targets.size());
       final RexNode newCondition = RexUtil.apply(mapping, filter.getCondition());
 
       List<String> synopsisNames = new ArrayList<>();
@@ -117,7 +128,7 @@ public class ApproxAggregateSynopsisFilterScanRule
       }
       RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-              (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
 
       List<RexNode> aggProjects = new ArrayList<>();
       final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
@@ -135,40 +146,43 @@ public class ApproxAggregateSynopsisFilterScanRule
         String aggFuncName = aggCall.getAggregation().getName();
         if (ApproxAggregateUtil.isScalingAggregateFunction(aggFuncName)) {
           expr = rexBuilder.makeCast(aggCall.getType(),
-                  rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
-                          rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
-                          rexBuilder.makeInputRef(aggregate, aggProjects.size())));
-        }
-        else {
+              rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
+                  rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
+                  rexBuilder.makeInputRef(aggregate, aggProjects.size())));
+        } else {
           expr = rexBuilder.makeInputRef(aggregate, aggProjects.size());
         }
         aggProjects.add(expr);
       }
 
       final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();
-      aggregate.getAggCallList().forEach(aggregateCall->newAggCalls.add(aggregateCall.transform(mapping)));
+      aggregate.getAggCallList()
+          .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(mapping)));
 
       RelNode node = relBuilder.push(newScan)
-              .filter(newCondition)
-              .aggregate(relBuilder.groupKey(aggregate.getGroupSet()), newAggCalls.build())
-              .project(aggProjects, rowType.getFieldNames())
-              .build();
+          .filter(newCondition)
+          .aggregate(relBuilder.groupKey(aggregate.getGroupSet()), newAggCalls.build())
+          .project(aggProjects, rowType.getFieldNames())
+          .build();
 
       call.transformTo(node);
     }
   }
 
-  /** Rule configuration. */
+  /**
+   * Rule configuration.
+   */
   @Value.Immutable(singleton = true)
   public interface Config extends RelRule.Config {
     Config DEFAULT = ImmutableApproxAggregateSynopsisFilterScanRule.Config.of()
-            .withOperandSupplier(b0 ->
-                    b0.operand(Aggregate.class)
-                            .predicate(ApproxAggregateUtil::isApproximateAggregate)
-                            .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
-                            .anyInputs());
+        .withOperandSupplier(b0 ->
+            b0.operand(Aggregate.class)
+                .predicate(ApproxAggregateUtil::isApproximateAggregate)
+                .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
+                .anyInputs());
 
-    @Override default ApproxAggregateSynopsisFilterScanRule toRule() {
+    @Override
+    default ApproxAggregateSynopsisFilterScanRule toRule() {
       return new ApproxAggregateSynopsisFilterScanRule(this);
     }
   }
