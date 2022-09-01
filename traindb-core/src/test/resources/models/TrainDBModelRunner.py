@@ -25,9 +25,9 @@ class TrainDBModelRunner():
 
     return mod
 
-  def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path, args=[], kwargs={}):
+  def train_model(self, modeltype_class, modeltype_path, real_data, table_metadata, model_path):
     mod = self._load_module(modeltype_class, modeltype_path)
-    model = getattr(mod, modeltype_class)(*args, **table_metadata['options'])
+    model = getattr(mod, modeltype_class)(**table_metadata['options'])
     model.train(real_data, table_metadata)
     model.save(model_path)
 
