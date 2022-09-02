@@ -96,19 +96,21 @@ public class ApproxAggregateSynopsisProjectScanRule
 
       MSynopsis bestSynopsis = null;
       for (MSynopsis synopsis : candidateSynopses) {
+        List<RexNode> tmpNewProjects = new ArrayList<>();
         for (int i = 0; i < oldProjects.size(); i++) {
           RexInputRef inputRef = (RexInputRef) oldProjects.get(i);
           int newIndex = synopsis.getModel().getColumnNames()
               .indexOf(project.getRowType().getFieldNames().get(i));
           if (newIndex == -1) {
-            newProjects.clear();
+            tmpNewProjects.clear();
             break;
           }
-          newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
+          tmpNewProjects.add(new RexInputRef(newIndex, inputRef.getType()));
         }
-        if (!newProjects.isEmpty()) {
+        if (!tmpNewProjects.isEmpty()) {
           // TODO choose a synopsis
           bestSynopsis = synopsis;
+          newProjects = tmpNewProjects;
         }
       }
       if (bestSynopsis == null) {
