@@ -124,7 +124,6 @@ public class Driver extends UnregisteredDriver {
       this.handler.onConnectionInit(connection);
       return connection;
     } catch (Exception e) {
-      e.printStackTrace();
       throw new SQLException(e.getMessage());
     }
   }
