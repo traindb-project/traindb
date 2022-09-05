@@ -131,10 +131,13 @@ public class ApproxAggregateSynopsisFilterScanRule
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
 
       List<RexNode> aggProjects = new ArrayList<>();
+      List<RexNode> newGroupSet = new ArrayList<>();
       final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
       for (int key : aggregate.getGroupSet()) {
-        final RexInputRef ref = rexBuilder.makeInputRef(aggregate, key);
+        int targetKey = mapping.getTarget(key);
+        final RexInputRef ref = rexBuilder.makeInputRef(aggregate, targetKey);
         aggProjects.add(ref);
+        newGroupSet.add(ref);
       }
 
       double scaleFactor = 1.0 / ratio;
@@ -161,7 +164,7 @@ public class ApproxAggregateSynopsisFilterScanRule
 
       RelNode node = relBuilder.push(newScan)
           .filter(newCondition)
-          .aggregate(relBuilder.groupKey(aggregate.getGroupSet()), newAggCalls.build())
+          .aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build())
           .project(aggProjects, rowType.getFieldNames())
           .build();
 
