@@ -83,6 +83,7 @@ SELECT count(*) as c2 FROM instacart_small.order_products_syn;
 
 !ok
 
+# simple aggregation
 SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products;
 
 JdbcToEnumerableConverter
@@ -91,6 +92,7 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
 !plan
 
+# order_id is not in the snyopsis -> exact query
 SELECT APPROXIMATE avg(order_id) as average FROM instacart_small.order_products;
 
 JdbcToEnumerableConverter
@@ -99,6 +101,7 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products]])
 !plan
 
+# scaling aggregation
 SELECT APPROXIMATE sum(reordered) FROM instacart_small.order_products;
 
 JdbcToEnumerableConverter
@@ -107,6 +110,7 @@ JdbcToEnumerableConverter
       JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
 !plan
 
+# aggregation with WHERE clause
 SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products WHERE reordered = 1;
 
 JdbcToEnumerableConverter
@@ -116,6 +120,7 @@ JdbcToEnumerableConverter
         JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
 !plan
 
+# aggregation with WHERE and GROUP BY clauses
 SELECT APPROXIMATE reordered, count(*) as order_count FROM instacart_small.order_products WHERE add_to_cart_order < 5 GROUP BY reordered;
 
 JdbcToEnumerableConverter
