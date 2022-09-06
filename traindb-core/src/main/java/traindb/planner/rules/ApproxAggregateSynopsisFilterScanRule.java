@@ -30,9 +30,11 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rex.RexBuilder;
+import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
@@ -79,6 +81,7 @@ public class ApproxAggregateSynopsisFilterScanRule
       if (parent == null || !(parent instanceof Filter)) {
         continue;
       }
+
       if (ApproxAggregateUtil.getParent(aggregate, parent) != aggregate) {
         continue;
       }
@@ -98,16 +101,68 @@ public class ApproxAggregateSynopsisFilterScanRule
       MSynopsis bestSynopsis = null;
 
       for (MSynopsis synopsis : candidateSynopses) {
-        targets.clear();
+        List<Integer> tmpTargets = new ArrayList<>();
+
+        List<Integer> queryColumnIndexLists = new ArrayList<>();
+        List<AggregateCall> aggCalls = aggregate.getAggCallList();
+
+        for (AggregateCall aggCall : aggCalls) {
+          List<Integer> args = aggCall.getArgList();
+          for (Integer arg : args) {
+            queryColumnIndexLists.add(arg);
+          }
+        }
+
+        final RexNode condition = filter.getCondition();
+        List<RexNode> rexNodes = ((RexCall) condition).getOperands();
+
+        SqlOperator op = ((RexCall) condition).getOperator();
+        //multi filter conditions
+        if (op.getName().equals("AND") || op.getName().equals("OR")) {
+          for (RexNode rexNode : rexNodes) {
+            List<RexNode> tmpRexnodes = ((RexCall) rexNode).getOperands();
+            queryColumnIndexLists.add(((RexInputRef) tmpRexnodes.get(0)).getIndex());
+          }
+        } else {
+          //sing filter condition
+          queryColumnIndexLists.add(((RexInputRef) rexNodes.get(0)).getIndex());
+        }
+
+        List<String> originalColumnNames = filter.getRowType().getFieldNames();
+        List<String> synopsesColumnNames = synopsis.getModel().getColumnNames();
+
+        boolean synopsisValid = false;
+        for (int i : queryColumnIndexLists) {
+          boolean equal = false;
+          String originalColumnName = originalColumnNames.get(i);
+          for (String synopsesColumnName : synopsesColumnNames) {
+            if (originalColumnName.equals(synopsesColumnName)) {
+              equal = true;
+            }
+          }
+
+          if (equal) {
+            synopsisValid = true;
+          } else {
+            synopsisValid = false;
+            break;
+          }
+        }
+
+        if (!synopsisValid) {
+          continue;
+        }
+
         for (int i = 0; i < filter.getRowType().getFieldNames().size(); i++) {
           int newIndex = synopsis.getModel().getColumnNames()
               .indexOf(filter.getRowType().getFieldNames().get(i));
 
-          targets.add(newIndex);
+          tmpTargets.add(newIndex);
         }
         if (synopsis != null) {
           // TODO choose a synopsis
           bestSynopsis = synopsis;
+          targets = tmpTargets;
         }
       }
       if (bestSynopsis == null) {
@@ -123,6 +178,7 @@ public class ApproxAggregateSynopsisFilterScanRule
       synopsisNames.add(bestSynopsis.getName());
 
       double ratio = bestSynopsis.getRatio();
+      double scanRatio = scan.getTable().getRowCount();
       if (ratio == 0d) {
         ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
       }
