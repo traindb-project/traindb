@@ -116,16 +116,15 @@ public class ApproxAggregateSynopsisFilterScanRule
         final RexNode condition = filter.getCondition();
         List<RexNode> rexNodes = ((RexCall) condition).getOperands();
 
-        SqlOperator op = ((RexCall) condition).getOperator();
-        //multi filter conditions
-        if (op.getName().equals("AND") || op.getName().equals("OR")) {
-          for (RexNode rexNode : rexNodes) {
-            List<RexNode> tmpRexnodes = ((RexCall) rexNode).getOperands();
-            queryColumnIndexLists.add(((RexInputRef) tmpRexnodes.get(0)).getIndex());
+        for (RexNode rexNode : rexNodes) {
+          //multi conditions
+          if (rexNode instanceof RexCall) {
+            rexNode = (RexInputRef) ((RexCall) rexNode).getOperands().get(0);
           }
-        } else {
-          //sing filter condition
-          queryColumnIndexLists.add(((RexInputRef) rexNodes.get(0)).getIndex());
+
+          if (rexNode instanceof RexInputRef) {
+            queryColumnIndexLists.add(((RexInputRef) rexNode).getIndex());
+          }
         }
 
         List<String> originalColumnNames = filter.getRowType().getFieldNames();
