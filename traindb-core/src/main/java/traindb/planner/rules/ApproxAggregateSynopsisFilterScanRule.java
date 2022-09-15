@@ -34,7 +34,6 @@ import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
@@ -190,7 +189,9 @@ public class ApproxAggregateSynopsisFilterScanRule
       final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
       for (int key : aggregate.getGroupSet()) {
         int targetKey = mapping.getTarget(key);
-        final RexInputRef ref = rexBuilder.makeInputRef(aggregate, targetKey);
+        RelDataType rowTypeForKey =
+            aggregate.getInput().getRowType().getFieldList().get(key).getType();
+        final RexInputRef ref = rexBuilder.makeInputRef(rowTypeForKey, targetKey);
         aggProjects.add(ref);
         newGroupSet.add(ref);
       }
