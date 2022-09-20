@@ -28,8 +28,10 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.sql.SqlDialect;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
@@ -249,17 +251,30 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(mModel.getSchemaName());
     sb.append(".");
     sb.append(synopsisName);
-    sb.append(" AS SELECT ");
-    for (String columnName : mModel.getColumnNames()) {
-      sb.append(columnName);
-      sb.append(",");
+
+    SqlDialect dialect = schemaManager.getDialect();
+    if (dialect instanceof TrainDBSqlDialect
+        && !((TrainDBSqlDialect) dialect).supportCreateTableAsSelect()) {
+      // FIXME set column type as integer temporarily
+      sb.append("(");
+      for (String columnName : mModel.getColumnNames()) {
+        sb.append(columnName + " integer,");
+      }
+      sb.deleteCharAt(sb.lastIndexOf(","));
+      sb.append(")");
+    } else {
+      sb.append(" AS SELECT ");
+      for (String columnName : mModel.getColumnNames()) {
+        sb.append(columnName);
+        sb.append(",");
+      }
+      sb.deleteCharAt(sb.lastIndexOf(","));
+      sb.append(" FROM ");
+      sb.append(mModel.getSchemaName());
+      sb.append(".");
+      sb.append(mModel.getTableName());
+      sb.append(" WHERE 1<0");
     }
-    sb.deleteCharAt(sb.lastIndexOf(","));
-    sb.append(" FROM ");
-    sb.append(mModel.getSchemaName());
-    sb.append(".");
-    sb.append(mModel.getTableName());
-    sb.append(" WHERE 1<0");
 
     String sql = sb.toString();
     conn.executeInternal(sql);

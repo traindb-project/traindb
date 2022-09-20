@@ -35,4 +35,8 @@ public abstract class TrainDBSqlDialect extends SqlDialect {
   public boolean supportCatalogs() {
     return true;
   }
+
+  public boolean supportCreateTableAsSelect() {
+    return true;
+  }
 }

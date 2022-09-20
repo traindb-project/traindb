@@ -25,6 +25,7 @@ import javax.sql.DataSource;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.hadoop.service.AbstractService;
 import traindb.adapter.jdbc.TrainDBJdbcDataSource;
@@ -129,6 +130,10 @@ public final class SchemaManager extends AbstractService {
     currentSchema = rootSchema;
     readLock.unlock();
     return currentSchema;
+  }
+
+  public SqlDialect getDialect() {
+    return traindbDataSource.getDialect();
   }
 
   /*

@@ -46,4 +46,9 @@ public class KairosSqlDialect extends TrainDBSqlDialect {
   public boolean supportCatalogs() {
     return false;
   }
+
+  @Override
+  public boolean supportCreateTableAsSelect() {
+    return false;
+  }
 }
