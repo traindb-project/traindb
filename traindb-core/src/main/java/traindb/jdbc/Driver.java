@@ -114,11 +114,10 @@ public class Driver extends UnregisteredDriver {
           }
         }
         newUrl = Joiner.on(":").join(newTokens);
-        for (int j = 2; j < tokens.length; ++j) {
-          urlPrefixLength += j + 1;
-        }
+        String[] suffixTokens = url.split("\\?");
+        urlPrefixLength = suffixTokens[0].length();
       }
-      String urlSuffix = newUrl.substring(urlPrefixLength);
+      String urlSuffix = url.substring(urlPrefixLength);
       Properties info2 = ConnectStringParser.parse(urlSuffix, info);
       AvaticaConnection connection = this.factory.newConnection(this, this.factory, newUrl, info2);
       this.handler.onConnectionInit(connection);
