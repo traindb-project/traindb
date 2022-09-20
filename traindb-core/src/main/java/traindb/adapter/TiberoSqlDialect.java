@@ -25,7 +25,7 @@ public class TiberoSqlDialect extends TrainDBSqlDialect {
   static {
     DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
         .withIdentifierQuoteString("\"")
-        .withUnquotedCasing(Casing.TO_LOWER)
+        .withUnquotedCasing(Casing.TO_UPPER)
         .withNullCollation(NullCollation.HIGH);
     DEFAULT = new TiberoSqlDialect(DEFAULT_CONTEXT);
   }
