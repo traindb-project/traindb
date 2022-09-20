@@ -41,4 +41,9 @@ public class TiberoSqlDialect extends TrainDBSqlDialect {
   public SqlDialect getDefaultSqlDialect() {
     return DEFAULT;
   }
+
+  @Override
+  public boolean supportCatalogs() {
+    return false;
+  }
 }

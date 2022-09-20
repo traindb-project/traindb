@@ -26,9 +26,11 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Util;
+import traindb.adapter.TrainDBSqlDialect;
 import traindb.common.TrainDBLogger;
 import traindb.schema.TrainDBSchema;
 
@@ -49,7 +51,13 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       TrainDBJdbcDataSource dataSource = (TrainDBJdbcDataSource) getDataSource();
       connection = dataSource.getDataSource().getConnection();
       DatabaseMetaData databaseMetaData = connection.getMetaData();
-      resultSet = databaseMetaData.getTables(getName(), null, null, null);
+      SqlDialect dialect = ((TrainDBJdbcDataSource) getDataSource()).getDialect();
+      if (!(dialect instanceof TrainDBSqlDialect)
+          || ((TrainDBSqlDialect) dialect).supportCatalogs()) {
+        resultSet = databaseMetaData.getTables(getName(), null, null, null);
+      } else {
+        resultSet = databaseMetaData.getTables(null, getName(), null, null);
+      }
       while (resultSet.next()) {
         final String catalogName = resultSet.getString(1);
         final String schemaName = resultSet.getString(2);
