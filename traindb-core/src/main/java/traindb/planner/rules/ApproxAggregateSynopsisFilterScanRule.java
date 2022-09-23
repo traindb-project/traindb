@@ -70,6 +70,12 @@ public class ApproxAggregateSynopsisFilterScanRule
     final RelBuilder relBuilder = call.builder();
 
     final Aggregate aggregate = call.rel(0);
+    List<Integer> requiredColumnIndex = new ArrayList<>();
+    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+      requiredColumnIndex.addAll(aggCall.getArgList());
+    }
+    int aggColumnSize = requiredColumnIndex.size();
+
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
     for (TableScan scan : tableScans) {
       if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
@@ -80,103 +86,49 @@ public class ApproxAggregateSynopsisFilterScanRule
       if (parent == null || !(parent instanceof Filter)) {
         continue;
       }
-
       if (ApproxAggregateUtil.getParent(aggregate, parent) != aggregate) {
         continue;
       }
 
-      List<String> tqn = scan.getTable().getQualifiedName();
-      String tableSchema = tqn.get(1);
-      String tableName = tqn.get(2);
-
+      requiredColumnIndex.subList(aggColumnSize, requiredColumnIndex.size()).clear();
+      Filter filter = (Filter) parent;
+      List<RexNode> rexNodes = ((RexCall) filter.getCondition()).getOperands();
+      for (RexNode rexNode : rexNodes) {
+        if (rexNode instanceof RexCall) {
+          rexNode = ((RexCall) rexNode).getOperands().get(0);
+        }
+        if (rexNode instanceof RexInputRef) {
+          requiredColumnIndex.add(((RexInputRef) rexNode).getIndex());
+        }
+      }
+      List<String> inputColumns = filter.getRowType().getFieldNames();
+      List<String> requiredColumnNames =
+          ApproxAggregateUtil.getSublistByIndex(inputColumns, requiredColumnIndex);
+      List<String> qualifiedTableName = scan.getTable().getQualifiedName();
       Collection<MSynopsis> candidateSynopses =
-          planner.getAvailableSynopses(tableSchema, tableName);
+          planner.getAvailableSynopses(qualifiedTableName, requiredColumnNames);
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
         return;
       }
 
-      Filter filter = (Filter) parent;
       List<Integer> targets = new ArrayList<>();
       MSynopsis bestSynopsis = null;
-
       for (MSynopsis synopsis : candidateSynopses) {
         List<Integer> tmpTargets = new ArrayList<>();
-
-        List<Integer> queryColumnIndexLists = new ArrayList<>();
-        List<AggregateCall> aggCalls = aggregate.getAggCallList();
-
-        for (AggregateCall aggCall : aggCalls) {
-          List<Integer> args = aggCall.getArgList();
-          for (Integer arg : args) {
-            queryColumnIndexLists.add(arg);
-          }
-        }
-
-        final RexNode condition = filter.getCondition();
-        List<RexNode> rexNodes = ((RexCall) condition).getOperands();
-
-        for (RexNode rexNode : rexNodes) {
-          //multi conditions
-          if (rexNode instanceof RexCall) {
-            rexNode = (RexInputRef) ((RexCall) rexNode).getOperands().get(0);
-          }
-
-          if (rexNode instanceof RexInputRef) {
-            queryColumnIndexLists.add(((RexInputRef) rexNode).getIndex());
-          }
-        }
-
-        List<String> originalColumnNames = filter.getRowType().getFieldNames();
-        List<String> synopsesColumnNames = synopsis.getModel().getColumnNames();
-
-        boolean synopsisValid = false;
-        for (int i : queryColumnIndexLists) {
-          boolean equal = false;
-          String originalColumnName = originalColumnNames.get(i);
-          for (String synopsesColumnName : synopsesColumnNames) {
-            if (originalColumnName.equals(synopsesColumnName)) {
-              equal = true;
-            }
-          }
-
-          if (equal) {
-            synopsisValid = true;
-          } else {
-            synopsisValid = false;
-            break;
-          }
-        }
-
-        if (!synopsisValid) {
-          continue;
-        }
-
-        for (int i = 0; i < filter.getRowType().getFieldNames().size(); i++) {
-          int newIndex = synopsis.getModel().getColumnNames()
-              .indexOf(filter.getRowType().getFieldNames().get(i));
-
+        for (int i = 0; i < inputColumns.size(); i++) {
+          int newIndex = synopsis.getModel().getColumnNames().indexOf(inputColumns.get(i));
           tmpTargets.add(newIndex);
         }
-        if (synopsis != null) {
-          // TODO choose a synopsis
-          bestSynopsis = synopsis;
-          targets = tmpTargets;
-        }
-      }
-      if (bestSynopsis == null) {
-        return;
+        // TODO choose a synopsis
+        bestSynopsis = synopsis;
+        targets = tmpTargets;
       }
 
       final Mappings.TargetMapping mapping = Mappings.source(targets, targets.size());
-      final RexNode newCondition = RexUtil.apply(mapping, filter.getCondition());
-
-      List<String> synopsisNames = new ArrayList<>();
-      synopsisNames.add(tqn.get(0));
-      synopsisNames.add(tqn.get(1));
-      synopsisNames.add(bestSynopsis.getName());
+      List<String> synopsisNames = ApproxAggregateUtil.getQualifiedName(
+          qualifiedTableName.get(0), qualifiedTableName.get(1), bestSynopsis.getName());
 
       double ratio = bestSynopsis.getRatio();
-      double scanRatio = scan.getTable().getRowCount();
       if (ratio == 0d) {
         ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
       }
@@ -218,6 +170,7 @@ public class ApproxAggregateSynopsisFilterScanRule
       aggregate.getAggCallList()
           .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(mapping)));
 
+      final RexNode newCondition = RexUtil.apply(mapping, filter.getCondition());
       RelNode node = relBuilder.push(newScan)
           .filter(newCondition)
           .aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build())

@@ -14,6 +14,8 @@
 
 package traindb.planner.rules;
 
+import static java.util.stream.Collectors.toList;
+
 import com.google.common.collect.Multimap;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -124,6 +126,14 @@ public class ApproxAggregateUtil {
       return parentNodes.get(0);
     }
     return null;
+  }
+
+  public static List<String> getQualifiedName(String catalog, String schema, String table) {
+    return new ArrayList(Arrays.asList(catalog, schema, table));
+  }
+
+  public static <T> List<T> getSublistByIndex(List<T> list, List<Integer> index) {
+    return index.stream().map(list::get).collect(toList());
   }
 }
 

@@ -66,104 +66,92 @@ public class ApproxAggregateSynopsisAggregateScanRule
     final TrainDBPlanner planner = (TrainDBPlanner) call.getPlanner();
     final RelBuilder relBuilder = call.builder();
     final Aggregate aggregate = call.rel(0);
-    List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
-    for (TableScan scan : tableScans) {
-      if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
-        continue;
-      }
+    final TableScan scan = call.rel(1);
 
-      RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
-      if (parent == null || !(parent instanceof Aggregate)) {
-        continue;
-      }
-
-      List<String> tqn = scan.getTable().getQualifiedName();
-      String tableSchema = tqn.get(1);
-      String tableName = tqn.get(2);
-
-      Collection<MSynopsis> candidateSynopses =
-          planner.getAvailableSynopses(tableSchema, tableName);
-      if (candidateSynopses == null || candidateSynopses.isEmpty()) {
-        return;
-      }
-
-      List<Integer> targets = new ArrayList<>();
-      MSynopsis bestSynopsis = null;
-
-      for (MSynopsis synopsis : candidateSynopses) {
-        List<Integer> tmpTargets = new ArrayList<>();
-        for (int i = 0; i < aggregate.getInput().getRowType().getFieldNames().size(); i++) {
-          int newIndex = synopsis.getModel().getColumnNames()
-              .indexOf(aggregate.getInput().getRowType().getFieldNames().get(i));
-
-          tmpTargets.add(newIndex);
-        }
-        if (synopsis != null) {
-          // TODO choose a synopsis
-          bestSynopsis = synopsis;
-          targets = tmpTargets;
-        }
-      }
-      if (bestSynopsis == null) {
-        return;
-      }
-
-      final Mappings.TargetMapping mapping = Mappings.source(targets, targets.size());
-
-      List<String> synopsisNames = new ArrayList<>();
-      synopsisNames.add(tqn.get(0));
-      synopsisNames.add(tqn.get(1));
-      synopsisNames.add(bestSynopsis.getName());
-
-      double ratio = bestSynopsis.getRatio();
-      if (ratio == 0d) {
-        ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
-      }
-      RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
-      TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
-
-      List<RexNode> aggProjects = new ArrayList<>();
-      List<RexNode> newGroupSet = new ArrayList<>();
-      final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
-      for (int key : aggregate.getGroupSet()) {
-        int targetKey = mapping.getTarget(key);
-        RelDataType rowTypeForKey =
-            aggregate.getInput().getRowType().getFieldList().get(key).getType();
-        final RexInputRef ref = rexBuilder.makeInputRef(rowTypeForKey, targetKey);
-        aggProjects.add(ref);
-        newGroupSet.add(ref);
-      }
-
-      double scaleFactor = 1.0 / ratio;
-      List<AggregateCall> aggCalls = aggregate.getAggCallList();
-      RelDataType rowType = aggregate.getRowType();
-
-      for (AggregateCall aggCall : aggCalls) {
-        RexNode expr;
-        String aggFuncName = aggCall.getAggregation().getName();
-        if (ApproxAggregateUtil.isScalingAggregateFunction(aggFuncName)) {
-          expr = rexBuilder.makeCast(aggCall.getType(),
-              rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
-                  rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
-                  rexBuilder.makeInputRef(aggregate, aggProjects.size())));
-        } else {
-          expr = rexBuilder.makeInputRef(aggregate, aggProjects.size());
-        }
-        aggProjects.add(expr);
-      }
-
-      final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();
-      aggregate.getAggCallList()
-          .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(mapping)));
-
-      RelNode node = relBuilder.push(newScan)
-          .aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build())
-          .project(aggProjects, rowType.getFieldNames())
-          .build();
-
-      call.transformTo(node);
+    List<Integer> requiredColumnIndex = new ArrayList<>();
+    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+      requiredColumnIndex.addAll(aggCall.getArgList());
     }
+
+    if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
+      return;
+    }
+
+    List<String> inputColumns = scan.getRowType().getFieldNames();
+    List<String> requiredColumnNames =
+        ApproxAggregateUtil.getSublistByIndex(inputColumns, requiredColumnIndex);
+    List<String> qualifiedTableName = scan.getTable().getQualifiedName();
+    Collection<MSynopsis> candidateSynopses =
+        planner.getAvailableSynopses(qualifiedTableName, requiredColumnNames);
+    if (candidateSynopses == null || candidateSynopses.isEmpty()) {
+      return;
+    }
+
+    List<Integer> targets = new ArrayList<>();
+    MSynopsis bestSynopsis = null;
+    for (MSynopsis synopsis : candidateSynopses) {
+      List<Integer> tmpTargets = new ArrayList<>();
+      for (int i = 0; i < inputColumns.size(); i++) {
+        int newIndex = synopsis.getModel().getColumnNames().indexOf(inputColumns.get(i));
+        tmpTargets.add(newIndex);
+      }
+      // TODO choose a synopsis
+      bestSynopsis = synopsis;
+      targets = tmpTargets;
+    }
+
+    final Mappings.TargetMapping mapping = Mappings.source(targets, targets.size());
+    List<String> synopsisNames = ApproxAggregateUtil.getQualifiedName(
+        qualifiedTableName.get(0), qualifiedTableName.get(1), bestSynopsis.getName());
+
+    double ratio = bestSynopsis.getRatio();
+    if (ratio == 0d) {
+      ratio = scan.getTable().getRowCount() * DEFAULT_SYNOPSIS_SIZE_RATIO;
+    }
+    RelOptTableImpl synopsisTable = (RelOptTableImpl) planner.getTable(synopsisNames, ratio);
+    TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
+        (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+
+    List<RexNode> aggProjects = new ArrayList<>();
+    List<RexNode> newGroupSet = new ArrayList<>();
+    final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
+    for (int key : aggregate.getGroupSet()) {
+      int targetKey = mapping.getTarget(key);
+      RelDataType rowTypeForKey =
+          aggregate.getInput().getRowType().getFieldList().get(key).getType();
+      final RexInputRef ref = rexBuilder.makeInputRef(rowTypeForKey, targetKey);
+      aggProjects.add(ref);
+      newGroupSet.add(ref);
+    }
+
+    double scaleFactor = 1.0 / ratio;
+    List<AggregateCall> aggCalls = aggregate.getAggCallList();
+    RelDataType rowType = aggregate.getRowType();
+
+    for (AggregateCall aggCall : aggCalls) {
+      RexNode expr;
+      String aggFuncName = aggCall.getAggregation().getName();
+      if (ApproxAggregateUtil.isScalingAggregateFunction(aggFuncName)) {
+        expr = rexBuilder.makeCast(aggCall.getType(),
+            rexBuilder.makeCall(SqlStdOperatorTable.MULTIPLY,
+                rexBuilder.makeExactLiteral(BigDecimal.valueOf(scaleFactor)),
+                rexBuilder.makeInputRef(aggregate, aggProjects.size())));
+      } else {
+        expr = rexBuilder.makeInputRef(aggregate, aggProjects.size());
+      }
+      aggProjects.add(expr);
+    }
+
+    final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();
+    aggregate.getAggCallList()
+        .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(mapping)));
+
+    RelNode node = relBuilder.push(newScan)
+        .aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build())
+        .project(aggProjects, rowType.getFieldNames())
+        .build();
+
+    call.transformTo(node);
   }
 
   /**

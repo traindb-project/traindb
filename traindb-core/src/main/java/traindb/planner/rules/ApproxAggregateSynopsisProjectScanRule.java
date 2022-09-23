@@ -66,6 +66,12 @@ public class ApproxAggregateSynopsisProjectScanRule
     final RelBuilder relBuilder = call.builder();
 
     final Aggregate aggregate = call.rel(0);
+    List<Integer> requiredColumnIndex = new ArrayList<>();
+    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+      requiredColumnIndex.addAll(aggCall.getArgList());
+    }
+    int aggColumnSize = requiredColumnIndex.size();
+
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
     for (TableScan scan : tableScans) {
       if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
@@ -80,17 +86,18 @@ public class ApproxAggregateSynopsisProjectScanRule
         continue;
       }
 
-      List<String> tqn = scan.getTable().getQualifiedName();
-      String tableSchema = tqn.get(1);
-      String tableName = tqn.get(2);
-
+      requiredColumnIndex.subList(aggColumnSize, requiredColumnIndex.size()).clear();
+      Project project = (Project) parent;
+      List<String> inputColumns = project.getRowType().getFieldNames();
+      List<String> requiredColumnNames =
+          ApproxAggregateUtil.getSublistByIndex(inputColumns, requiredColumnIndex);
+      List<String> qualifiedTableName = scan.getTable().getQualifiedName();
       Collection<MSynopsis> candidateSynopses =
-          planner.getAvailableSynopses(tableSchema, tableName);
+          planner.getAvailableSynopses(qualifiedTableName, requiredColumnNames);
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
         return;
       }
 
-      Project project = (Project) parent;
       List<RexNode> oldProjects = project.getProjects();
       List<RexNode> newProjects = new ArrayList<>();
 
@@ -99,28 +106,16 @@ public class ApproxAggregateSynopsisProjectScanRule
         List<RexNode> tmpNewProjects = new ArrayList<>();
         for (int i = 0; i < oldProjects.size(); i++) {
           RexInputRef inputRef = (RexInputRef) oldProjects.get(i);
-          int newIndex = synopsis.getModel().getColumnNames()
-              .indexOf(project.getRowType().getFieldNames().get(i));
-          if (newIndex == -1) {
-            tmpNewProjects.clear();
-            break;
-          }
+          int newIndex = synopsis.getModel().getColumnNames().indexOf(inputColumns.get(i));
           tmpNewProjects.add(new RexInputRef(newIndex, inputRef.getType()));
         }
-        if (!tmpNewProjects.isEmpty()) {
-          // TODO choose a synopsis
-          bestSynopsis = synopsis;
-          newProjects = tmpNewProjects;
-        }
-      }
-      if (bestSynopsis == null) {
-        return;
+        // TODO choose a synopsis
+        bestSynopsis = synopsis;
+        newProjects = tmpNewProjects;
       }
 
-      List<String> synopsisNames = new ArrayList<>();
-      synopsisNames.add(tqn.get(0));
-      synopsisNames.add(tqn.get(1));
-      synopsisNames.add(bestSynopsis.getName());
+      List<String> synopsisNames = ApproxAggregateUtil.getQualifiedName(
+          qualifiedTableName.get(0), qualifiedTableName.get(1), bestSynopsis.getName());
 
       double ratio = bestSynopsis.getRatio();
       if (ratio == 0d) {

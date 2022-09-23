@@ -14,6 +14,7 @@
 
 package traindb.planner;
 
+import java.util.ArrayList;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.plan.Context;
@@ -66,11 +67,20 @@ public class TrainDBPlanner extends VolcanoPlanner {
     Hook.PLANNER.run(this); // allow test to add or remove rules
   }
 
-  public Collection<MSynopsis> getAvailableSynopses(String baseSchema, String baseTable) {
+  public Collection<MSynopsis> getAvailableSynopses(List<String> qualifiedBaseTableName,
+                                                    List<String> requiredColumnNames) {
+    String baseSchema = qualifiedBaseTableName.get(1);
+    String baseTable = qualifiedBaseTableName.get(2);
     try {
       Collection<MSynopsis> synopses = catalogContext.getAllSynopses(baseSchema, baseTable);
-      // TODO check columns
-      return synopses;
+      List<MSynopsis> availableSynopses = new ArrayList<>();
+      for (MSynopsis synopsis : synopses) {
+        List<String> synopsisColumnNames = synopsis.getModel().getColumnNames();
+        if (synopsisColumnNames.containsAll(requiredColumnNames)) {
+          availableSynopses.add(synopsis);
+        }
+      }
+      return availableSynopses;
     } catch (CatalogException e) { }
     return null;
   }
