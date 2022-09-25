@@ -15,6 +15,7 @@
 package traindb.planner;
 
 import java.util.ArrayList;
+import java.util.Arrays;
 import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.plan.Context;
@@ -33,6 +34,8 @@ import traindb.planner.rules.TrainDBRules;
 import traindb.prepare.TrainDBCatalogReader;
 
 public class TrainDBPlanner extends VolcanoPlanner {
+
+  public static final double DEFAULT_SYNOPSIS_SIZE_RATIO = 0.01;
 
   private CatalogContext catalogContext;
   private TrainDBCatalogReader catalogReader;
@@ -81,15 +84,26 @@ public class TrainDBPlanner extends VolcanoPlanner {
         }
       }
       return availableSynopses;
-    } catch (CatalogException e) { }
+    } catch (CatalogException e) {
+    }
     return null;
   }
 
-  public RelOptTable getTable(List<String> names) {
-    return catalogReader.getTable(names, null);
+  public RelOptTable getSynopsisTable(MSynopsis synopsis, RelOptTable baseTable) {
+    List<String> qualifiedSynopsisName = new ArrayList(Arrays.asList(
+        baseTable.getQualifiedName().get(0), baseTable.getQualifiedName().get(1),
+        synopsis.getName()));
+    double ratio = synopsis.getRatio();
+    if (ratio == 0d) {
+      ratio = DEFAULT_SYNOPSIS_SIZE_RATIO;
+    }
+    double rowCount = baseTable.getRowCount() * ratio;
+    return catalogReader.getTable(qualifiedSynopsisName, rowCount);
   }
 
-  public RelOptTable getTable(List<String> names, @Nullable Double rowCount) {
-    return catalogReader.getTable(names, rowCount);
+  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses) {
+    // TODO choose the best synopsis
+    MSynopsis bestSynopsis = synopses.iterator().next();
+    return bestSynopsis;
   }
 }
