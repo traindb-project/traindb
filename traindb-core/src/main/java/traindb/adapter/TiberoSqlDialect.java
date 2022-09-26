@@ -16,7 +16,13 @@ package traindb.adapter;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.NullCollation;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.sql.SqlAlienSystemTypeNameSpec;
+import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.checkerframework.checker.nullness.qual.Nullable;
 
 public class TiberoSqlDialect extends TrainDBSqlDialect {
   public static final Context DEFAULT_CONTEXT;
@@ -45,5 +51,30 @@ public class TiberoSqlDialect extends TrainDBSqlDialect {
   @Override
   public boolean supportCatalogs() {
     return false;
+  }
+
+  @Override
+  public @Nullable SqlNode getCastSpec(RelDataType type) {
+    String castSpec;
+    switch (type.getSqlTypeName()) {
+      case SMALLINT:
+        castSpec = "NUMBER(5)";
+        break;
+      case INTEGER:
+        castSpec = "NUMBER(10)";
+        break;
+      case BIGINT:
+        castSpec = "NUMBER(19)";
+        break;
+      case DOUBLE:
+        castSpec = "DOUBLE PRECISION";
+        break;
+      default:
+        return super.getCastSpec(type);
+    }
+
+    return new SqlDataTypeSpec(
+        new SqlAlienSystemTypeNameSpec(castSpec, type.getSqlTypeName(), SqlParserPos.ZERO),
+        SqlParserPos.ZERO);
   }
 }
