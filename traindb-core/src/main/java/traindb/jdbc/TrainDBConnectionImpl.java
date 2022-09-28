@@ -43,13 +43,13 @@ import org.apache.calcite.avatica.AvaticaFactory;
 import org.apache.calcite.avatica.AvaticaSite;
 import org.apache.calcite.avatica.AvaticaStatement;
 import org.apache.calcite.avatica.Helper;
-import org.apache.calcite.avatica.InternalProperty;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.UnregisteredDriver;
 import org.apache.calcite.avatica.remote.TypedValue;
 import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalcitePrepare.Context;
@@ -76,6 +76,7 @@ import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.impl.LongSchemaVersion;
 import org.apache.calcite.server.CalciteServer;
 import org.apache.calcite.server.CalciteServerStatement;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.advise.SqlAdvisor;
 import org.apache.calcite.sql.advise.SqlAdvisorValidator;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
@@ -88,6 +89,7 @@ import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.SourceDbmsProducts;
+import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.JDOCatalogStore;
@@ -162,10 +164,18 @@ public abstract class TrainDBConnectionImpl
             ? rootSchema
             : CalciteSchema.from(schemaManager.getCurrentSchema()));
     Preconditions.checkArgument(this.rootSchema.isRoot(), "must be root schema");
-    this.properties.put(InternalProperty.CASE_SENSITIVE, cfg.caseSensitive());
-    this.properties.put(InternalProperty.UNQUOTED_CASING, cfg.unquotedCasing());
-    this.properties.put(InternalProperty.QUOTED_CASING, cfg.quotedCasing());
-    this.properties.put(InternalProperty.QUOTING, cfg.quoting());
+
+    SqlDialect dialect = schemaManager.getDialect();
+    if (dialect instanceof TrainDBSqlDialect) {
+      cfg.getProps().put(CalciteConnectionProperty.CASE_SENSITIVE.name(),
+          dialect.isCaseSensitive());
+      cfg.getProps().put(CalciteConnectionProperty.UNQUOTED_CASING.name(),
+          dialect.getUnquotedCasing());
+      cfg.getProps().put(CalciteConnectionProperty.QUOTED_CASING.name(),
+          dialect.getQuotedCasing());
+      cfg.getProps().put(CalciteConnectionProperty.QUOTING.name(),
+          ((TrainDBSqlDialect) dialect).getQuoting());
+    }
   }
 
   private BasicDataSource dataSource(String url, Properties info) {

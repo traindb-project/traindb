@@ -602,7 +602,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       // First check input query with TrainDB sql grammar
       List<TrainDBSqlCommand> commands = null;
       try {
-        commands = TrainDBSql.parse(query.sql);
+        commands = TrainDBSql.parse(query.sql, parserConfig);
       } catch (Exception e) {
         if (commands != null) {
           commands.clear();

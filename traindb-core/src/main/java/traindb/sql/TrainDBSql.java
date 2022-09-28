@@ -24,6 +24,8 @@ import org.antlr.v4.runtime.ConsoleErrorListener;
 import org.antlr.v4.runtime.ParserRuleContext;
 import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
+import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.sql.parser.SqlParser;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 
@@ -32,9 +34,9 @@ public final class TrainDBSql {
   private TrainDBSql() {
   }
 
-  public static List<TrainDBSqlCommand> parse(String query) {
+  public static List<TrainDBSqlCommand> parse(String query, SqlParser.Config parserConfig) {
     ANTLRInputStream input = new ANTLRInputStream(query);
-    TrainDBSqlLexer lexer = new TrainDBSqlLexer(input);
+    TrainDBSqlLexer lexer = new TrainDBSqlLexer(input, parserConfig);
     CommonTokenStream tokens = new CommonTokenStream(lexer);
     TrainDBSqlParser parser = new TrainDBSqlParser(tokens);
     TrainDBErrorListener trainDBErrorListener = new TrainDBErrorListener();
@@ -117,6 +119,17 @@ public final class TrainDBSql {
         throw new RuntimeException("invalid TrainDB SQL command");
     }
     return TrainDBListResultSet.empty();
+  }
+
+  public static String toCase(String s, Casing casing) {
+    switch (casing) {
+      case TO_UPPER:
+        return s.toUpperCase();
+      case TO_LOWER:
+        return s.toLowerCase();
+      default:
+        return s;
+    }
   }
 
   private static class Listener extends TrainDBSqlBaseListener {

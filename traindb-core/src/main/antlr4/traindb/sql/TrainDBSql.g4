@@ -14,6 +14,20 @@
 
 grammar TrainDBSql;
 
+@lexer::header {
+    import org.apache.calcite.avatica.util.Casing;
+    import org.apache.calcite.sql.parser.SqlParser;
+}
+
+@lexer::members {
+    SqlParser.Config parserConfig;
+
+    public TrainDBSqlLexer(CharStream input, SqlParser.Config parserConfig) {
+        this(input);
+        this.parserConfig = parserConfig;
+    }
+}
+
 traindbStmts
     : createModeltype
     | dropModeltype
@@ -204,7 +218,7 @@ IDENTIFIER
         }
     | LETTER ( LETTER | DIGIT )*
         {
-            setText(getText().toLowerCase());
+            setText(TrainDBSql.toCase(getText(), parserConfig.unquotedCasing()));
         }
     ;
 

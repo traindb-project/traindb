@@ -19,38 +19,21 @@ import java.io.InputStream;
 import java.util.Enumeration;
 import java.util.Properties;
 import org.apache.calcite.avatica.util.Casing;
+import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionConfigImpl;
+import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.hadoop.conf.Configuration;
 
 public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
-  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBConfiguration.class);
-
   public static final String CATALOG_STORE_PROPERTY_PREFIX = "catalog.store.";
   public static final String SERVER_PROPERTY_PREFIX = "traindb.server.";
-
+  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBConfiguration.class);
   private final String TRAINDB_CONFIG_FILENAME = "traindb.properties";
   private Properties props;
 
   public TrainDBConfiguration(Properties p) {
     super(p);
     this.props = p;
-  }
-
-  public void loadConfiguration() {
-    try {
-      loadConfigurationFile(props, TRAINDB_CONFIG_FILENAME);
-    } catch (Exception e) {
-      LOG.debug("Could not load configuration file.");
-    }
-  }
-
-  private void loadConfigurationFile(Properties props, String filename) throws Exception {
-    InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
-    props.load(inputStream);
-  }
-
-  public Properties getProps() {
-    return props;
   }
 
   public static String getModelRunnerPath() {
@@ -73,9 +56,44 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     return uri;
   }
 
+  public void loadConfiguration() {
+    try {
+      loadConfigurationFile(props, TRAINDB_CONFIG_FILENAME);
+    } catch (Exception e) {
+      LOG.debug("Could not load configuration file.");
+    }
+  }
+
+  private void loadConfigurationFile(Properties props, String filename) throws Exception {
+    InputStream inputStream = this.getClass().getClassLoader().getResourceAsStream(filename);
+    props.load(inputStream);
+  }
+
+  public Properties getProps() {
+    return props;
+  }
+
+  @Override
+  public Quoting quoting() {
+    return (Quoting) props.getOrDefault(
+        CalciteConnectionProperty.QUOTING.name(), Quoting.DOUBLE_QUOTE);
+  }
+
   @Override
   public Casing unquotedCasing() {
-    return Casing.TO_LOWER;
+    return (Casing) props.getOrDefault(
+        CalciteConnectionProperty.UNQUOTED_CASING.name(), Casing.TO_LOWER);
+  }
+
+  @Override
+  public Casing quotedCasing() {
+    return (Casing) props.getOrDefault(
+        CalciteConnectionProperty.QUOTED_CASING.name(), Casing.UNCHANGED);
+  }
+
+  @Override
+  public boolean caseSensitive() {
+    return (Boolean) props.getOrDefault(CalciteConnectionProperty.CASE_SENSITIVE.name(), true);
   }
 
   public Configuration asHadoopConfiguration() {
