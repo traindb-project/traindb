@@ -16,14 +16,9 @@ package traindb.engine;
 
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
-import com.opencsv.CSVWriter;
 import java.io.FileReader;
-import java.io.FileWriter;
-import java.nio.file.Files;
-import java.nio.file.Path;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
-import java.sql.Types;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -37,7 +32,6 @@ import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
-import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
@@ -75,108 +69,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.dropModeltype(name);
   }
 
-  private JSONObject getTableMetadata(String schemaName, String tableName, List<String> columnNames,
-                                      Map<String, Object> trainOptions) throws Exception {
-    // query to get table metadata
-    StringBuilder sb = new StringBuilder();
-    sb.append("SELECT ");
-    for (String columnName : columnNames) {
-      sb.append(columnName);
-      sb.append(",");
-    }
-    sb.deleteCharAt(sb.lastIndexOf(","));
-    sb.append(" FROM ");
-    sb.append(schemaName);
-    sb.append(".");
-    sb.append(tableName);
-    sb.append(" WHERE 1<0");
-
-    String sql = sb.toString();
-    ResultSet res = conn.executeQueryInternal(sql);
-
-    JSONObject root = new JSONObject();
-    JSONObject fields = new JSONObject();
-    for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
-      JSONObject typeInfo = new JSONObject();
-
-      /* datatype (type, subtype)
-        ('categorical', None): 'object',
-        ('boolean', None): 'bool',
-        ('numerical', None): 'float',
-        ('numerical', 'float'): 'float',
-        ('numerical', 'integer'): 'int',
-        ('datetime', None): 'datetime64',
-        ('id', None): 'int',
-        ('id', 'integer'): 'int',
-        ('id', 'string'): 'str'
-       */
-      switch (res.getMetaData().getColumnType(i)) {
-        case Types.CHAR:
-        case Types.VARCHAR:
-          typeInfo.put("type", "categorical");
-          break;
-        case Types.NUMERIC:
-        case Types.DECIMAL:
-        case Types.INTEGER:
-        case Types.BIGINT:
-        case Types.TINYINT:
-        case Types.SMALLINT:
-          typeInfo.put("type", "numerical");
-          typeInfo.put("subtype", "integer");
-          break;
-        case Types.FLOAT:
-        case Types.DOUBLE:
-          typeInfo.put("type", "numerical");
-          typeInfo.put("subtype", "float");
-          break;
-        case Types.BOOLEAN:
-          typeInfo.put("type", "boolean");
-          break;
-        case Types.DATE:
-        case Types.TIME:
-        case Types.TIMESTAMP:
-        case Types.TIMESTAMP_WITH_TIMEZONE:
-          typeInfo.put("type", "datetime");
-          break;
-        default:
-          typeInfo.put("type", "unknown");
-          break;
-      }
-
-      fields.put(res.getMetaData().getColumnName(i), typeInfo);
-    }
-    root.put("fields", fields);
-    root.put("schema", schemaName);
-    root.put("table", tableName);
-
-    JSONObject options = new JSONObject();
-    options.putAll(trainOptions);
-    root.put("options", options);
-
-    res.close();
-    return root;
-  }
-
-  // FIXME temporary
-  private ResultSet getTrainingData(String schemaName, String tableName,
-                                          List<String> columnNames) throws Exception {
-    // query to get table metadata
-    StringBuilder sb = new StringBuilder();
-    sb.append("SELECT ");
-    for (String columnName : columnNames) {
-      sb.append(columnName);
-      sb.append(",");
-    }
-    sb.deleteCharAt(sb.lastIndexOf(","));
-    sb.append(" FROM ");
-    sb.append(schemaName);
-    sb.append(".");
-    sb.append(tableName);
-
-    String sql = sb.toString();
-    return conn.executeQueryInternal(sql);
-  }
-
   @Override
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
@@ -191,51 +83,19 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       schemaName = conn.getSchema();
     }
 
-    JSONObject tableMetadata = getTableMetadata(schemaName, tableName, columnNames, trainOptions);
-    Path modelPath = catalogContext.getModelPath(modeltypeName, modelName);
-    Files.createDirectories(modelPath);
-    String outputPath = modelPath.toString();
+    AbstractTrainDBModelRunner runner =
+        new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
+    String trainInfo = runner.trainModel(schemaName, tableName, columnNames, trainOptions);
 
-    // write metadata for model training scripts in python
-    String metadataFilename = outputPath + "/metadata.json";
-    FileWriter fileWriter = new FileWriter(metadataFilename);
-    fileWriter.write(tableMetadata.toJSONString());
-    fileWriter.flush();
-    fileWriter.close();
-
-    // FIXME securely pass training data for ML model training
-    ResultSet trainingData = getTrainingData(schemaName, tableName, columnNames);
-    String dataFilename = outputPath + "/data.csv";
-    FileWriter datafileWriter = new FileWriter(dataFilename);
-    CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
-    csvWriter.writeAll(trainingData, true);
-    csvWriter.close();
-    trainingData.close();
-
-    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
-
-    // train ML model
-    ProcessBuilder pb = new ProcessBuilder("python",
-        TrainDBConfiguration.getModelRunnerPath(), "train",
-        mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
-        dataFilename, metadataFilename, outputPath);
-    pb.inheritIO();
-    Process process = pb.start();
-    process.waitFor();
-
-    if (process.exitValue() != 0) {
-      throw new TrainDBException("failed to train model " + modelName);
-    }
-
-    String trainInfoFilename = outputPath + "/train_info.json";
     JSONParser jsonParser = new JSONParser();
-    JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(new FileReader(trainInfoFilename));
+    JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(trainInfo);
     Long baseTableRows = (Long) jsonTrainInfo.get("base_table_rows");
     Long trainedRows = (Long) jsonTrainInfo.get("trained_rows");
 
-    catalogContext.trainModel(
-        modeltypeName, modelName, schemaName, tableName, columnNames,
-        baseTableRows, trainedRows, tableMetadata.get("options").toString());
+    JSONObject options = new JSONObject();
+    options.putAll(trainOptions);
+    catalogContext.trainModel(modeltypeName, modelName, schemaName, tableName, columnNames,
+        baseTableRows, trainedRows, options.toString());
   }
 
   @Override
@@ -330,24 +190,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (!catalogContext.modelExists(modelName)) {
       throw new CatalogException("model '" + modelName + "' does not exist");
     }
+
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
-    String modelPath =
-        catalogContext.getModelPath(mModeltype.getName(), mModel.getName()).toString();
-    String outputPath = modelPath + '/' + synopsisName + ".csv";
 
-    // generate synopsis from ML model
-    ProcessBuilder pb = new ProcessBuilder("python",
-        TrainDBConfiguration.getModelRunnerPath(), "synopsis",
-        mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
-        modelPath, String.valueOf(limitNumber), outputPath);
-    pb.inheritIO();
-    Process process = pb.start();
-    process.waitFor();
+    AbstractTrainDBModelRunner runner =
+        new TrainDBFileModelRunner(conn, catalogContext, mModeltype.getName(), modelName);
+    String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
+    runner.generateSynopsis(outputPath, limitNumber);
 
-    if (process.exitValue() != 0) {
-      throw new TrainDBException("failed to create synopsis " + synopsisName);
-    }
     double ratio = (double) limitNumber / (double) mModel.getBaseTableRows();
     catalogContext.createSynopsis(synopsisName, modelName, limitNumber, ratio);
     try {
