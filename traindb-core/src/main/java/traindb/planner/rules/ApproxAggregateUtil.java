@@ -143,8 +143,19 @@ public class ApproxAggregateUtil {
     return index.stream().map(list::get).collect(toList());
   }
 
+  public static List<RexNode> makeAggregateGroupSet(Aggregate aggregate,
+                                                    Mappings.TargetMapping mapping) {
+    final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
+    List<RexNode> newGroupSet = new ArrayList<>();
+    for (int key : aggregate.getGroupSet()) {
+      RelDataType rowTypeForKey =
+          aggregate.getInput().getRowType().getFieldList().get(key).getType();
+      newGroupSet.add(rexBuilder.makeInputRef(rowTypeForKey, mapping.getTarget(key)));
+    }
+    return newGroupSet;
+  }
+
   public static List<RexNode> makeAggregateProjects(Aggregate aggregate,
-                                                    Mappings.TargetMapping mapping,
                                                     RelOptTable baseTable,
                                                     RelOptTable synopsisTable) {
     final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
@@ -152,7 +163,7 @@ public class ApproxAggregateUtil {
     for (int key : aggregate.getGroupSet()) {
       RelDataType rowTypeForKey =
           aggregate.getInput().getRowType().getFieldList().get(key).getType();
-      aggProjects.add(rexBuilder.makeInputRef(rowTypeForKey, mapping.getTarget(key)));
+      aggProjects.add(rexBuilder.makeInputRef(rowTypeForKey, aggProjects.size()));
     }
 
     double scaleFactor = baseTable.getRowCount() / synopsisTable.getRowCount();

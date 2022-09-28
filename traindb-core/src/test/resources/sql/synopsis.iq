@@ -130,6 +130,15 @@ JdbcToEnumerableConverter
         JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
 !plan
 
+SELECT APPROXIMATE add_to_cart_order, count(add_to_cart_order) FROM instacart_small.order_products WHERE add_to_cart_order < 3 GROUP BY add_to_cart_order;
+
+JdbcToEnumerableConverter
+  JdbcProject(add_to_cart_order=[$0], EXPR$1=[CAST(*(1384.617:DECIMAL(7, 3), $1)):BIGINT NOT NULL])
+    JdbcAggregate(group=[{1}], EXPR$1=[COUNT()])
+      JdbcFilter(condition=[<($1, 3)])
+        JdbcTableScan(table=[[traindb, instacart_small, order_products_syn]])
+!plan
+
 DROP SYNOPSIS order_products_syn;
 (0 rows modified)
 

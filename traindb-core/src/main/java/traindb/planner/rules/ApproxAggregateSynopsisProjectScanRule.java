@@ -97,22 +97,19 @@ public class ApproxAggregateSynopsisProjectScanRule
 
       List<RexNode> oldProjects = project.getProjects();
       List<RexNode> newProjects = new ArrayList<>();
-      List<Integer> targets = new ArrayList<>();
       for (int i = 0; i < oldProjects.size(); i++) {
         RexInputRef inputRef = (RexInputRef) oldProjects.get(i);
         int newIndex = synopsisColumns.indexOf(inputColumns.get(i));
         newProjects.add(new RexInputRef(newIndex, inputRef.getType()));
-        targets.add(newIndex);
       }
-      final Mappings.TargetMapping mapping = Mappings.source(targets, synopsisColumns.size());
 
       RelOptTableImpl synopsisTable =
           (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, scan.getTable());
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
 
-      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
-          aggregate, mapping, scan.getTable(), synopsisTable);
+      List<RexNode> aggProjects =
+          ApproxAggregateUtil.makeAggregateProjects(aggregate, scan.getTable(), synopsisTable);
 
       RelNode node = relBuilder.push(newScan)
           .project(newProjects, project.getRowType().getFieldNames())
