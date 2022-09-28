@@ -198,6 +198,10 @@ public abstract class TrainDBConnectionImpl
     return dataSource;
   }
 
+  public BasicDataSource getDataSource() {
+    return dataSource;
+  }
+
   private Connection extraConnection() {
     try {
       return dataSource.getConnection();

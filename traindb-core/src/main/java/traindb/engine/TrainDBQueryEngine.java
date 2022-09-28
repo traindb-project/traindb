@@ -83,8 +83,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       schemaName = conn.getSchema();
     }
 
-    AbstractTrainDBModelRunner runner =
-        new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(modeltypeName, modelName);
     String trainInfo = runner.trainModel(schemaName, tableName, columnNames, trainOptions);
 
     JSONParser jsonParser = new JSONParser();
@@ -181,6 +180,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
   }
 
+  private AbstractTrainDBModelRunner createModelRunner(String modeltypeName, String modelName) {
+    String modelrunner = conn.cfg.getModelRunner();
+    if (modelrunner.equals("py4j")) {
+      return new TrainDBPy4JModelRunner(conn, catalogContext, modeltypeName, modelName);
+    }
+
+    return new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
+  }
+
   @Override
   public void createSynopsis(String synopsisName, String modelName, int limitNumber)
       throws Exception {
@@ -194,8 +202,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
 
-    AbstractTrainDBModelRunner runner =
-        new TrainDBFileModelRunner(conn, catalogContext, mModeltype.getName(), modelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(mModeltype.getName(), modelName);
     String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
     runner.generateSynopsis(outputPath, limitNumber);
 

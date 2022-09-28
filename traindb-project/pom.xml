@@ -227,6 +227,11 @@ limitations under the License.
                 <artifactId>jdo-api</artifactId>
                 <version>3.1</version>
             </dependency>
+            <dependency>
+                <groupId>net.sf.py4j</groupId>
+                <artifactId>py4j</artifactId>
+                <version>0.10.9.7</version>
+            </dependency>
 
             <!--  Test Support -->
             <dependency>

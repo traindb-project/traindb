@@ -38,6 +38,10 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     super(conn, catalogContext, modeltypeName, modelName);
   }
 
+  public static String getModelRunnerPath() {
+    return TrainDBConfiguration.getTrainDBPrefixPath() + "/models/TrainDBModelRunner.py";
+  }
+
   @Override
   public String trainModel(String schemaName, String tableName, List<String> columnNames,
                            Map<String, Object> trainOptions) throws Exception {
@@ -64,8 +68,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
 
     // train ML model
-    ProcessBuilder pb = new ProcessBuilder("python",
-        TrainDBConfiguration.getModelRunnerPath(), "train",
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "train",
         mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
         dataFilename, metadataFilename, outputPath);
     pb.inheritIO();
@@ -86,8 +89,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
 
     // generate synopsis from ML model
-    ProcessBuilder pb = new ProcessBuilder("python",
-        TrainDBConfiguration.getModelRunnerPath(), "synopsis",
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "synopsis",
         mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
         modelPath, String.valueOf(rows), outputPath);
     pb.inheritIO();

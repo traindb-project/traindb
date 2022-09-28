@@ -36,8 +36,8 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     this.props = p;
   }
 
-  public static String getModelRunnerPath() {
-    return getTrainDBPrefixPath() + "/models/TrainDBModelRunner.py";
+  public String getModelRunner() {
+    return (String) props.getOrDefault("traindb.server.modelrunner", "file");
   }
 
   public static String getTrainDBPrefixPath() {
