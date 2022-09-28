@@ -210,6 +210,7 @@ public abstract class TrainDBConnectionImpl
     try {
       Statement stmt = extraConnection().createStatement();
       stmt.execute(sql);
+      stmt.close();
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }

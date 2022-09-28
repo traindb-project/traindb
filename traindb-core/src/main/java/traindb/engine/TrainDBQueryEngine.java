@@ -153,6 +153,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     options.putAll(trainOptions);
     root.put("options", options);
 
+    res.close();
     return root;
   }
 
@@ -209,6 +210,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
     csvWriter.writeAll(trainingData, true);
     csvWriter.close();
+    trainingData.close();
 
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
 
