@@ -39,7 +39,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   public static String getModelRunnerPath() {
-    return TrainDBConfiguration.getTrainDBPrefixPath() + "/models/TrainDBModelRunner.py";
+    return TrainDBConfiguration.getTrainDBPrefixPath() + "/models/TrainDBCliModelRunner.py";
   }
 
   @Override
