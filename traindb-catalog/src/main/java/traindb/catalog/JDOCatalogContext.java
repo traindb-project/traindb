@@ -99,11 +99,11 @@ public final class JDOCatalogContext implements CatalogContext {
   public MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
       List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows,
-      String options) throws CatalogException {
+      @Nullable String options) throws CatalogException {
     try {
       MModel mModel = new MModel(
           getModeltype(modeltypeName), modelName, schemaName, tableName, columnNames,
-          baseTableRows, trainedRows, options);
+          baseTableRows, trainedRows, options == null ? "" : options);
       pm.makePersistent(mModel);
       return mModel;
     } catch (RuntimeException e) {

@@ -14,6 +14,7 @@
 
 package traindb.catalog.pm;
 
+import java.util.Arrays;
 import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -56,7 +57,7 @@ public final class MModel {
   private List<String> columns;
 
   @Persistent
-  private String options;
+  private byte[] options;
 
   public MModel(
       MModeltype modeltype, String modelName, String schemaName, String tableName,
@@ -69,7 +70,7 @@ public final class MModel {
     this.columns = columns;
     this.baseTableRows = (baseTableRows == null) ? 0 : baseTableRows;
     this.trainedRows = (trainedRows == null) ? 0 : trainedRows;
-    this.options = (options == null) ? "" : options;
+    this.options = options.getBytes();
   }
 
   public String getName() {
@@ -101,6 +102,6 @@ public final class MModel {
   }
 
   public String getOptions() {
-    return options;
+    return new String(options);
   }
 }
