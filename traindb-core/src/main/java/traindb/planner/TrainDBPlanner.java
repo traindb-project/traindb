@@ -20,13 +20,20 @@ import java.util.Collection;
 import java.util.List;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
+import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
+import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.adapter.jdbc.JdbcConvention;
+import traindb.adapter.jdbc.JdbcTableScan;
+import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MSynopsis;
@@ -101,9 +108,42 @@ public class TrainDBPlanner extends VolcanoPlanner {
     return catalogReader.getTable(qualifiedSynopsisName, rowCount);
   }
 
-  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses) {
+  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, TableScan scan) {
     // TODO choose the best synopsis
-    MSynopsis bestSynopsis = synopses.iterator().next();
+    if (synopses.size() == 1) {
+      return synopses.iterator().next();
+    }
+    MSynopsis bestSynopsis = null;
+    double bestSynopsisScanRows = Double.valueOf(0.0d);
+    double bestSynopsisScanCpu = Double.valueOf(0.0d);
+    double bestSynopsisScanIo = Double.valueOf(0.0d);
+    for (MSynopsis synopsis : synopses) {
+
+      RelOptTableImpl synopsisTable =
+          (RelOptTableImpl) getSynopsisTable(synopsis, scan.getTable());
+      TableScan synopsisScan =
+          new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
+              (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+
+      RelMetadataQuery mq = scan.getCluster().getMetadataQuery();
+      RelOptCost synopsisScanCost = mq.getCumulativeCost(synopsisScan);
+
+      List<Double> synopsisScanColumnSizes = mq.getAverageColumnSizes(synopsisScan);
+      Double synopsisScanColumnSize =
+          synopsisScanColumnSizes.stream().mapToDouble(Double::doubleValue).sum();
+
+      double synopsisScanRows = synopsisScanCost.getRows();
+      double synopsisScanCpu = synopsisScanRows * synopsisScanColumnSize;
+      double synopsisScanIo = synopsisScanCost.getIo();
+
+      if ((bestSynopsis == null) || (synopsisScanRows < bestSynopsisScanRows) ||
+          (synopsisScanCpu < bestSynopsisScanCpu) || (synopsisScanIo < bestSynopsisScanIo)) {
+        bestSynopsis = synopsis;
+        bestSynopsisScanRows = synopsisScanRows;
+        bestSynopsisScanCpu = synopsisScanCpu;
+        bestSynopsisScanIo = synopsisScanIo;
+      }
+    }
     return bestSynopsis;
   }
 }

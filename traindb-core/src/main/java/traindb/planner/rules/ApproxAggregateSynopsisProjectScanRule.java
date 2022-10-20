@@ -29,7 +29,6 @@ import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.tools.RelBuilder;
-import org.apache.calcite.util.mapping.Mappings;
 import org.immutables.value.Value;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
@@ -92,7 +91,7 @@ public class ApproxAggregateSynopsisProjectScanRule
         return;
       }
 
-      final MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses);
+      final MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan);
       final List<String> synopsisColumns = bestSynopsis.getModel().getColumnNames();
 
       List<RexNode> oldProjects = project.getProjects();
