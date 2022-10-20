@@ -140,6 +140,20 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MModel.class);
+      query.setFilter(
+          "schemaName == baseSchema && tableName == baseTable && modeltype.type == \"INFERENCE\"");
+      query.declareParameters("String baseSchema, String baseTable");
+      return (List<MModel>) query.execute(baseSchema, baseTable);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get models", e);
+    }
+  }
+
+  @Override
   public boolean modelExists(String name) {
     return getModel(name) != null;
   }

@@ -44,6 +44,9 @@ public interface CatalogContext {
 
   Collection<MModel> getModels() throws CatalogException;
 
+  Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
+      throws CatalogException;
+
   boolean modelExists(String name);
 
   MModel getModel(String name);

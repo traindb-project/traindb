@@ -29,6 +29,7 @@ import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
+import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.rules.TrainDBRules;
 import traindb.prepare.TrainDBCatalogReader;
@@ -106,4 +107,24 @@ public class TrainDBPlanner extends VolcanoPlanner {
     MSynopsis bestSynopsis = synopses.iterator().next();
     return bestSynopsis;
   }
+
+  public Collection<MModel> getAvailableInferenceModels(
+      List<String> qualifiedBaseTableName, List<String> requiredColumnNames) {
+    String baseSchema = qualifiedBaseTableName.get(1);
+    String baseTable = qualifiedBaseTableName.get(2);
+    try {
+      Collection<MModel> models = catalogContext.getInferenceModels(baseSchema, baseTable);
+      List<MModel> availableModels = new ArrayList<>();
+      for (MModel model : models) {
+        List<String> columnNames = model.getColumnNames();
+        if (columnNames.containsAll(requiredColumnNames)) {
+          availableModels.add(model);
+        }
+      }
+      return availableModels;
+    } catch (CatalogException e) {
+    }
+    return null;
+  }
+
 }
