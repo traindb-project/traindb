@@ -45,6 +45,9 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void generateSynopsis(String synopsisName, int rows) throws Exception;
 
+  public abstract String infer(String aggregateExpression, String groupByColumn,
+                               String whereCondition) throws Exception;
+
   public Path getModelPath() {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
         modeltypeName, modelName);
