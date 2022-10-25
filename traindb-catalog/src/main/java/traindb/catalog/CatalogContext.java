@@ -14,7 +14,6 @@
 
 package traindb.catalog;
 
-import java.nio.file.Path;
 import java.util.Collection;
 import java.util.List;
 import traindb.catalog.pm.MModel;
@@ -44,11 +43,12 @@ public interface CatalogContext {
 
   Collection<MModel> getModels() throws CatalogException;
 
+  Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
+      throws CatalogException;
+
   boolean modelExists(String name);
 
   MModel getModel(String name);
-
-  Path getModelPath(String modeltypeName, String modelName);
 
   MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
       throws CatalogException;

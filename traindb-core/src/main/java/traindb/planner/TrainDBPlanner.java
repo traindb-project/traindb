@@ -36,6 +36,7 @@ import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
+import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.rules.TrainDBRules;
 import traindb.prepare.TrainDBCatalogReader;
@@ -68,6 +69,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN);
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_FILTER_SCAN);
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_AGGREGATE_SCAN);
+    addRule(TrainDBRules.APPROX_AGGREGATE_INFERENCE);
 
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
     addRelTraitDef(ConventionTraitDef.INSTANCE);
@@ -75,6 +77,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
     setTopDownOpt(false);
 
     Hook.PLANNER.run(this); // allow test to add or remove rules
+  }
+
+  public CatalogContext getCatalogContext() {
+    return catalogContext;
   }
 
   public Collection<MSynopsis> getAvailableSynopses(List<String> qualifiedBaseTableName,
@@ -146,4 +152,24 @@ public class TrainDBPlanner extends VolcanoPlanner {
     }
     return bestSynopsis;
   }
+
+  public Collection<MModel> getAvailableInferenceModels(
+      List<String> qualifiedBaseTableName, List<String> requiredColumnNames) {
+    String baseSchema = qualifiedBaseTableName.get(1);
+    String baseTable = qualifiedBaseTableName.get(2);
+    try {
+      Collection<MModel> models = catalogContext.getInferenceModels(baseSchema, baseTable);
+      List<MModel> availableModels = new ArrayList<>();
+      for (MModel model : models) {
+        List<String> columnNames = model.getColumnNames();
+        if (columnNames.containsAll(requiredColumnNames)) {
+          availableModels.add(model);
+        }
+      }
+      return availableModels;
+    } catch (CatalogException e) {
+    }
+    return null;
+  }
+
 }

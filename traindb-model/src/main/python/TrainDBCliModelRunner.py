@@ -55,6 +55,7 @@ import argparse
 import pandas as pd
 import json
 import sys
+import csv
 
 root_parser = argparse.ArgumentParser(description='TrainDB CLI Model Runner')
 subparsers = root_parser.add_subparsers(dest='cmd')
@@ -79,6 +80,7 @@ parser_synopsis.add_argument('model_path', type=str, help='(str) path to model')
 parser_synopsis.add_argument('agg_expr', type=str, help='(str) aggregation expression')
 parser_synopsis.add_argument('group_by_column', type=str, help='(str) column specified in GROUP BY clause')
 parser_synopsis.add_argument('where_condition', type=str, help='(str) filter condition specified in WHERE clause')
+parser_synopsis.add_argument('output_file', type=str, nargs='?', default='', help='(str) path to save inferred query result file')
 
 args = root_parser.parse_args()
 runner = TrainDBCliModelRunner()
@@ -95,7 +97,13 @@ elif args.cmd == 'synopsis':
   syn_data.to_csv(args.output_file, index=False)
   sys.exit(0)
 elif args.cmd == 'infer':
-  syn_data = runner.infer(args.modeltype_class, args.modeltype_uri, args.model_path, args.agg_expr, args.group_by_column, args.where_condition)
+  aqp_result, confidence_interval = runner.infer(args.modeltype_class, args.modeltype_uri, args.model_path, args.agg_expr, args.group_by_column, args.where_condition)
+  if args.output_file == '':
+    print(aqp_result)
+  else:
+    with open(args.output_file, 'w') as f:
+      writer = csv.writer(f)
+      writer.writerows(aqp_result)
   sys.exit(0)
 else:
   root_parser.print_help()

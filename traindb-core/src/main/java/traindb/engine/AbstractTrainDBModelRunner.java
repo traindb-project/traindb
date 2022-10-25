@@ -15,12 +15,14 @@
 package traindb.engine;
 
 import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.sql.Types;
 import java.util.List;
 import java.util.Map;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
+import traindb.common.TrainDBConfiguration;
 import traindb.jdbc.TrainDBConnectionImpl;
 
 public abstract class AbstractTrainDBModelRunner {
@@ -43,8 +45,12 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void generateSynopsis(String synopsisName, int rows) throws Exception;
 
+  public abstract String infer(String aggregateExpression, String groupByColumn,
+                               String whereCondition) throws Exception;
+
   public Path getModelPath() {
-    return catalogContext.getModelPath(modeltypeName, modelName);
+    return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
+        modeltypeName, modelName);
   }
 
   protected String buildSelectTrainingDataQuery(String schemaName, String tableName,

@@ -126,6 +126,12 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     process.destroy();
   }
 
+  @Override
+  public String infer(String aggregateExpression, String groupByColumn, String whereCondition)
+      throws Exception {
+    throw new TrainDBException("Not supported yet in Py4J model runner");
+  }
+
   private int getAvailablePort() throws Exception {
     ServerSocket s;
     try {

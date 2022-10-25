@@ -14,8 +14,6 @@
 
 package traindb.catalog;
 
-import java.nio.file.Path;
-import java.nio.file.Paths;
 import java.util.Collection;
 import java.util.List;
 import javax.jdo.PersistenceManager;
@@ -25,7 +23,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
-import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -140,6 +137,20 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MModel.class);
+      query.setFilter(
+          "schemaName == baseSchema && tableName == baseTable && modeltype.type == \"INFERENCE\"");
+      query.declareParameters("String baseSchema, String baseTable");
+      return (List<MModel>) query.execute(baseSchema, baseTable);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get models", e);
+    }
+  }
+
+  @Override
   public boolean modelExists(String name) {
     return getModel(name) != null;
   }
@@ -155,12 +166,6 @@ public final class JDOCatalogContext implements CatalogContext {
       return (MModel) query.execute(name);
     } catch (RuntimeException e) { }
     return null;
-  }
-
-  @Override
-  public Path getModelPath(String modeltypeName, String modelName) {
-    return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
-                     modeltypeName, modelName);
   }
 
   @Override

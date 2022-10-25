@@ -23,6 +23,7 @@ import java.nio.file.Paths;
 import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.pm.MModeltype;
@@ -84,6 +85,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     return trainInfo;
   }
 
+  @Override
   public void generateSynopsis(String outputPath, int rows) throws Exception {
     String modelPath = getModelPath().toString();
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
@@ -99,6 +101,29 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     if (process.exitValue() != 0) {
       throw new TrainDBException("failed to create synopsis");
     }
+  }
+
+  @Override
+  public String infer(String aggregateExpression, String groupByColumn, String whereCondition)
+      throws Exception {
+    String modelPath = getModelPath().toString();
+    MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
+
+    UUID queryId = UUID.randomUUID();
+    String outputPath = modelPath + "/infer" + queryId + ".csv";
+
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "infer",
+        mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
+        modelPath, aggregateExpression, groupByColumn, whereCondition, outputPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
+
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to infer '" + aggregateExpression + "'");
+    }
+
+    return outputPath;
   }
 
 }
