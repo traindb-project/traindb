@@ -62,6 +62,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN);
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_FILTER_SCAN);
     addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_AGGREGATE_SCAN);
+    addRule(TrainDBRules.APPROX_AGGREGATE_INFERENCE);
 
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
     addRelTraitDef(ConventionTraitDef.INSTANCE);
@@ -69,6 +70,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
     setTopDownOpt(false);
 
     Hook.PLANNER.run(this); // allow test to add or remove rules
+  }
+
+  public CatalogContext getCatalogContext() {
+    return catalogContext;
   }
 
   public Collection<MSynopsis> getAvailableSynopses(List<String> qualifiedBaseTableName,

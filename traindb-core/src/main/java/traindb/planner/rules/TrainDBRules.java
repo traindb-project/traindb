@@ -30,4 +30,8 @@ public class TrainDBRules {
   public static final ApproxAggregateSynopsisAggregateScanRule
       APPROX_AGGREGATE_SYNOPSIS_AGGREGATE_SCAN =
       ApproxAggregateSynopsisAggregateScanRule.Config.DEFAULT.toRule();
+
+  public static final ApproxAggregateInferenceRule
+      APPROX_AGGREGATE_INFERENCE =
+      ApproxAggregateInferenceRule.Config.DEFAULT.toRule();
 }
