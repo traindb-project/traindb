@@ -55,6 +55,7 @@ import argparse
 import pandas as pd
 import json
 import sys
+import csv
 
 root_parser = argparse.ArgumentParser(description='TrainDB CLI Model Runner')
 subparsers = root_parser.add_subparsers(dest='cmd')
