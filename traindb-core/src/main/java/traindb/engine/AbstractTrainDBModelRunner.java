@@ -153,4 +153,8 @@ public abstract class AbstractTrainDBModelRunner {
     return root;
   }
 
+  public String getModelName() {
+    return modelName;
+  }
+
 }
