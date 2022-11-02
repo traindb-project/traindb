@@ -15,6 +15,7 @@
 package traindb.adapter.python;
 
 import au.com.bytecode.opencsv.CSVReader;
+import java.io.File;
 import java.io.FileReader;
 import java.io.IOException;
 import java.util.ArrayList;
@@ -27,7 +28,7 @@ import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
-public class PythonMLAggregateEnumerable extends AbstractEnumerable<Object[]> {
+public class PythonMLAggregateEnumerable<E> extends AbstractEnumerable<E> {
 
   public final String csvResultPath;
   public final Map<String, SqlTypeName> fields;
@@ -38,13 +39,20 @@ public class PythonMLAggregateEnumerable extends AbstractEnumerable<Object[]> {
   }
 
   @Override
-  public Enumerator<Object[]> enumerator() {
-    return Linq4j.enumerator(inferResult());
+  public Enumerator<E> enumerator() {
+    return (Enumerator<E>) Linq4j.enumerator(inferResult());
   }
 
-  private List<Object[]> inferResult() {
+  private List<?> inferResult() {
+    if (fields.size() == 1) {
+      return convertSingleColumn();
+    }
+    return convertArray();
+  }
+
+  private List<Object[]> convertArray() {
+    List<Object[]> result = new ArrayList<>();
     try (CSVReader csvReader = new CSVReader(new FileReader(csvResultPath))) {
-      List<Object[]> result = new ArrayList<>();
       String[] line;
       while ((line = csvReader.readNext()) != null) {
         Object[] row = new Object[fields.size()];
@@ -58,6 +66,27 @@ public class PythonMLAggregateEnumerable extends AbstractEnumerable<Object[]> {
       return result;
     } catch (IOException exception) {
       return Collections.emptyList();
+    } finally {
+      File f = new File(csvResultPath);
+      f.delete();
+    }
+  }
+
+  private List<Object> convertSingleColumn() {
+    List<Object> result = new ArrayList<>();
+    try (CSVReader csvReader = new CSVReader(new FileReader(csvResultPath))) {
+      String[] line;
+      while ((line = csvReader.readNext()) != null) {
+        Object row = convert(fields.entrySet().iterator().next().getValue(), line[0]);
+        ;
+        result.add(row);
+      }
+      return result;
+    } catch (IOException exception) {
+      return Collections.emptyList();
+    } finally {
+      File f = new File(csvResultPath);
+      f.delete();
     }
   }
 
