@@ -145,7 +145,6 @@ public class ApproxAggregateSynopsisFilterScanRule
         .withOperandSupplier(b0 ->
             b0.operand(Aggregate.class)
                 .predicate(ApproxAggregateUtil::isApproximateAggregate)
-                .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
                 .anyInputs());
 
     @Override

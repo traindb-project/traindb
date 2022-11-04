@@ -117,7 +117,6 @@ public class ApproxAggregateSynopsisAggregateScanRule
         .withOperandSupplier(b0 ->
             b0.operand(Aggregate.class)
                 .predicate(ApproxAggregateUtil::isApproximateAggregate)
-                .predicate(ApproxAggregateUtil::hasApproxAggregateFunctionsOnly)
                 .oneInput(b1 ->
                     b1.operand(TableScan.class).noInputs()));
 

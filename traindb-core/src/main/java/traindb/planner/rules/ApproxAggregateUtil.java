@@ -54,6 +54,11 @@ public class ApproxAggregateUtil {
   );
 
   public static boolean isApproximateAggregate(Aggregate aggregate) {
+    for (AggregateCall aggCall : aggregate.getAggCallList()) {
+      if (!approxAggregateFuncList.contains(aggCall.getAggregation().getName())) {
+        return false;
+      }
+    }
     List<RelHint> hints = aggregate.getHints();
     for (RelHint hint : hints) {
       if (hint.hintName.equals("APPROXIMATE_AGGR")) {
@@ -71,15 +76,6 @@ public class ApproxAggregateUtil {
       }
     }
     return false;
-  }
-
-  public static boolean hasApproxAggregateFunctionsOnly(Aggregate aggregate) {
-    for (AggregateCall aggCall : aggregate.getAggCallList()) {
-      if (!approxAggregateFuncList.contains(aggCall.getAggregation().getName())) {
-        return false;
-      }
-    }
-    return true;
   }
 
   public static boolean isScalingAggregateFunction(String aggFuncName) {
