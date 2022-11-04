@@ -50,18 +50,13 @@ public class TrainDBSqlSelect extends SqlSelect {
     if (isKeywordPresent(TrainDBSqlSelectKeyword.APPROXIMATE)) {
       List<SqlNode> hintList;
       if (hints == null) {
-        hintList = new ArrayList<SqlNode>();
+        hintList = new ArrayList<>();
       } else {
         hintList = getHints().getList();
       }
       hintList.add(new SqlHint(pos, new SqlIdentifier("APPROXIMATE_AGGR", pos),
           SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
       setHints(new SqlNodeList(hintList, pos));
-
-      SqlParserPos fromPos = Span.of(from).end(from);
-      hintList.add(new SqlHint(fromPos, new SqlIdentifier("APPROXIMATE_AGGR_TABLE", fromPos),
-          SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
-      setHints(new SqlNodeList(hintList, fromPos));
     }
   }
 

@@ -66,10 +66,6 @@ public class ApproxAggregateSynopsisAggregateScanRule
       requiredColumnIndex.addAll(aggCall.getArgList());
     }
 
-    if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
-      return;
-    }
-
     List<String> inputColumns = scan.getRowType().getFieldNames();
     List<String> requiredColumnNames =
         ApproxAggregateUtil.getSublistByIndex(inputColumns, requiredColumnIndex);

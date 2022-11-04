@@ -69,25 +69,20 @@ public class ApproxAggregateInferenceRule
     final RelBuilder relBuilder = call.builder();
 
     final Aggregate aggregate = call.rel(0);
-    List<Integer> requiredColumnIndex = new ArrayList<>();
+    List<Integer> aggColumnIndex = new ArrayList<>();
     for (AggregateCall aggCall : aggregate.getAggCallList()) {
-      requiredColumnIndex.addAll(aggCall.getArgList());
+      aggColumnIndex.addAll(aggCall.getArgList());
     }
-    int aggColumnSize = requiredColumnIndex.size();
 
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
     if (tableScans.size() != 1) {
       return;
     }
     TableScan scan = tableScans.get(0);
-    if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
-      return;
-    }
-
-    requiredColumnIndex.subList(aggColumnSize, requiredColumnIndex.size()).clear();
-
     RelDataType inputRowType = scan.getRowType();
     Map<RexNode, RelDataType> filterConditionMap = new HashMap<>();
+    List<String> requiredColumnNames = new ArrayList<>();
+
     RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
     while (parent != aggregate) {
       if (parent instanceof Project) {
@@ -102,15 +97,16 @@ public class ApproxAggregateInferenceRule
             rexNode = ((RexCall) rexNode).getOperands().get(0);
           }
           if (rexNode instanceof RexInputRef) {
-            requiredColumnIndex.add(((RexInputRef) rexNode).getIndex());
+            requiredColumnNames.add(
+                inputRowType.getFieldNames().get(((RexInputRef) rexNode).getIndex()));
           }
         }
       }
       parent = ApproxAggregateUtil.getParent(aggregate, parent);
     }
 
-    List<String> requiredColumnNames =
-        ApproxAggregateUtil.getSublistByIndex(inputRowType.getFieldNames(), requiredColumnIndex);
+    requiredColumnNames.addAll(
+        ApproxAggregateUtil.getSublistByIndex(inputRowType.getFieldNames(), aggColumnIndex));
     Collection<MModel> candidateModels =
         planner.getAvailableInferenceModels(scan.getTable().getQualifiedName(),
             requiredColumnNames);

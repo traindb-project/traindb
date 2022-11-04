@@ -68,10 +68,6 @@ public class ApproxAggregateSynopsisProjectScanRule
 
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
     for (TableScan scan : tableScans) {
-      if (!ApproxAggregateUtil.isApproximateTableScan(scan)) {
-        continue;
-      }
-
       RelNode parent = ApproxAggregateUtil.getParent(aggregate, scan);
       if (parent == null || !(parent instanceof Project)) {
         continue;

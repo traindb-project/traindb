@@ -37,6 +37,7 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.util.mapping.Mappings;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.adapter.python.PythonMLAggregateModelScan;
 
 public class ApproxAggregateUtil {
 
@@ -68,16 +69,6 @@ public class ApproxAggregateUtil {
     return false;
   }
 
-  public static boolean isApproximateTableScan(TableScan scan) {
-    List<RelHint> hints = scan.getHints();
-    for (RelHint hint : hints) {
-      if (hint.hintName.equals("APPROXIMATE_AGGR_TABLE")) {
-        return true;
-      }
-    }
-    return false;
-  }
-
   public static boolean isScalingAggregateFunction(String aggFuncName) {
     return scalingAggregateFuncList.contains(aggFuncName);
   }
@@ -95,6 +86,9 @@ public class ApproxAggregateUtil {
     for (Map.Entry<Class<? extends RelNode>, Collection<RelNode>> e : nodes.asMap().entrySet()) {
       if (TableScan.class.isAssignableFrom(e.getKey())) {
         for (RelNode node : e.getValue()) {
+          if (node instanceof PythonMLAggregateModelScan) {
+            continue;
+          }
           usedTableScans.add((TableScan) node);
         }
       }
