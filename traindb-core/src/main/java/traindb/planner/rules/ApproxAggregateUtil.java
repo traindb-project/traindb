@@ -62,7 +62,7 @@ public class ApproxAggregateUtil {
     }
     List<RelHint> hints = aggregate.getHints();
     for (RelHint hint : hints) {
-      if (hint.hintName.equals("APPROXIMATE_AGGR")) {
+      if (hint.hintName.equals("approx_aggr")) {
         return true;
       }
     }
