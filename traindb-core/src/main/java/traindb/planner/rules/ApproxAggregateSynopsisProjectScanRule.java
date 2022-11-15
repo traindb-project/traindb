@@ -87,7 +87,14 @@ public class ApproxAggregateSynopsisProjectScanRule
         return;
       }
 
-      final MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan);
+      MSynopsis bestSynopsis = null;
+      String hintTable = ApproxAggregateUtil.getApproximateAggregateHintTable(aggregate);
+      if(hintTable != null) {
+        bestSynopsis = planner.getHintSynopsis(candidateSynopses, hintTable);
+      }
+      if(bestSynopsis == null) {
+        bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan);
+      }
       final List<String> synopsisColumns = bestSynopsis.getModel().getColumnNames();
 
       List<RexNode> oldProjects = project.getProjects();

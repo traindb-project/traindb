@@ -172,4 +172,14 @@ public class TrainDBPlanner extends VolcanoPlanner {
     return null;
   }
 
+  public MSynopsis getHintSynopsis(Collection<MSynopsis> synopses, String hintTable) {
+    for (MSynopsis synopsis : synopses) {
+      if(synopsis.getName().equals(hintTable))
+      {
+        return synopsis;
+      }
+    }
+
+    return null;
+  }
 }
