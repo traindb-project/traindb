@@ -18,6 +18,7 @@ import java.util.Collection;
 import java.util.List;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
+import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSynopsis;
 
 public interface CatalogContext {
@@ -63,5 +64,13 @@ public interface CatalogContext {
 
   void dropSynopsis(String name) throws CatalogException;
 
+  /*============ Catalog Table ============*/
+  Collection<MQueryLog> getQueryLog() throws CatalogException;
+
+  MQueryLog insertQueryLog(String start, String user, String query) throws CatalogException;
+
+  void deleteQueryLog(String user) throws CatalogException;
+
+  /*============ Common  =================*/
   void close();
 }
