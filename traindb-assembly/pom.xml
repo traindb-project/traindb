@@ -51,6 +51,7 @@ limitations under the License.
                 <configuration>
                     <finalName>traindb-${project.version}</finalName>
                     <appendAssemblyId>false</appendAssemblyId>
+                    <tarLongFileMode>posix</tarLongFileMode>
                     <descriptors>
                         <descriptor>bin-dist.xml</descriptor>
                     </descriptors>
