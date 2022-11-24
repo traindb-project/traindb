@@ -73,4 +73,24 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
       return Type.SHOW_TABLES;
     }
   }
+  static class QueryLogs extends TrainDBSqlShowCommand {
+    QueryLogs() {
+      super();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_QUERY_LOGS;
+    }
+  }
+  static class Tasks extends TrainDBSqlShowCommand {
+    Tasks() {
+      super();
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_TASKS;
+    }
+  }
 }
