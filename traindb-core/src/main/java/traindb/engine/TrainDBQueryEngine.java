@@ -32,6 +32,8 @@ import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MQueryLog;
+import traindb.catalog.pm.MTask;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
@@ -341,5 +343,37 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public void bypassDdlStmt(String stmt) throws Exception {
     conn.executeInternal(stmt);
     conn.refreshRootSchema();
+  }
+
+  @Override
+  public void insertQueryLogs(String start, String user, String query)
+          throws Exception {
+    catalogContext.insertQueryLog(start, user, query);
+  }
+
+  @Override
+  public TrainDBListResultSet showQueryLogs() throws Exception {
+    List<String> header = Arrays.asList("start", "user", "query");
+    List<List<Object>> queryLogInfo = new ArrayList<>();
+
+    for (MQueryLog mQuerylog : catalogContext.getQueryLog()) {
+      queryLogInfo.add(Arrays.asList(mQuerylog.getStartTime(), mQuerylog.getUser(),
+              mQuerylog.getQuery()));
+    }
+
+    return new TrainDBListResultSet(header, queryLogInfo);
+  }
+
+  @Override
+  public TrainDBListResultSet showTasks() throws Exception {
+    List<String> header = Arrays.asList("task");
+    List<List<Object>> schemaInfo = new ArrayList<>();
+    ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
+
+    while (rows.next()) {
+      schemaInfo.add(Arrays.asList(rows.getString(1)));
+    }
+
+    return new TrainDBListResultSet(header, schemaInfo);
   }
 }
