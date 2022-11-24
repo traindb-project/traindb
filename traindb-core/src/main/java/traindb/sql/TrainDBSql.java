@@ -115,6 +115,12 @@ public final class TrainDBSql {
         TrainDBSqlBypassDdlStmt bypassDdlStmt = (TrainDBSqlBypassDdlStmt) command;
         runner.bypassDdlStmt(bypassDdlStmt.getStatement());
         break;
+      case SHOW_QUERY_LOGS:
+        TrainDBSqlShowCommand showQueryLogs = (TrainDBSqlShowCommand) command;
+        return runner.showQueryLogs();
+      case SHOW_TASKS:
+        TrainDBSqlShowCommand showTasks = (TrainDBSqlShowCommand) command;
+        return runner.showTasks();
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -251,6 +257,16 @@ public final class TrainDBSql {
     @Override
     public void exitShowTables(TrainDBSqlParser.ShowTablesContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Tables());
+    }
+
+    @Override
+    public void exitShowQueryLogs(TrainDBSqlParser.ShowQueryLogsContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.QueryLogs());
+    }
+
+    @Override
+    public void exitShowTasks(TrainDBSqlParser.ShowTasksContext ctx) {
+      commands.add(new TrainDBSqlShowCommand.Tasks());
     }
 
     @Override
