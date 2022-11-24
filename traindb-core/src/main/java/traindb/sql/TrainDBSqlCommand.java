@@ -32,6 +32,8 @@ public abstract class TrainDBSqlCommand {
     USE_SCHEMA,
     DESCRIBE_TABLE,
     BYPASS_DDL_STMT,
+    SHOW_QUERY_LOGS,
+    SHOW_TASKS,
     OTHER
   }
 }
