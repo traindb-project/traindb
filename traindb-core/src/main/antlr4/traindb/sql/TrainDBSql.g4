@@ -114,6 +114,8 @@ showTargets
     | K_SYNOPSES  # ShowSynopses
     | K_SCHEMAS  # ShowSchemas
     | K_TABLES  # ShowTables
+    | K_QUERYLOGS   # ShowQueryLogs
+    | K_TASKS   # ShowTasks
     ;
 
 modelName
@@ -194,12 +196,14 @@ K_MODELTYPE : M O D E L T Y P E ;
 K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
+K_QUERYLOGS : Q U E R Y L O G S ;
 K_REMOTE : R E M O T E ;
 K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TABLES : T A B L E S ;
+K_TASKS : T A S K S ;
 K_TRAIN : T R A I N ;
 K_USE : U S E ;
 
