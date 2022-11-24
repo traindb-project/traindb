@@ -23,6 +23,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MQueryLog;
+import traindb.catalog.pm.MTask;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -233,6 +235,47 @@ public final class JDOCatalogContext implements CatalogContext {
       tx.commit();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to drop synopsis '" + name + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
+  public Collection<MQueryLog> getQueryLog() throws CatalogException {
+    try {
+      Query query = pm.newQuery(MQueryLog.class);
+//      query.setFilter("user == user");
+//      query.declareParameters("String user");
+//      Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
+//      return ret;
+      return (List<MQueryLog>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get query log", e);
+    }
+  }
+
+  @Override
+  public MQueryLog insertQueryLog(String start, String user, String query) throws CatalogException {
+    try {
+      MQueryLog mQuery = new MQueryLog(start, user, query);
+      pm.makePersistent(mQuery);
+      return mQuery;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create query log '" + query + "'", e);
+    }
+  }
+
+  @Override
+  public void deleteQueryLog(String user) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+      pm.deletePersistent(getQueryLog());
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to delete query log '" + user + "'", e);
     } finally {
       if (tx.isActive()) {
         tx.rollback();
