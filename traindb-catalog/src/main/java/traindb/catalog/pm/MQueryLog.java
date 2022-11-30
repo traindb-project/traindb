@@ -14,9 +14,11 @@
 
 package traindb.catalog.pm;
 
+import javax.jdo.annotations.Column;
+import javax.jdo.annotations.PersistenceCapable;
+import javax.jdo.annotations.Persistent;
+import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
-
-import javax.jdo.annotations.*;
 
 @PersistenceCapable
 public final class MQueryLog {
@@ -33,9 +35,9 @@ public final class MQueryLog {
   private String query;
 
   public MQueryLog(String start, String user, String query) {
-    this.start   = start;
-    this.user    = user;
-    this.query   = query;
+    this.start = start;
+    this.user = user;
+    this.query = query;
   }
 
   public String getStartTime() {
@@ -46,5 +48,7 @@ public final class MQueryLog {
     return user;
   }
 
-  public String getQuery()   { return query;  }
+  public String getQuery() {
+    return query;
+  }
 }

@@ -14,12 +14,10 @@
 
 package traindb.catalog.pm;
 
-import traindb.catalog.CatalogConstants;
-
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
-import javax.jdo.annotations.Unique;
+import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
 public final class MTask {
@@ -38,19 +36,25 @@ public final class MTask {
   private String status;
 
   public MTask(String time, Integer idx, String task, String status) {
-    this.time   = time;
-    this.idx    = idx;
-    this.task   = task;
+    this.time = time;
+    this.idx = idx;
+    this.task = task;
     this.status = status;
   }
 
-  public String getTime() { return time;  }
+  public String getTime() {
+    return time;
+  }
 
-  public Integer getIdx() { return idx;  }
+  public Integer getIdx() {
+    return idx;
+  }
 
   public String getTask() {
     return task;
   }
 
-  public String getStatus()   { return status;  }
+  public String getStatus() {
+    return status;
+  }
 }

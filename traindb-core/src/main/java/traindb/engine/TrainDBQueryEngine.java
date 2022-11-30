@@ -31,9 +31,8 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
-import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MQueryLog;
-import traindb.catalog.pm.MTask;
+import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
@@ -347,7 +346,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public void insertQueryLogs(String start, String user, String query)
-          throws Exception {
+      throws Exception {
     catalogContext.insertQueryLog(start, user, query);
   }
 
@@ -358,7 +357,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     for (MQueryLog mQuerylog : catalogContext.getQueryLog()) {
       queryLogInfo.add(Arrays.asList(mQuerylog.getStartTime(), mQuerylog.getUser(),
-              mQuerylog.getQuery()));
+          mQuerylog.getQuery()));
     }
 
     return new TrainDBListResultSet(header, queryLogInfo);
