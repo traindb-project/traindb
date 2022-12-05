@@ -1333,6 +1333,7 @@ SqlSelect SqlSelect() :
         where = WhereOpt()
         groupBy = GroupByOpt()
         having = HavingOpt()
+        ApproxConstraintOpt(hints)
         windowDecls = WindowOpt()
     |
         E() {
@@ -2762,6 +2763,29 @@ SqlNode WindowRange() :
             return SqlWindow.createFollowing(e, getPos());
         }
     )
+}
+
+/**
+ * Parses the optional constraint clause for SELECT APPROXIMATE
+ */
+void ApproxConstraintOpt(List<SqlNode> hints) :
+{
+    SqlNumericLiteral timeConstraint;
+    List<SqlNode> list = new ArrayList<SqlNode>();
+    SqlParserPos pos;
+}
+{
+    [ <WITHIN> ] timeConstraint = UnsignedNumericLiteral() [ <SECONDS> ] {
+        list.add(timeConstraint);
+        pos = getPos();
+        hints.add(new SqlHint(pos, new SqlIdentifier("approx_time", pos),
+            SqlNodeList.of(pos, list), SqlHint.HintOptionFormat.LITERAL_LIST));
+        return;
+    }
+|
+    {
+        return;
+    }
 }
 
 /**
