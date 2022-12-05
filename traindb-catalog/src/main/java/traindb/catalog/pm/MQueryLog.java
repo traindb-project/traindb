@@ -32,12 +32,12 @@ public final class MQueryLog {
   private String user;
 
   @Persistent
-  private String query;
+  private byte[] query;
 
   public MQueryLog(String start, String user, String query) {
     this.start = start;
     this.user = user;
-    this.query = query;
+    this.query = query.getBytes();
   }
 
   public String getStartTime() {
@@ -49,6 +49,6 @@ public final class MQueryLog {
   }
 
   public String getQuery() {
-    return query;
+    return new String(query);
   }
 }
