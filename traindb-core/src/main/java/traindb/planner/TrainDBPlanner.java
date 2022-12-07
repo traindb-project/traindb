@@ -114,8 +114,20 @@ public class TrainDBPlanner extends VolcanoPlanner {
     return catalogReader.getTable(qualifiedSynopsisName, rowCount);
   }
 
-  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, TableScan scan) {
+  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, List<String> hintTables, TableScan scan) {
     // TODO choose the best synopsis
+    Collection<MSynopsis> hintTablesSynopses = new ArrayList<>();
+    if(!hintTables.isEmpty()) {
+      for (MSynopsis synopsis : synopses) {
+        for (String hintTable : hintTables) {
+          if (synopsis.getName().equals(hintTable)) {
+            hintTablesSynopses.add(synopsis);
+          }
+        }
+      }
+      synopses = hintTablesSynopses;
+    }
+
     if (synopses.size() == 1) {
       return synopses.iterator().next();
     }
@@ -169,17 +181,6 @@ public class TrainDBPlanner extends VolcanoPlanner {
       return availableModels;
     } catch (CatalogException e) {
     }
-    return null;
-  }
-
-  public MSynopsis getHintSynopsis(Collection<MSynopsis> synopses, String hintTable) {
-    for (MSynopsis synopsis : synopses) {
-      if(synopsis.getName().equals(hintTable))
-      {
-        return synopsis;
-      }
-    }
-
     return null;
   }
 }
