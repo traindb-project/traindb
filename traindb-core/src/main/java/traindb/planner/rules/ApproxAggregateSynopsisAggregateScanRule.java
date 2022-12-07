@@ -76,14 +76,9 @@ public class ApproxAggregateSynopsisAggregateScanRule
       return;
     }
 
-    MSynopsis bestSynopsis = null;
-    String hintTable = ApproxAggregateUtil.getApproximateAggregateHintTable(aggregate);
-    if(hintTable != null) {
-      bestSynopsis = planner.getHintSynopsis(candidateSynopses, hintTable);
-    }
-    if(bestSynopsis == null) {
-      bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan);
-    }
+    List<String> hintTables = ApproxAggregateUtil.getApproximateAggregateHintTables(aggregate);
+    MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, hintTables, scan);
+
     List<Integer> targets = new ArrayList<>();
     for (int i = 0; i < inputColumns.size(); i++) {
       targets.add(bestSynopsis.getModel().getColumnNames().indexOf(inputColumns.get(i)));
