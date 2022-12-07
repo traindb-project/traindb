@@ -54,7 +54,7 @@ public class TrainDBSqlSelect extends SqlSelect {
       } else {
         hintList = getHints().getList();
       }
-      hintList.add(new SqlHint(pos, new SqlIdentifier("approx_aggr", pos),
+      hintList.add(new SqlHint(pos, new SqlIdentifier("approximate", pos),
           SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
       setHints(new SqlNodeList(hintList, pos));
     }
