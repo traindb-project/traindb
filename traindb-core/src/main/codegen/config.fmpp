@@ -385,6 +385,7 @@ data: {
     # items in this list become non-reserved.
     nonReservedKeywordsToAdd: [
       "APPROXIMATE"
+      "WITHIN"
     ]
 
     # List of non-reserved keywords to remove;

@@ -173,16 +173,5 @@ public class ApproxAggregateUtil {
 
     return aggProjects;
   }
-
-  public static List<String> getApproximateAggregateHintTables(Aggregate aggregate) {
-    List<String> synopsisTables = new ArrayList<>();
-    List<RelHint> hints = aggregate.getHints();
-    for (RelHint hint : hints) {
-      for (String table : hint.listOptions) {
-        synopsisTables.add(table);
-      }
-    }
-    return synopsisTables;
-  }
 }
 

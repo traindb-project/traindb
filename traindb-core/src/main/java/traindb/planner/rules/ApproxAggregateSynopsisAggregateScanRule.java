@@ -76,8 +76,7 @@ public class ApproxAggregateSynopsisAggregateScanRule
       return;
     }
 
-    List<String> hintTables = ApproxAggregateUtil.getApproximateAggregateHintTables(aggregate);
-    MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, hintTables, scan);
+    MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan, aggregate.getHints());
 
     List<Integer> targets = new ArrayList<>();
     for (int i = 0; i < inputColumns.size(); i++) {
