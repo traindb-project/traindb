@@ -28,6 +28,7 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
@@ -114,18 +115,22 @@ public class TrainDBPlanner extends VolcanoPlanner {
     return catalogReader.getTable(qualifiedSynopsisName, rowCount);
   }
 
-  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, List<String> hintTables, TableScan scan) {
-    // TODO choose the best synopsis
-    Collection<MSynopsis> hintTablesSynopses = new ArrayList<>();
-    if(!hintTables.isEmpty()) {
-      for (MSynopsis synopsis : synopses) {
-        for (String hintTable : hintTables) {
-          if (synopsis.getName().equals(hintTable)) {
-            hintTablesSynopses.add(synopsis);
+  public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, TableScan scan,
+                                   List<RelHint> hints) {
+    Collection<MSynopsis> hintSynopses = new ArrayList<>();
+    for (RelHint hint : hints) {
+      if (hint.hintName.equals("approximate")) {
+        List<String> hintSynopsisNames = hint.listOptions;
+        if (hintSynopsisNames.isEmpty()) {
+          continue;
+        }
+        for (MSynopsis synopsis : synopses) {
+          if (hintSynopsisNames.contains(synopsis.getName())) {
+            hintSynopses.add(synopsis);
           }
         }
+        synopses = hintSynopses;
       }
-      synopses = hintTablesSynopses;
     }
 
     if (synopses.size() == 1) {
