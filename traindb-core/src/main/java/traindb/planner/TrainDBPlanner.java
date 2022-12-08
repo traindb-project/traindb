@@ -196,9 +196,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
       return synopses.iterator().next();
     }
     MSynopsis bestSynopsis = null;
-    double bestSynopsisScanRows = Double.valueOf(0.0d);
-    double bestSynopsisScanCpu = Double.valueOf(0.0d);
-    double bestSynopsisScanIo = Double.valueOf(0.0d);
+    double bestSynopsisCost = Double.MAX_VALUE;
     for (MSynopsis synopsis : synopses) {
 
       RelOptTableImpl synopsisTable =
@@ -214,16 +212,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
       Double synopsisScanColumnSize =
           synopsisScanColumnSizes.stream().mapToDouble(Double::doubleValue).sum();
 
-      double synopsisScanRows = synopsisScanCost.getRows();
-      double synopsisScanCpu = synopsisScanRows * synopsisScanColumnSize;
-      double synopsisScanIo = synopsisScanCost.getIo();
-
-      if ((bestSynopsis == null) || (synopsisScanRows < bestSynopsisScanRows) ||
-          (synopsisScanCpu < bestSynopsisScanCpu) || (synopsisScanIo < bestSynopsisScanIo)) {
+      double cost =  synopsisScanCost.getRows() * synopsisScanColumnSize;
+      if (cost < bestSynopsisCost) {
         bestSynopsis = synopsis;
-        bestSynopsisScanRows = synopsisScanRows;
-        bestSynopsisScanCpu = synopsisScanCpu;
-        bestSynopsisScanIo = synopsisScanIo;
+        bestSynopsisCost = cost;
       }
     }
     return bestSynopsis;
