@@ -20,19 +20,15 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 
 /**
  * Policy for approximate query processing with an execution time constraint
- * ('WITHIN n SECONDS' clause)
+ * ('WITHIN n SECONDS' clause).
  */
 public enum CaqpExecutionTimePolicyType {
 
   ROW("row", CaqpExecutionTimeRowPolicy.class, 10000000);
 
-  public final String name;
-  public final Class<? extends CaqpExecutionTimePolicy> policyClass;
-  public final double defaultUnitAmount;
-
   private static final String DEFAULT_CAQP_EXECUTION_TIME_POLICY = "row";
-
-  private static final Map<String, CaqpExecutionTimePolicyType> NAME_TO_POLICY_MAP = new HashMap<>();
+  private static final Map<String, CaqpExecutionTimePolicyType> NAME_TO_POLICY_MAP =
+      new HashMap<>();
   private static final Map<Class<? extends CaqpExecutionTimePolicy>, CaqpExecutionTimePolicyType>
       CLASS_TO_POLICY_MAP = new HashMap<>();
 
@@ -43,6 +39,10 @@ public enum CaqpExecutionTimePolicyType {
       CLASS_TO_POLICY_MAP.put(value.policyClass, value);
     }
   }
+
+  public final String name;
+  public final Class<? extends CaqpExecutionTimePolicy> policyClass;
+  public final double defaultUnitAmount;
 
   CaqpExecutionTimePolicyType(String name, Class<? extends CaqpExecutionTimePolicy> policyClass,
                               double defaultUnitAmount) {

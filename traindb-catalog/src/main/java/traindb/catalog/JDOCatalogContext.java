@@ -22,9 +22,8 @@ import javax.jdo.Transaction;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
-import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MQueryLog;
-import traindb.catalog.pm.MTask;
+import traindb.catalog.pm.MSynopsis;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -50,7 +49,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MModeltype) query.execute(name);
-    } catch (RuntimeException e) { }
+    } catch (RuntimeException e) {
+    }
     return null;
   }
 
@@ -166,7 +166,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MModel) query.execute(name);
-    } catch (RuntimeException e) { }
+    } catch (RuntimeException e) {
+    }
     return null;
   }
 
@@ -220,7 +221,8 @@ public final class JDOCatalogContext implements CatalogContext {
       query.setUnique(true);
 
       return (MSynopsis) query.execute(name);
-    } catch (RuntimeException e) { }
+    } catch (RuntimeException e) {
+    }
     return null;
   }
 
@@ -246,10 +248,10 @@ public final class JDOCatalogContext implements CatalogContext {
   public Collection<MQueryLog> getQueryLog() throws CatalogException {
     try {
       Query query = pm.newQuery(MQueryLog.class);
-//      query.setFilter("user == user");
-//      query.declareParameters("String user");
-//      Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
-//      return ret;
+      // query.setFilter("user == user");
+      // query.declareParameters("String user");
+      // Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
+      // return ret;
       return (List<MQueryLog>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get query log", e);
