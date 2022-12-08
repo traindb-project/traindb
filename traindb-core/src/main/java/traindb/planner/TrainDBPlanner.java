@@ -17,7 +17,9 @@ package traindb.planner;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashSet;
 import java.util.List;
+import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCost;
@@ -39,6 +41,9 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MSynopsis;
+import traindb.common.TrainDBConfiguration;
+import traindb.planner.caqp.CaqpExecutionTimePolicy;
+import traindb.planner.caqp.CaqpExecutionTimePolicyType;
 import traindb.planner.rules.TrainDBRules;
 import traindb.prepare.TrainDBCatalogReader;
 
@@ -48,6 +53,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
   private CatalogContext catalogContext;
   private TrainDBCatalogReader catalogReader;
+
+  private CaqpExecutionTimePolicy caqpExecutionTimePolicy;
 
   public TrainDBPlanner(CatalogContext catalogContext, TrainDBCatalogReader catalogReader) {
     this(catalogContext, catalogReader, null, null);
@@ -60,6 +67,12 @@ public class TrainDBPlanner extends VolcanoPlanner {
     super(costFactory, externalContext);
     this.catalogContext = catalogContext;
     this.catalogReader = catalogReader;
+    try {
+      this.caqpExecutionTimePolicy = createCaqpExecutionTimePolicy(catalogReader.getConfig());
+    } catch (Exception e) {
+      throw new RuntimeException(e);
+    }
+
     initPlanner();
   }
 
@@ -78,6 +91,29 @@ public class TrainDBPlanner extends VolcanoPlanner {
     setTopDownOpt(false);
 
     Hook.PLANNER.run(this); // allow test to add or remove rules
+  }
+
+  private CaqpExecutionTimePolicy createCaqpExecutionTimePolicy(CalciteConnectionConfig config)
+      throws Exception {
+    CaqpExecutionTimePolicyType policy;
+    double unitAmount;
+    if (config instanceof TrainDBConfiguration) {
+      TrainDBConfiguration conf = (TrainDBConfiguration) config;
+      policy = CaqpExecutionTimePolicyType.of(conf.getAqpExecTimePolicy());
+      if (policy == null) {
+        policy = CaqpExecutionTimePolicyType.getDefaultPolicy();
+      }
+      String unitAmountString = conf.getAqpExecTimeUnitAmount();
+      if (unitAmountString == null) {
+        unitAmount = policy.defaultUnitAmount;
+      } else {
+        unitAmount = Double.valueOf(unitAmountString);
+      }
+    } else {
+      policy = CaqpExecutionTimePolicyType.getDefaultPolicy();
+      unitAmount = policy.defaultUnitAmount;
+    }
+    return policy.policyClass.getDeclaredConstructor(double.class).newInstance(unitAmount);
   }
 
   public CatalogContext getCatalogContext() {
@@ -131,6 +167,29 @@ public class TrainDBPlanner extends VolcanoPlanner {
         }
         synopses = hintSynopses;
       }
+    }
+
+    Collection<MSynopsis> filteredSynopses = new HashSet<>();
+    for (RelHint hint : hints) {
+      if (!hint.hintName.equals("approx_time")) {
+        continue;
+      }
+      List<String> hintExecTime = hint.listOptions;
+      for (String str : hintExecTime) {
+        try {
+          double hintTime = Double.valueOf(str);
+          for (MSynopsis syn : synopses) {
+            if (caqpExecutionTimePolicy.check(syn, hintTime)) {
+              filteredSynopses.add(syn);
+            }
+          }
+        } catch (Exception e) {
+          // ignore
+        }
+      }
+    }
+    if (filteredSynopses.size() < synopses.size()) {
+      synopses.removeAll(filteredSynopses);
     }
 
     if (synopses.size() == 1) {

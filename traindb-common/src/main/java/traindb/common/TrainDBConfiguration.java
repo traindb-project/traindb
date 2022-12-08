@@ -105,4 +105,12 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     }
     return hadoopConf;
   }
+
+  public String getAqpExecTimePolicy() {
+    return (String) props.get("traindb.aqp.exec.time.policy");
+  }
+
+  public String getAqpExecTimeUnitAmount() {
+    return (String) props.get("traindb.aqp.exec.time.unit-amount");
+  }
 }
