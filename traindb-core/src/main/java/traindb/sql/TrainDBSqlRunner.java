@@ -54,6 +54,12 @@ public interface TrainDBSqlRunner {
 
   TrainDBListResultSet showQueryLogs() throws Exception;
 
+  void insertTask() throws Exception;
+
   TrainDBListResultSet showTasks() throws Exception;
+
+  void deleteQueryLogs(Integer cnt) throws Exception;
+
+  void deleteTasks(Integer cnt) throws Exception;
 }
 

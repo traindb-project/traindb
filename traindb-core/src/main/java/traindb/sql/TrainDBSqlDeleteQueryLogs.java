@@ -14,28 +14,19 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlDeleteQueryLogs extends TrainDBSqlCommand {
+    private final Integer rowCount;
 
-  public enum Type {
-    CREATE_MODELTYPE,
-    DROP_MODELTYPE,
-    SHOW_MODELTYPES,
-    SHOW_MODELS,
-    TRAIN_MODEL,
-    DROP_MODEL,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    SHOW_TABLES,
-    USE_SCHEMA,
-    DESCRIBE_TABLE,
-    BYPASS_DDL_STMT,
-    SHOW_QUERY_LOGS,
-    SHOW_TASKS,
-    DELETE_QUERY_LOGS,
-    DELETE_TASKS,
-    OTHER
-  }
+    TrainDBSqlDeleteQueryLogs(Integer rowCount) {
+        this.rowCount = rowCount;
+    }
+
+    Integer getRowCount() {
+        return rowCount;
+    }
+
+    @Override
+    public Type getType() {
+        return Type.DELETE_QUERY_LOGS;
+    }
 }
