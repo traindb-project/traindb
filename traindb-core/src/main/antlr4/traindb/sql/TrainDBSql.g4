@@ -39,6 +39,8 @@ traindbStmts
     | useSchema
     | describeTable
     | bypassDdlStmt
+    | deleteQueryLogs
+    | deleteTasks
     ;
 
 createModeltype
@@ -55,6 +57,14 @@ trainModel
 
 dropModel
     : K_DROP K_MODEL modelName
+    ;
+
+deleteQueryLogs
+    : K_DELETE K_QUERYLOGS limitNumber
+    ;
+
+deleteTasks
+    : K_DELETE K_TASKS limitNumber
     ;
 
 modeltypeName
@@ -181,6 +191,7 @@ K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
 K_CREATE : C R E A T E ;
+K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
