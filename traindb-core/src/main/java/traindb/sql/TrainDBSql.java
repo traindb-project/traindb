@@ -26,6 +26,7 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.parser.SqlParser;
+import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 
@@ -121,6 +122,14 @@ public final class TrainDBSql {
       case SHOW_TASKS:
         TrainDBSqlShowCommand showTasks = (TrainDBSqlShowCommand) command;
         return runner.showTasks();
+      case DELETE_QUERY_LOGS:
+        TrainDBSqlDeleteQueryLogs deleteQueryLogs = (TrainDBSqlDeleteQueryLogs) command;
+        runner.deleteQueryLogs(deleteQueryLogs.getRowCount());
+        break;
+      case DELETE_TASKS:
+        TrainDBSqlDeleteTasks deleteTasks = (TrainDBSqlDeleteTasks) command;
+        runner.deleteTasks(deleteTasks.getRowCount());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -267,6 +276,18 @@ public final class TrainDBSql {
     @Override
     public void exitShowTasks(TrainDBSqlParser.ShowTasksContext ctx) {
       commands.add(new TrainDBSqlShowCommand.Tasks());
+    }
+
+    @Override
+    public void exitDeleteQueryLogs(TrainDBSqlParser.DeleteQueryLogsContext ctx) {
+      int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
+      commands.add(new TrainDBSqlDeleteQueryLogs(limitNumber));
+    }
+
+    @Override
+    public void exitDeleteTasks(TrainDBSqlParser.DeleteTasksContext ctx) {
+      int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
+      commands.add(new TrainDBSqlDeleteTasks(limitNumber));
     }
 
     @Override
