@@ -619,9 +619,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       String currentUser = conn.getProperties().getProperty("user");
 
       if (commands != null && commands.size() > 0) {
+        TrainDBQueryEngine engine = new TrainDBQueryEngine(conn);
         try {
-          TrainDBQueryEngine engine = new TrainDBQueryEngine(conn);
-
           // INSERT QUERY LOGS
           engine.insertQueryLogs(currentTime, currentUser, query.sql);
 
@@ -630,9 +629,17 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         } catch (Exception e) {
           throw new RuntimeException(
               "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
+        } finally {
+          try {
+            engine.insertTask();
+          } catch ( Exception e) {
+            throw new RuntimeException(
+                    "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
+          }
         }
       }
 
+      System.out.println("create parser");
       SqlParser parser = createParser(query.sql,  parserConfig);
       SqlNode sqlNode;
       try {
