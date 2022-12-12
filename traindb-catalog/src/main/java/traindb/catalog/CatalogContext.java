@@ -20,6 +20,7 @@ import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTask;
 
 public interface CatalogContext {
 
@@ -69,7 +70,13 @@ public interface CatalogContext {
 
   MQueryLog insertQueryLog(String start, String user, String query) throws CatalogException;
 
-  void deleteQueryLog(String user) throws CatalogException;
+  void deleteQueryLogs(Integer cnt) throws CatalogException;
+
+  Collection<MTask> getTaskLog() throws CatalogException;
+
+  MTask insertTask(String time, Integer idx, String task, String status) throws CatalogException;
+
+  void deleteTasks(Integer cnt) throws CatalogException;
 
   /*============ Common  =================*/
   void close();
