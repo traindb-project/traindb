@@ -32,29 +32,44 @@ public final class MTask {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String task;
 
-  @Persistent(dependent = "SUCCESS")
-  private String status;
+  private byte[] status;
 
   public MTask(String time, Integer idx, String task, String status) {
     this.time = time;
     this.idx = idx;
     this.task = task;
-    this.status = status;
+    this.status = status.getBytes();
   }
 
   public String getTime() {
     return time;
   }
 
+  public void setTime(String time) {
+    this.time = time;
+  }
+
   public Integer getIdx() {
     return idx;
+  }
+
+  public void setIdx(Integer idx) {
+    this.idx = idx;
   }
 
   public String getTask() {
     return task;
   }
 
+  public void setTask(String task) {
+    this.task = task;
+  }
+
   public String getStatus() {
-    return status;
+    return new String(status);
+  }
+
+  public void setStatus(String status) {
+    this.status = status.getBytes();
   }
 }
