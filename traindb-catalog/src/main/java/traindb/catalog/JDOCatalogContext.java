@@ -24,6 +24,7 @@ import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTask;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -270,14 +271,78 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public void deleteQueryLog(String user) throws CatalogException {
+  public void deleteQueryLogs(Integer cnt) throws CatalogException {
     Transaction tx = pm.currentTransaction();
     try {
       tx.begin();
-      pm.deletePersistent(getQueryLog());
+
+      Query query = pm.newQuery(MQueryLog.class);
+
+      if ( cnt < 0 ) cnt = 0;
+      if ( cnt != 0 ) {
+        query.range(0, cnt);
+      }
+
+      Collection<MTask> ret = (List<MTask>) query.execute();
+      pm.deletePersistentAll(ret);
+
+      //pm.deletePersistent(getQueryLog());
       tx.commit();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to delete query log '" + user + "'", e);
+      throw new CatalogException("failed to delete query log", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
+  public Collection<MTask> getTaskLog() throws CatalogException {
+    try {
+      Query query = pm.newQuery(MTask.class);
+//      query.setFilter("user == user");
+//      query.declareParameters("String user");
+//      Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
+//      return ret;
+      return (List<MTask>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get query log", e);
+    }
+  }
+
+  @Override
+  public MTask insertTask(String time, Integer idx, String task, String status) throws CatalogException {
+    try {
+      MTask mtask = new MTask(time, idx, task, status);
+      pm.makePersistent(mtask);
+      return mtask;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create query log '" + task + "'", e);
+    }
+  }
+
+  @Override
+  public void deleteTasks(Integer cnt) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+
+      Query query = pm.newQuery(MTask.class);
+
+      if ( cnt < 0 ) cnt = 0;
+      if ( cnt != 0 ) {
+        query.range(0, cnt);
+      }
+
+      Collection<MTask> ret = (List<MTask>) query.execute();
+
+      pm.deletePersistentAll(ret);
+      //pm.deletePersistent(getTaskLog());
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to delete task log", e);
     } finally {
       if (tx.isActive()) {
         tx.rollback();
