@@ -27,7 +27,6 @@ import org.apache.calcite.sql.SqlDialect;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
-import traindb.adapter.jdbc.TaskTracer;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;

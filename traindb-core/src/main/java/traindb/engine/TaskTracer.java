@@ -12,7 +12,7 @@
  * limitations under the License.
  */
 
-package traindb.adapter.jdbc;
+package traindb.engine;
 
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
