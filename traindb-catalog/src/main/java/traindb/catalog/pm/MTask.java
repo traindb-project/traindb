@@ -32,13 +32,15 @@ public final class MTask {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String task;
 
-  private byte[] status;
+  @Persistent
+  @Column(length = 8)
+  private String status;
 
   public MTask(String time, Integer idx, String task, String status) {
     this.time = time;
     this.idx = idx;
     this.task = task;
-    this.status = status.getBytes();
+    this.status = status;
   }
 
   public String getTime() {
@@ -66,10 +68,10 @@ public final class MTask {
   }
 
   public String getStatus() {
-    return new String(status);
+    return status;
   }
 
   public void setStatus(String status) {
-    this.status = status.getBytes();
+    this.status = status;
   }
 }
