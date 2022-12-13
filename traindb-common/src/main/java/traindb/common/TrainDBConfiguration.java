@@ -40,6 +40,14 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     return (String) props.getOrDefault("traindb.server.modelrunner", "file");
   }
 
+  public boolean queryLog() {
+    return Boolean.parseBoolean((String) props.getOrDefault("traindb.server.querylog", "false"));
+  }
+
+  public boolean taskTrace() {
+    return Boolean.parseBoolean((String) props.getOrDefault("traindb.server.tasktrace", "false"));
+  }
+
   public static String getTrainDBPrefixPath() {
     String prefix = System.getProperty("TRAINDB_PREFIX");
     if (prefix == null) {

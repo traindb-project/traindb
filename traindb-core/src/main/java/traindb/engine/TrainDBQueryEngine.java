@@ -526,6 +526,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void insertQueryLogs(String start, String user, String query)
       throws Exception {
+    if (!conn.cfg.queryLog()) {
+      return;
+    }
     catalogContext.insertQueryLog(start, user, query);
   }
 
@@ -544,6 +547,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public void insertTask() throws Exception {
+    if (!conn.cfg.taskTrace()) {
+      return;
+    }
     for (MTask mtask : T_tracer.getTaskLog()) {
       catalogContext.insertTask(mtask.getTime(), mtask.getIdx(), mtask.getTask(),
           mtask.getStatus());
@@ -554,7 +560,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   public TrainDBListResultSet showTasks() throws Exception {
     List<String> header = Arrays.asList("time", "idx", "task", "status");
     List<List<Object>> taskInfo = new ArrayList<>();
-    ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
 
     for (MTask mTask : catalogContext.getTaskLog()) {
       taskInfo.add(Arrays.asList(mTask.getTime(), mTask.getIdx(),
