@@ -307,7 +307,7 @@ public final class JDOCatalogContext implements CatalogContext {
 //      return ret;
       return (List<MTask>) query.execute();
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to get query log", e);
+      throw new CatalogException("failed to get task log", e);
     }
   }
 
@@ -318,7 +318,7 @@ public final class JDOCatalogContext implements CatalogContext {
       pm.makePersistent(mtask);
       return mtask;
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to create query log '" + task + "'", e);
+      throw new CatalogException("failed to create task log '" + task + "'", e);
     }
   }
 
