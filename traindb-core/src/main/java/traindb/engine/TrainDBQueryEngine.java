@@ -542,10 +542,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void insertTask()
-          throws Exception {
-    for ( MTask mtask : T_tracer.getTaskLog() ) {
-      catalogContext.insertTask(mtask.getTime(), mtask.getIdx(), mtask.getTask(), mtask.getStatus());
+  public void insertTask() throws Exception {
+    for (MTask mtask : T_tracer.getTaskLog()) {
+      catalogContext.insertTask(mtask.getTime(), mtask.getIdx(), mtask.getTask(),
+          mtask.getStatus());
     }
   }
 

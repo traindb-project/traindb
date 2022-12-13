@@ -33,27 +33,25 @@ public class TaskTracer {
   }
 
   public static String getExecutionTime(long elapsed) {
-    long time_ms = TimeUnit.NANOSECONDS.toMicros(elapsed) % 1000000L;
-    long time_sec = TimeUnit.NANOSECONDS.toSeconds(elapsed) % 60;
-    long time_min = TimeUnit.NANOSECONDS.toMinutes(elapsed) % 60;
-    long time_hour = TimeUnit.NANOSECONDS.toHours(elapsed) % 24;
-    long time_days = TimeUnit.NANOSECONDS.toDays(elapsed);
+    long ms = TimeUnit.NANOSECONDS.toMicros(elapsed) % 1000000L;
+    long sec = TimeUnit.NANOSECONDS.toSeconds(elapsed) % 60;
+    long min = TimeUnit.NANOSECONDS.toMinutes(elapsed) % 60;
+    long hour = TimeUnit.NANOSECONDS.toHours(elapsed) % 24;
+    long days = TimeUnit.NANOSECONDS.toDays(elapsed);
     String res = "";
 
-    if (time_days == 0) {
-      if (time_hour == 0) {
-        if (time_min == 0) {
-          res = String.format("                 %02d.%06d", time_sec, time_ms);
+    if (days == 0) {
+      if (hour == 0) {
+        if (min == 0) {
+          res = String.format("                 %02d.%06d", sec, ms);
         } else {
-          res = String.format("              %02d:%02d.%06d", time_min, time_sec, time_ms);
+          res = String.format("              %02d:%02d.%06d", min, sec, ms);
         }
       } else {
-        res = String.format("           %02d:%02d:%02d.%06d", time_hour, time_min, time_sec,
-            time_ms);
+        res = String.format("           %02d:%02d:%02d.%06d", hour, min, sec, ms);
       }
     } else {
-      res = String.format("        %dd %02d:%02d:%02d.%06d", time_days, time_hour, time_min,
-          time_sec, time_ms);
+      res = String.format("        %dd %02d:%02d:%02d.%06d", days, hour, min, sec, ms);
     }
     return res;
   }
@@ -63,7 +61,7 @@ public class TaskTracer {
   }
 
   public void startTaskTracer(String query) {
-//        this.taskStatus.clear();
+    //this.taskStatus.clear();
     this.idx = 0;
 
     LocalDateTime now = LocalDateTime.now();

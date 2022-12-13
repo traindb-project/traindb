@@ -15,18 +15,18 @@
 package traindb.sql;
 
 class TrainDBSqlDeleteQueryLogs extends TrainDBSqlCommand {
-    private final Integer rowCount;
+  private final Integer rowCount;
 
-    TrainDBSqlDeleteQueryLogs(Integer rowCount) {
-        this.rowCount = rowCount;
-    }
+  TrainDBSqlDeleteQueryLogs(Integer rowCount) {
+    this.rowCount = rowCount;
+  }
 
-    Integer getRowCount() {
-        return rowCount;
-    }
+  Integer getRowCount() {
+    return rowCount;
+  }
 
-    @Override
-    public Type getType() {
-        return Type.DELETE_QUERY_LOGS;
-    }
+  @Override
+  public Type getType() {
+    return Type.DELETE_QUERY_LOGS;
+  }
 }

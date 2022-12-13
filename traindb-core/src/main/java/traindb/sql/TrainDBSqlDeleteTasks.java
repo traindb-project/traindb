@@ -15,18 +15,18 @@
 package traindb.sql;
 
 class TrainDBSqlDeleteTasks extends TrainDBSqlCommand {
-    private final Integer rowCount;
+  private final Integer rowCount;
 
-    TrainDBSqlDeleteTasks(Integer rowCount) {
-        this.rowCount = rowCount;
-    }
+  TrainDBSqlDeleteTasks(Integer rowCount) {
+    this.rowCount = rowCount;
+  }
 
-    Integer getRowCount() {
-        return rowCount;
-    }
+  Integer getRowCount() {
+    return rowCount;
+  }
 
-    @Override
-    public Type getType() {
-        return Type.DELETE_TASKS;
-    }
+  @Override
+  public Type getType() {
+    return Type.DELETE_TASKS;
+  }
 }

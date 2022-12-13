@@ -278,8 +278,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
       Query query = pm.newQuery(MQueryLog.class);
 
-      if ( cnt < 0 ) cnt = 0;
-      if ( cnt != 0 ) {
+      if (cnt > 0) {
         query.range(0, cnt);
       }
 
@@ -301,10 +300,10 @@ public final class JDOCatalogContext implements CatalogContext {
   public Collection<MTask> getTaskLog() throws CatalogException {
     try {
       Query query = pm.newQuery(MTask.class);
-//      query.setFilter("user == user");
-//      query.declareParameters("String user");
-//      Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
-//      return ret;
+      // query.setFilter("user == user");
+      // query.declareParameters("String user");
+      // Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
+      // return ret;
       return (List<MTask>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get task log", e);
@@ -312,7 +311,8 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MTask insertTask(String time, Integer idx, String task, String status) throws CatalogException {
+  public MTask insertTask(String time, Integer idx, String task, String status)
+      throws CatalogException {
     try {
       MTask mtask = new MTask(time, idx, task, status);
       pm.makePersistent(mtask);
@@ -330,8 +330,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
       Query query = pm.newQuery(MTask.class);
 
-      if ( cnt < 0 ) cnt = 0;
-      if ( cnt != 0 ) {
+      if (cnt > 0) {
         query.range(0, cnt);
       }
 
