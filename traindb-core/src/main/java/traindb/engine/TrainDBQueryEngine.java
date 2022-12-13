@@ -39,6 +39,7 @@ import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBSqlRunner;
+import traindb.task.TaskTracer;
 
 
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
@@ -47,7 +48,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private TrainDBConnectionImpl conn;
   private CatalogContext catalogContext;
   private SchemaManager schemaManager;
-  public  TaskTracer T_tracer;
+  public TaskTracer T_tracer;
 
   public TrainDBQueryEngine(TrainDBConnectionImpl conn) {
     this.conn = conn;
