@@ -639,7 +639,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         }
       }
 
-      System.out.println("create parser");
       SqlParser parser = createParser(query.sql,  parserConfig);
       SqlNode sqlNode;
       try {
