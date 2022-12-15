@@ -155,7 +155,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
                                    List<RelHint> hints) {
     Collection<MSynopsis> hintSynopses = new ArrayList<>();
     for (RelHint hint : hints) {
-      if (hint.hintName.equals("approximate")) {
+      if (hint.hintName.equals("synopsis")) {
         List<String> hintSynopsisNames = hint.listOptions;
         if (hintSynopsisNames.isEmpty()) {
           continue;
