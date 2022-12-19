@@ -271,8 +271,8 @@
         <module name="NoWhitespaceBeforeCaseDefaultColon"/>
 <!--
         <module name="OverloadMethodsDeclarationOrder"/>
--->
         <module name="VariableDeclarationUsageDistance"/>
+-->
         <module name="CustomImportOrder">
             <property name="sortImportsInGroupAlphabetically" value="true"/>
             <property name="separateLineBetweenGroups" value="true"/>
