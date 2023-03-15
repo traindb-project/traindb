@@ -162,6 +162,7 @@ public abstract class TrainDBConnectionImpl
     this.cfg.loadConfiguration();
     this.schemaManager = schemaManager;
     this.dataSource = dataSource(url, info);
+    schemaManager.loadDataSource(dataSource);
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
