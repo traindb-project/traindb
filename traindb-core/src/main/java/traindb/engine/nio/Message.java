@@ -71,6 +71,10 @@ public final class Message {
     return ByteBuffers.getCString(buf);
   }
 
+  public String getBodyString() {
+    return new String(body, StandardCharsets.UTF_8);
+  }
+
   public static final class Builder {
     private char type;
     private ByteBuffer buf;
@@ -78,6 +82,12 @@ public final class Message {
     public Builder(char type) {
       this.type = type;
       buf = ByteBuffer.allocate(1024);
+    }
+
+    public Builder putByte(byte b) {
+      buf = ByteBuffers.enlargeByteBuffer(buf, ByteBuffers.BYTE_BYTES);
+      buf.put(b);
+      return this;
     }
 
     public Builder putChar(char c) {
@@ -95,6 +105,24 @@ public final class Message {
     public Builder putInt(int i) {
       buf = ByteBuffers.enlargeByteBuffer(buf, ByteBuffers.INTEGER_BYTES);
       buf.putInt(i);
+      return this;
+    }
+
+    public Builder putLong(long l) {
+      buf = ByteBuffers.enlargeByteBuffer(buf, ByteBuffers.LONG_BYTES);
+      buf.putLong(l);
+      return this;
+    }
+
+    public Builder putFloat(float f) {
+      buf = ByteBuffers.enlargeByteBuffer(buf, ByteBuffers.FLOAT_BYTES);
+      buf.putFloat(f);
+      return this;
+    }
+
+    public Builder putDouble(double d) {
+      buf = ByteBuffers.enlargeByteBuffer(buf, ByteBuffers.DOUBLE_BYTES);
+      buf.putDouble(d);
       return this;
     }
 
