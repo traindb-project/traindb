@@ -263,7 +263,7 @@ public final class Session implements Runnable {
               msgBld.putLong(rs.getLong(i));
               break;
             case Types.FLOAT:
-              msgBld.putDouble(rs.getFloat(i));
+              msgBld.putFloat(rs.getFloat(i));
               break;
             case Types.DOUBLE:
               msgBld.putDouble(rs.getDouble(i));
