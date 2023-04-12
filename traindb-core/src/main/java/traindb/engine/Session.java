@@ -222,12 +222,12 @@ public final class Session implements Runnable {
       for (int i = 1; i <= columnCount; i++) {
         msgBld.putCString(md.getColumnName(i));
         int type = md.getColumnType(i);
-        msgBld.putInt(type).putInt(getTypeSize(type));  // data type id and size
-        if (type == Types.VARCHAR) {              // type-specific type modifier
+        msgBld.putInt(type);
+        if (type == Types.VARCHAR) {
           msgBld.putInt(md.getPrecision(i));
           msgBld.putShort((short) 0); // Field.TEXT_FORMAT
         } else {
-          msgBld.putInt(-1);
+          msgBld.putInt(getTypeSize(type));
           msgBld.putShort((short) 1); // Field.BINARY_FORMAT
         }
       }
@@ -248,25 +248,28 @@ public final class Session implements Runnable {
         // Column Data
         for (int i = 1; i <= columnCount; i++) {
           int type = md.getColumnType(i);
-          msgBld.putInt(getTypeSize(type));
           switch (type) {
             case Types.TINYINT:
-              msgBld.putByte(rs.getByte(i));
+              msgBld.putInt(getTypeSize(type)).putByte(rs.getByte(i));
               break;
             case Types.SMALLINT:
-              msgBld.putShort(rs.getShort(i));
+              msgBld.putInt(getTypeSize(type)).putShort(rs.getShort(i));
               break;
             case Types.INTEGER:
-              msgBld.putInt(rs.getInt(i));
+              msgBld.putInt(getTypeSize(type)).putInt(rs.getInt(i));
               break;
             case Types.BIGINT:
-              msgBld.putLong(rs.getLong(i));
+              msgBld.putInt(getTypeSize(type)).putLong(rs.getLong(i));
               break;
             case Types.FLOAT:
-              msgBld.putFloat(rs.getFloat(i));
+              msgBld.putInt(getTypeSize(type)).putFloat(rs.getFloat(i));
               break;
             case Types.DOUBLE:
-              msgBld.putDouble(rs.getDouble(i));
+              msgBld.putInt(getTypeSize(type)).putDouble(rs.getDouble(i));
+              break;
+            case Types.VARCHAR:
+              byte[] bytes = rs.getString(i).getBytes(StandardCharsets.UTF_8);
+              msgBld.putInt(bytes.length).putBytes(bytes);
               break;
             // TODO support more data types
             default:
