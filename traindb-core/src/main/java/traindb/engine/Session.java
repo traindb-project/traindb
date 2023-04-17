@@ -175,10 +175,13 @@ public final class Session implements Runnable {
 
   class SessionHandler {
     private TrainDBConnectionImpl conn;
+    private TrainDBStatement stmt;
     private TrainDBQueryEngine queryEngine;
+    private SqlParser.Config parserConfig;
 
     SessionHandler() {
       this.conn = null;
+      this.stmt = null;
       this.queryEngine = null;
     }
 
@@ -191,6 +194,9 @@ public final class Session implements Runnable {
     public void setConnection(TrainDBConnectionImpl newConn) {
       try {
         if (conn != null) {
+          if (stmt != null) {
+            stmt.close();
+          }
           conn.close();
         }
       } catch (SQLException e) {
@@ -198,6 +204,19 @@ public final class Session implements Runnable {
       }
       conn = newConn;
       queryEngine = new TrainDBQueryEngine(newConn);
+
+      final CalciteConnectionConfig config = conn.config();
+      parserConfig = SqlParser.config()
+          .withQuotedCasing(config.quotedCasing())
+          .withUnquotedCasing(config.unquotedCasing())
+          .withQuoting(config.quoting())
+          .withConformance(config.conformance())
+          .withCaseSensitive(config.caseSensitive());
+      final SqlParserImplFactory parserFactory =
+          config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
+      if (parserFactory != null) {
+        parserConfig = parserConfig.withParserFactory(parserFactory);
+      }
     }
 
     public void handleQuery(String sqlQuery) throws TrainDBException, IOException {
@@ -205,20 +224,9 @@ public final class Session implements Runnable {
       LOG.debug("handleQuery: " + sqlQuery);
 
       try {
-        TrainDBStatement stmt = conn.createStatement(
-            ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, conn.getHoldability());
-
-        final CalciteConnectionConfig config = conn.config();
-        SqlParser.Config parserConfig = SqlParser.config()
-            .withQuotedCasing(config.quotedCasing())
-            .withUnquotedCasing(config.unquotedCasing())
-            .withQuoting(config.quoting())
-            .withConformance(config.conformance())
-            .withCaseSensitive(config.caseSensitive());
-        final SqlParserImplFactory parserFactory =
-            config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
-        if (parserFactory != null) {
-          parserConfig = parserConfig.withParserFactory(parserFactory);
+        if (stmt == null) {
+          stmt = conn.createStatement(
+              ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, conn.getHoldability());
         }
 
         // First check input query with TrainDB sql grammar
@@ -342,7 +350,7 @@ public final class Session implements Runnable {
   private void sendCommandComplete(String tag) throws IOException {
     LOG.debug("send CommandComplete message");
     if (tag == null) {
-      tag = "SELECT 0";
+      tag = "";
     }
     Message msg = Message.builder('C')
         .putCString(tag)
