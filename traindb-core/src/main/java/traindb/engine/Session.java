@@ -27,6 +27,9 @@ import java.util.List;
 import java.util.Properties;
 import java.util.Random;
 import org.apache.calcite.avatica.ConnectStringParser;
+import org.apache.calcite.config.CalciteConnectionConfig;
+import org.apache.calcite.sql.parser.SqlParser;
+import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -41,6 +44,9 @@ import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.jdbc.TrainDBJdbc41Factory;
 import traindb.jdbc.TrainDBStatement;
 import traindb.schema.SchemaManager;
+import traindb.sql.TrainDBSql;
+import traindb.sql.TrainDBSqlCommand;
+import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 
 public final class Session implements Runnable {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(Session.class);
@@ -98,6 +104,15 @@ public final class Session implements Runnable {
     LOCAL_SESSION.remove();
 
     close();
+  }
+
+  public void sendError(Exception e) throws IOException {
+    Message.Builder builder = Message.builder('E')
+            .putChar('S').putCString("ERROR")
+            .putChar('C').putCString("")
+            .putChar('M').putCString(e.getMessage())
+            .putChar('\0');
+    messageStream.putMessageAndFlush(builder.build());
   }
 
   private void messageLoop() throws Exception {
@@ -185,25 +200,54 @@ public final class Session implements Runnable {
       queryEngine = new TrainDBQueryEngine(newConn);
     }
 
-    public void handleQuery(String sqlQuery) throws TrainDBException {
+    public void handleQuery(String sqlQuery) throws TrainDBException, IOException {
       checkConnection();
       LOG.debug("handleQuery: " + sqlQuery);
 
       try {
         TrainDBStatement stmt = conn.createStatement(
             ResultSet.TYPE_FORWARD_ONLY, ResultSet.CONCUR_READ_ONLY, conn.getHoldability());
-        // stmt.setFetchSize(0);
-        ResultSet rs = stmt.executeQuery(sqlQuery);
-        // TrainDBResultSet trs = (TrainDBResultSet) rs;
-        sendRowDesc(rs.getMetaData());
-        sendDataRow(rs);
-        sendCommandComplete("SELECT"); // FIXME
+
+        final CalciteConnectionConfig config = conn.config();
+        SqlParser.Config parserConfig = SqlParser.config()
+            .withQuotedCasing(config.quotedCasing())
+            .withUnquotedCasing(config.unquotedCasing())
+            .withQuoting(config.quoting())
+            .withConformance(config.conformance())
+            .withCaseSensitive(config.caseSensitive());
+        final SqlParserImplFactory parserFactory =
+            config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
+        if (parserFactory != null) {
+          parserConfig = parserConfig.withParserFactory(parserFactory);
+        }
+
+        // First check input query with TrainDB sql grammar
+        List<TrainDBSqlCommand> commands = null;
+        try {
+          commands = TrainDBSql.parse(sqlQuery, parserConfig);
+        } catch (Exception e) {
+          if (commands != null) {
+            commands.clear();
+          }
+        }
+
+        if (commands != null && commands.size() > 0) {  // TrainDB DDL
+          stmt.execute(sqlQuery);
+          sendCommandComplete(commands.get(0).getType().toString());
+        } else {
+          // stmt.setFetchSize(0);
+          ResultSet rs = stmt.executeQuery(sqlQuery);
+          sendRowDesc(rs.getMetaData());
+          sendDataRow(rs);
+          sendCommandComplete("SELECT"); // FIXME
+        }
       } catch (IOException ioe) {
-
+        sendError(ioe);
       } catch (SQLException se) {
-
+        sendError(se);
       }
     }
+
   }
 
   private void sendRowDesc(ResultSetMetaData md) {
@@ -270,9 +314,9 @@ public final class Session implements Runnable {
         messageStream.putMessage(msgBld.build());
       }
     } catch (SQLException e) {
-      throw new RuntimeException(e);
+      sendError(e);
     } catch (TrainDBException e) {
-      throw new RuntimeException(e);
+      sendError(e);
     }
   }
 
