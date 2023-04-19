@@ -20,16 +20,13 @@ import traindb.catalog.CatalogStore;
 import traindb.schema.SchemaManager;
 
 public class SessionFactory {
-  private final CatalogStore catalogStore;
   private final SchemaManager schemaManager;
 
-  public SessionFactory(CatalogStore catalogStore, SchemaManager schemaManager) {
-    this.catalogStore = catalogStore;
+  public SessionFactory(SchemaManager schemaManager) {
     this.schemaManager = schemaManager;
   }
 
   public Session createSession(SocketChannel clientChannel, Session.EventHandler sessEvtHandler) {
-    return new Session(
-        clientChannel, sessEvtHandler, catalogStore.getCatalogContext(), schemaManager);
+    return new Session(clientChannel, sessEvtHandler, schemaManager);
   }
 }

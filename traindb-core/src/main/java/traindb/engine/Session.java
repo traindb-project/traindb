@@ -33,7 +33,6 @@ import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.commons.lang3.exception.ExceptionUtils;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.engine.nio.ByteBuffers;
@@ -56,24 +55,16 @@ public final class Session implements Runnable {
 
   private final SocketChannel clientChannel;
   private final EventHandler eventHandler;
-
-  private final CatalogContext catalogContext;
   private final SchemaManager schemaManager;
-
   final MessageStream messageStream;
 
-  Session(SocketChannel clientChannel, EventHandler eventHandler,
-          CatalogContext catalogContext, SchemaManager schemaManager) {
+  Session(SocketChannel clientChannel, EventHandler eventHandler, SchemaManager schemaManager) {
     sessionId = new Random(this.hashCode()).nextInt();
     cancelContext = new CancelContext(this);
     this.clientChannel = clientChannel;
     this.eventHandler = eventHandler;
-    this.messageStream = new MessageStream(clientChannel);
-
-    this.catalogContext = catalogContext;
     this.schemaManager = schemaManager;
-
-    // TODO: create TrainDBQueryEngine
+    this.messageStream = new MessageStream(clientChannel);
   }
 
   public static Session currentSession() {

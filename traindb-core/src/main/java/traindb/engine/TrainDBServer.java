@@ -47,7 +47,7 @@ public class TrainDBServer extends CompositeService {
     SchemaManager schemaManager = SchemaManager.getInstance(catalogStore);
     addService(schemaManager);
 
-    SessionFactory sessFactory = new SessionFactory(catalogStore, schemaManager);
+    SessionFactory sessFactory = new SessionFactory(schemaManager);
     SessionServer sessServer = new SessionServer(sessFactory);
     addService(sessServer);
 
