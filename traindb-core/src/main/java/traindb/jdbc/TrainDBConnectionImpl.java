@@ -107,7 +107,6 @@ public abstract class TrainDBConnectionImpl
     implements CalciteConnection, QueryProvider {
   public final TrainDBConfiguration cfg;
   public final JavaTypeFactory typeFactory;
-  private CatalogStore catalogStore;
   private SchemaManager schemaManager;
   private BasicDataSource dataSource;
 
@@ -131,51 +130,48 @@ public abstract class TrainDBConnectionImpl
    * @param typeFactory Type factory, or null
    */
   protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,
-                                  String url, Properties info, @Nullable CalciteSchema rootSchema,
+                                  String url, Properties info,
+                                  @Nullable CalciteSchema rootSchema,
                                   @Nullable JavaTypeFactory typeFactory) {
     super(driver, factory, url, info);
     this.cfg = new TrainDBConfiguration(info);
     this.cfg.loadConfiguration();
-    this.prepareFactory = driver.prepareFactory;
-    if (typeFactory != null) {
-      this.typeFactory = typeFactory;
-    } else {
-      RelDataTypeSystem typeSystem =
-          cfg.typeSystem(RelDataTypeSystem.class, RelDataTypeSystem.DEFAULT);
-      if (cfg.conformance().shouldConvertRaggedUnionTypesToVarying()) {
-        typeSystem =
-            new DelegatingTypeSystem(typeSystem) {
-              @Override public boolean
-              shouldConvertRaggedUnionTypesToVarying() {
-                return true;
-              }
-            };
-      }
-      this.typeFactory = new JavaTypeFactoryImpl(typeSystem);
-    }
-    this.catalogStore = new JDOCatalogStore();
+    CatalogStore catalogStore = new JDOCatalogStore();
     catalogStore.start(cfg.getProps());
     this.schemaManager = SchemaManager.getInstance(catalogStore);
     this.dataSource = dataSource(url, info);
     schemaManager.loadDataSource(dataSource);
-
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
             : CalciteSchema.from(schemaManager.getCurrentSchema()));
     Preconditions.checkArgument(this.rootSchema.isRoot(), "must be root schema");
 
-    SqlDialect dialect = schemaManager.getDialect();
-    if (dialect instanceof TrainDBSqlDialect) {
-      cfg.getProps().put(CalciteConnectionProperty.CASE_SENSITIVE.name(),
-          dialect.isCaseSensitive());
-      cfg.getProps().put(CalciteConnectionProperty.UNQUOTED_CASING.name(),
-          dialect.getUnquotedCasing());
-      cfg.getProps().put(CalciteConnectionProperty.QUOTED_CASING.name(),
-          dialect.getQuotedCasing());
-      cfg.getProps().put(CalciteConnectionProperty.QUOTING.name(),
-          ((TrainDBSqlDialect) dialect).getQuoting());
-    }
+    this.prepareFactory = driver.prepareFactory;
+    this.typeFactory = getTypeFactory(typeFactory, cfg);
+    addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
+  }
+
+  protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,
+                                  String url, Properties info,
+                                  @Nullable CalciteSchema rootSchema,
+                                  @Nullable JavaTypeFactory typeFactory,
+                                  SchemaManager schemaManager) {
+    super(driver, factory, url, info);
+    this.cfg = new TrainDBConfiguration(info);
+    this.cfg.loadConfiguration();
+    this.schemaManager = schemaManager;
+    this.dataSource = dataSource(url, info);
+    schemaManager.loadDataSource(dataSource);
+    this.rootSchema =
+        requireNonNull(rootSchema != null
+            ? rootSchema
+            : CalciteSchema.from(schemaManager.getCurrentSchema()));
+    Preconditions.checkArgument(this.rootSchema.isRoot(), "must be root schema");
+
+    this.prepareFactory = driver.prepareFactory;
+    this.typeFactory = getTypeFactory(typeFactory, cfg);
+    addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
   }
 
   private BasicDataSource dataSource(String url, Properties info) {
@@ -196,6 +192,36 @@ public abstract class TrainDBConnectionImpl
     dataSource.setUsername(info.getProperty("user"));
     dataSource.setPassword(info.getProperty("password"));
     return dataSource;
+  }
+
+  private JavaTypeFactory getTypeFactory(JavaTypeFactory typeFactory, TrainDBConfiguration cfg) {
+    if (typeFactory != null) {
+      return typeFactory;
+    }
+    RelDataTypeSystem typeSystem =
+        cfg.typeSystem(RelDataTypeSystem.class, RelDataTypeSystem.DEFAULT);
+    if (cfg.conformance().shouldConvertRaggedUnionTypesToVarying()) {
+      typeSystem =
+          new DelegatingTypeSystem(typeSystem) {
+            @Override public boolean
+            shouldConvertRaggedUnionTypesToVarying() {
+              return true;
+            }
+          };
+    }
+    return new JavaTypeFactoryImpl(typeSystem);
+  }
+
+  private void addTrainDBSqlDialectProperties(SqlDialect dialect, TrainDBConfiguration cfg) {
+    if (!(dialect instanceof TrainDBSqlDialect)) {
+      return;
+    }
+    cfg.getProps().put(CalciteConnectionProperty.CASE_SENSITIVE.name(), dialect.isCaseSensitive());
+    cfg.getProps().put(CalciteConnectionProperty.UNQUOTED_CASING.name(),
+        dialect.getUnquotedCasing());
+    cfg.getProps().put(CalciteConnectionProperty.QUOTED_CASING.name(), dialect.getQuotedCasing());
+    cfg.getProps().put(CalciteConnectionProperty.QUOTING.name(),
+        ((TrainDBSqlDialect) dialect).getQuoting());
   }
 
   public BasicDataSource getDataSource() {
@@ -255,7 +281,7 @@ public abstract class TrainDBConnectionImpl
   }
 
   public CatalogContext getCatalogContext() {
-    return catalogStore.getCatalogContext();
+    return schemaManager.getCatalogContext();
   }
 
   public SchemaManager getSchemaManager() {

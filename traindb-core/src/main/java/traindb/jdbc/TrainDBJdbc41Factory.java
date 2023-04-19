@@ -37,6 +37,7 @@ import org.apache.calcite.jdbc.CalciteFactory;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.schema.SchemaManager;
 
 /**
  * Implementation of {@link org.apache.calcite.avatica.AvaticaFactory}
@@ -64,6 +65,14 @@ public class TrainDBJdbc41Factory extends CalciteFactory {
       @Nullable CalciteSchema rootSchema, @Nullable JavaTypeFactory typeFactory) {
     return new TrainDBJdbc41Connection(
         (Driver) driver, factory, url, info, rootSchema, typeFactory);
+  }
+
+  public TrainDBJdbc41Connection newConnection(
+      UnregisteredDriver driver, AvaticaFactory factory, String url, Properties info,
+      @Nullable CalciteSchema rootSchema, @Nullable JavaTypeFactory typeFactory,
+      SchemaManager schemaManager) {
+    return new TrainDBJdbc41Connection(
+        (Driver) driver, factory, url, info, rootSchema, typeFactory, schemaManager);
   }
 
   @Override
@@ -122,10 +131,17 @@ public class TrainDBJdbc41Factory extends CalciteFactory {
    * Implementation of connection for JDBC 4.1.
    */
   private static class TrainDBJdbc41Connection extends TrainDBConnectionImpl {
-    TrainDBJdbc41Connection(Driver driver, AvaticaFactory factory, String url,
-                            Properties info, @Nullable CalciteSchema rootSchema,
+    TrainDBJdbc41Connection(Driver driver, AvaticaFactory factory, String url, Properties info,
+                            @Nullable CalciteSchema rootSchema,
                             @Nullable JavaTypeFactory typeFactory) {
       super(driver, factory, url, info, rootSchema, typeFactory);
+    }
+
+    TrainDBJdbc41Connection(Driver driver, AvaticaFactory factory, String url, Properties info,
+                            @Nullable CalciteSchema rootSchema,
+                            @Nullable JavaTypeFactory typeFactory,
+                            SchemaManager schemaManager) {
+      super(driver, factory, url, info, rootSchema, typeFactory, schemaManager);
     }
   }
 

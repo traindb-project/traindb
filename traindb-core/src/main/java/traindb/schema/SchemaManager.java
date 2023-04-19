@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.hadoop.service.AbstractService;
 import traindb.adapter.jdbc.TrainDBJdbcDataSource;
+import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
 import traindb.common.TrainDBLogger;
 
@@ -122,6 +123,10 @@ public final class SchemaManager extends AbstractService {
       map.put(key, values);
     }
     values.add(value);
+  }
+
+  public CatalogContext getCatalogContext() {
+    return catalogStore.getCatalogContext();
   }
 
   public SchemaPlus getCurrentSchema() {
