@@ -240,7 +240,7 @@ public final class Session implements Runnable {
         }
 
         if (commands != null && commands.size() > 0
-            && isTrainDBStmtWithResultSet(commands.get(0).getType())) {  // TrainDB DDL
+            && !isTrainDBStmtWithResultSet(commands.get(0).getType())) {  // TrainDB DDL
           stmt.execute(sqlQuery);
           sendCommandComplete(commands.get(0).getType().toString());
         } else {
@@ -260,7 +260,7 @@ public final class Session implements Runnable {
   }
 
   private boolean isTrainDBStmtWithResultSet(TrainDBSqlCommand.Type type) {
-    return type.toString().startsWith("SHOW")|| type.toString().startsWith("DESCRIBE");
+    return type.toString().startsWith("SHOW") || type.toString().startsWith("DESCRIBE");
   }
 
   private void sendRowDesc(ResultSetMetaData md) {
