@@ -1,0 +1,3 @@
+[submodule "traindb-model"]
+	path = traindb-model
+	url = https://github.com/traindb-project/traindb-model
