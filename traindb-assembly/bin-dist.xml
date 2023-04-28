@@ -75,7 +75,11 @@ limitations under the License.
             <outputDirectory>share/traindb/ext</outputDirectory>
         </fileSet>
         <fileSet>
-            <directory>../traindb-model/src/main/python</directory>
+            <directory>../traindb-model/models</directory>
+	    <outputDirectory>models</outputDirectory>
+        </fileSet>
+        <fileSet>
+            <directory>../traindb-model/tools</directory>
             <outputDirectory>models</outputDirectory>
         </fileSet>
     </fileSets>
