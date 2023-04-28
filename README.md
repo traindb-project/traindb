@@ -13,12 +13,14 @@ Currently, we are implementing a prototype for proof of concept.
 * Maven 3.x
 * SQLite3
 
+For python environment setup, see README in our [traindb-model](https://github.com/traindb-project/traindb-model) repository.
+
 ## Install
 
 ### Download
 
 ```console
-$ git clone https://github.com/traindb-project/traindb.git
+$ git clone --recurse-submodules https://github.com/traindb-project/traindb.git
 ```
 
 ### Build
@@ -32,13 +34,6 @@ Then, you can find traindb-x.y.z-SNAPSHOT.tar.gz in traindb-assembly/target dire
 
 ```console
 $ tar xvfz traindb-assembly/target/traindb-x.y.z-SNAPSHOT.tar.gz
-```
-
-To use ML models, you need to checkout models.\
-For python environment setup, see README in our [traindb-model](https://github.com/traindb-project/traindb-model) repository.
-``` console
-$ cd traindb-assembly/target/traindb-x.y.z-SNAPSHOT
-$ svn co https://github.com/traindb-project/traindb-model/trunk/models
 ```
 
 ## Run
