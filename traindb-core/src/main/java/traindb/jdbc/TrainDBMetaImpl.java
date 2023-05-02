@@ -56,6 +56,7 @@ import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParser;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlOperatorTables;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.Holder;
@@ -80,6 +81,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import traindb.sql.fun.TrainDBSpatialOperatorTable;
 
 import static java.util.Objects.requireNonNull;
 
@@ -527,7 +529,9 @@ public class TrainDBMetaImpl extends MetaImpl {
     Enumerable<MetaFunction> opTableFunctions = Linq4j.emptyEnumerable();
     if (schema.calciteSchema.schema.equals(MetadataSchema.INSTANCE)) {
       SqlOperatorTable opTable = getConnection().config()
-          .fun(SqlOperatorTable.class, SqlStdOperatorTable.instance());
+          .fun(SqlOperatorTable.class,
+              SqlOperatorTables.chain(SqlStdOperatorTable.instance(),
+                  TrainDBSpatialOperatorTable.instance()));
       List<SqlOperator> q = opTable.getOperatorList();
       opTableFunctions = Linq4j.asEnumerable(q)
           .where(op -> SqlKind.FUNCTION.contains(op.getKind()))
