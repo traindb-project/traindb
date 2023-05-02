@@ -100,6 +100,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         String columnName = resultSet.getString(4);
         int dataType = resultSet.getInt(5);
         String typeString = resultSet.getString(6);
+        boolean nullable = (resultSet.getInt(11) != databaseMetaData.columnNoNulls);
         int precision;
         int scale;
         switch (SqlType.valueOf(dataType)) {
@@ -113,7 +114,8 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
             scale = resultSet.getInt(9); // SCALE
             break;
         }
-        RelDataType sqlType = sqlType(typeFactory, dataType, precision, scale, typeString);
+        RelDataType sqlType =
+            sqlType(typeFactory, dataType, precision, scale, nullable, typeString);
 
         builder.add(columnName, sqlType);
       }
@@ -126,7 +128,8 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
   }
 
   private static RelDataType sqlType(RelDataTypeFactory typeFactory, int dataType,
-                                     int precision, int scale, @Nullable String typeString) {
+                                     int precision, int scale, boolean nullable,
+                                     @Nullable String typeString) {
     // Fall back to ANY if type is unknown
     final SqlTypeName sqlTypeName =
         Util.first(SqlTypeName.getNameForJdbcType(dataType), SqlTypeName.ANY);
@@ -145,6 +148,12 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
               typeFactory.createSqlType(SqlTypeName.ANY), true);
         }
         return typeFactory.createArrayType(component, -1);
+      case ANY:
+        if (typeString.startsWith("ST_")) {
+          return typeFactory.createTypeWithNullability(
+              typeFactory.createSqlType(SqlTypeName.GEOMETRY), nullable);
+        }
+        break;
       default:
         break;
     }
