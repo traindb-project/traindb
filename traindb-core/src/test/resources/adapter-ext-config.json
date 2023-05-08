@@ -1,0 +1,12 @@
+[
+  {
+    "jdbc.protocol": "kairos",
+    "jdbc.driver.class": "kr.co.realtimetech.kairos.jdbc.kairosDriver",
+    "sql.dialect.class": "traindb.adapter.KairosSqlDialect"
+  },
+  {
+    "jdbc.protocol": "tibero",
+    "jdbc.driver.class": "com.tmax.tibero.jdbc.TbDriver",
+    "sql.dialect.class": "traindb.adapter.TiberoSqlDialect"
+  }
+]
