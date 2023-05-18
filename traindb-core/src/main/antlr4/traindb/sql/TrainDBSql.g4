@@ -115,17 +115,38 @@ optionValue
     ;
 
 showStmt
-    : K_SHOW showTargets
+    : K_SHOW showTargets showWhereClause?
     ;
 
 showTargets
-    : K_MODELTYPES  # ShowModeltypes
-    | K_MODELS  # ShowModels
-    | K_SYNOPSES  # ShowSynopses
-    | K_SCHEMAS  # ShowSchemas
-    | K_TABLES  # ShowTables
-    | K_QUERYLOGS   # ShowQueryLogs
-    | K_TASKS   # ShowTasks
+    : K_MODELTYPES
+    | K_MODELS
+    | K_SYNOPSES
+    | K_SCHEMAS
+    | K_TABLES
+    | K_QUERYLOGS
+    | K_TASKS
+    ;
+
+showWhereClause
+    : K_WHERE showWhereExpressionList
+    ;
+
+showWhereExpressionList
+    : showWhereExpression ( K_AND showWhereExpression )*
+    ;
+
+showWhereExpression
+    : showFilterKey showFilterOperator optionValue
+    ;
+
+showFilterKey
+    : IDENTIFIER
+    ;
+
+showFilterOperator
+    : K_LIKE
+    | '='
     ;
 
 modelName
@@ -199,6 +220,7 @@ K_FOR : F O R ;
 K_FROM : F R O M ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
+K_LIKE : L I K E ;
 K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
@@ -217,6 +239,7 @@ K_TABLES : T A B L E S ;
 K_TASKS : T A S K S ;
 K_TRAIN : T R A I N ;
 K_USE : U S E ;
+K_WHERE : W H E R E ;
 
 IDENTIFIER
     : '"' ( ~["\r\n] | '""' )* '"'

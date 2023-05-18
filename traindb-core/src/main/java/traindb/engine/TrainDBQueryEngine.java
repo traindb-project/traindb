@@ -14,6 +14,7 @@
 
 package traindb.engine;
 
+import com.google.common.collect.ImmutableList;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.FileReader;
@@ -364,15 +365,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showModeltypes() throws Exception {
+  public TrainDBListResultSet showModeltypes(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("modeltype_name", "category", "location", "class_name",
         "uri");
-    List<List<Object>> modeltypeInfo = new ArrayList<>();
+    checkShowWhereColumns(filterPatterns, header);
 
     T_tracer.startTaskTracer("show modeltypes");
     T_tracer.openTaskTime("scan : modeltype");
 
-    for (MModeltype mModeltype : catalogContext.getModeltypes()) {
+    List<List<Object>> modeltypeInfo = new ArrayList<>();
+    for (MModeltype mModeltype : catalogContext.getModeltypes(filterPatterns)) {
       modeltypeInfo.add(Arrays.asList(mModeltype.getModeltypeName(), mModeltype.getCategory(),
           mModeltype.getLocation(), mModeltype.getClassName(), mModeltype.getUri()));
     }
@@ -384,15 +386,17 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showModels() throws Exception {
+  public TrainDBListResultSet showModels(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("model_name", "modeltype_name", "schema_name", "table_name",
         "columns", "table_rows", "trained_rows", "model_options");
-    List<List<Object>> modelInfo = new ArrayList<>();
+    checkShowWhereColumns(filterPatterns, header);
+    addPrefixToPatternFilter(filterPatterns, ImmutableList.of("modeltype_name"), "modeltype");
 
     T_tracer.startTaskTracer("show models");
     T_tracer.openTaskTime("scan : model");
 
-    for (MModel mModel : catalogContext.getModels()) {
+    List<List<Object>> modelInfo = new ArrayList<>();
+    for (MModel mModel : catalogContext.getModels(filterPatterns)) {
       modelInfo.add(Arrays.asList(mModel.getModelName(), mModel.getModeltype().getModeltypeName(),
           mModel.getSchemaName(), mModel.getTableName(),
           mModel.getColumnNames().toString(), mModel.getTableRows(),
@@ -406,15 +410,18 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showSynopses() throws Exception {
+  public TrainDBListResultSet showSynopses(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("synopsis_name", "model_name", "schema_name", "table_name",
         "columns", "rows", "ratio");
-    List<List<Object>> synopsisInfo = new ArrayList<>();
+    checkShowWhereColumns(filterPatterns, header);
+    addPrefixToPatternFilter(filterPatterns,
+        ImmutableList.of("model_name", "schema_name", "table_name", "columns"), "model");
 
     T_tracer.startTaskTracer("show synopses");
     T_tracer.openTaskTime("scan : synopsis");
 
-    for (MSynopsis mSynopsis : catalogContext.getAllSynopses()) {
+    List<List<Object>> synopsisInfo = new ArrayList<>();
+    for (MSynopsis mSynopsis : catalogContext.getAllSynopses(filterPatterns)) {
       MModel mModel = mSynopsis.getModel();
       synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mModel.getModelName(),
           mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames(),
@@ -428,7 +435,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showSchemas() throws Exception {
+  public TrainDBListResultSet showSchemas(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("schema");
     List<List<Object>> schemaInfo = new ArrayList<>();
 
@@ -448,7 +455,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showTables() throws Exception {
+  public TrainDBListResultSet showTables(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("table");
     List<List<Object>> tableInfo = new ArrayList<>();
 
@@ -534,7 +541,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showQueryLogs() throws Exception {
+  public TrainDBListResultSet showQueryLogs(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("start", "user", "query");
     List<List<Object>> queryLogInfo = new ArrayList<>();
 
@@ -558,25 +565,43 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet showTasks() throws Exception {
+  public TrainDBListResultSet showTasks(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("time", "idx", "task", "status");
     List<List<Object>> taskInfo = new ArrayList<>();
 
     for (MTask mTask : catalogContext.getTaskLogs()) {
       taskInfo.add(Arrays.asList(mTask.getTime(), mTask.getIdx(),
-              mTask.getTask(), mTask.getStatus()));
+          mTask.getTask(), mTask.getStatus()));
     }
 
     return new TrainDBListResultSet(header, taskInfo);
   }
 
   @Override
-  public void deleteQueryLogs(Integer cnt) throws Exception  {
+  public void deleteQueryLogs(Integer cnt) throws Exception {
     catalogContext.deleteQueryLogs(cnt);
   }
 
   @Override
   public void deleteTasks(Integer cnt) throws Exception {
     catalogContext.deleteTasks(cnt);
+  }
+
+  private void checkShowWhereColumns(Map<String, Object> patterns, List<String> columns)
+      throws TrainDBException {
+    for (String key : patterns.keySet()) {
+      if (!columns.contains(key)) {
+        throw new TrainDBException("column '" + key + "' does not exist");
+      }
+    }
+  }
+
+  private void addPrefixToPatternFilter(Map<String, Object> patterns, List<String> columns,
+                                        String prefix) {
+    for (String key : patterns.keySet()) {
+      if (columns.contains(key)) {
+        patterns.put(prefix + "." + key, patterns.remove(key));
+      }
+    }
   }
 }

@@ -34,15 +34,15 @@ public interface TrainDBSqlRunner {
 
   void dropSynopsis(String synopsisName) throws Exception;
 
-  TrainDBListResultSet showModeltypes() throws Exception;
+  TrainDBListResultSet showModeltypes(Map<String, Object> filterPatterns) throws Exception;
 
-  TrainDBListResultSet showModels() throws Exception;
+  TrainDBListResultSet showModels(Map<String, Object> filterPatterns) throws Exception;
 
-  TrainDBListResultSet showSynopses() throws Exception;
+  TrainDBListResultSet showSynopses(Map<String, Object> filterPatterns) throws Exception;
 
-  TrainDBListResultSet showSchemas() throws Exception;
+  TrainDBListResultSet showSchemas(Map<String, Object> filterPatterns) throws Exception;
 
-  TrainDBListResultSet showTables() throws Exception;
+  TrainDBListResultSet showTables(Map<String, Object> filterPatterns) throws Exception;
 
   void useSchema(String schemaName) throws Exception;
 
@@ -52,11 +52,11 @@ public interface TrainDBSqlRunner {
 
   void insertQueryLogs(String start, String user, String query) throws Exception;
 
-  TrainDBListResultSet showQueryLogs() throws Exception;
+  TrainDBListResultSet showQueryLogs(Map<String, Object> filterPatterns) throws Exception;
 
   void insertTask() throws Exception;
 
-  TrainDBListResultSet showTasks() throws Exception;
+  TrainDBListResultSet showTasks(Map<String, Object> filterPatterns) throws Exception;
 
   void deleteQueryLogs(Integer cnt) throws Exception;
 
