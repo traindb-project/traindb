@@ -132,7 +132,7 @@ public final class Session implements Runnable {
             throw new TrainDBException("invalid message type '" + type + "'");
         }
       } catch (Exception e) {
-
+        throw new TrainDBException(e.getMessage());
       }
     }
   }
