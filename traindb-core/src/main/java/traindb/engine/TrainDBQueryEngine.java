@@ -537,7 +537,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<String> header = Arrays.asList("start", "user", "query");
     List<List<Object>> queryLogInfo = new ArrayList<>();
 
-    for (MQueryLog mQuerylog : catalogContext.getQueryLog()) {
+    for (MQueryLog mQuerylog : catalogContext.getQueryLogs()) {
       queryLogInfo.add(Arrays.asList(mQuerylog.getStartTime(), mQuerylog.getUser(),
           mQuerylog.getQuery()));
     }
@@ -561,7 +561,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<String> header = Arrays.asList("time", "idx", "task", "status");
     List<List<Object>> taskInfo = new ArrayList<>();
 
-    for (MTask mTask : catalogContext.getTaskLog()) {
+    for (MTask mTask : catalogContext.getTaskLogs()) {
       taskInfo.add(Arrays.asList(mTask.getTime(), mTask.getIdx(),
               mTask.getTask(), mTask.getStatus()));
     }

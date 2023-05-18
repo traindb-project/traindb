@@ -14,8 +14,10 @@
 
 package traindb.catalog;
 
+import com.google.common.collect.ImmutableMap;
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
@@ -57,8 +59,15 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public Collection<MModeltype> getModeltypes() throws CatalogException {
+    return getModeltypes(ImmutableMap.of());
+  }
+
+  @Override
+  public Collection<MModeltype> getModeltypes(Map<String, Object> filterPatterns)
+      throws CatalogException {
     try {
       Query query = pm.newQuery(MModeltype.class);
+      setFilterPatterns(query, filterPatterns);
       return (List<MModeltype>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get modeltypes", e);
@@ -131,8 +140,14 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public Collection<MModel> getModels() throws CatalogException {
+    return getModels(ImmutableMap.of());
+  }
+
+  @Override
+  public Collection<MModel> getModels(Map<String, Object> filterPatterns) throws CatalogException {
     try {
       Query query = pm.newQuery(MModel.class);
+      setFilterPatterns(query, filterPatterns);
       return (List<MModel>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get models", e);
@@ -186,12 +201,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public Collection<MSynopsis> getAllSynopses() throws CatalogException {
-    try {
-      Query query = pm.newQuery(MSynopsis.class);
-      return (List<MSynopsis>) query.execute();
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get synopses", e);
-    }
+    return getAllSynopses(ImmutableMap.of());
   }
 
   @Override
@@ -203,6 +213,18 @@ public final class JDOCatalogContext implements CatalogContext {
       query.declareParameters("String baseSchema, String baseTable");
       Collection<MSynopsis> ret = (List<MSynopsis>) query.execute(baseSchema, baseTable);
       return ret;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopses", e);
+    }
+  }
+
+  @Override
+  public Collection<MSynopsis> getAllSynopses(Map<String, Object> filterPatterns)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MSynopsis.class);
+      setFilterPatterns(query, filterPatterns);
+      return (List<MSynopsis>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get synopses", e);
     }
@@ -246,13 +268,16 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public Collection<MQueryLog> getQueryLog() throws CatalogException {
+  public Collection<MQueryLog> getQueryLogs() throws CatalogException {
+    return getQueryLogs(ImmutableMap.of());
+  }
+
+  @Override
+  public Collection<MQueryLog> getQueryLogs(Map<String, Object> filterPatterns)
+      throws CatalogException {
     try {
       Query query = pm.newQuery(MQueryLog.class);
-      // query.setFilter("user == user");
-      // query.declareParameters("String user");
-      // Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
-      // return ret;
+      setFilterPatterns(query, filterPatterns);
       return (List<MQueryLog>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get query log", e);
@@ -297,13 +322,15 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public Collection<MTask> getTaskLog() throws CatalogException {
+  public Collection<MTask> getTaskLogs() throws CatalogException {
+    return getTaskLogs(ImmutableMap.of());
+  }
+
+  @Override
+  public Collection<MTask> getTaskLogs(Map<String, Object> filterPatterns) throws CatalogException {
     try {
       Query query = pm.newQuery(MTask.class);
-      // query.setFilter("user == user");
-      // query.declareParameters("String user");
-      // Collection<MQueryLog> ret = (List<MQueryLog>) query.execute(user);
-      // return ret;
+      setFilterPatterns(query, filterPatterns);
       return (List<MTask>) query.execute();
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get task log", e);
@@ -352,5 +379,11 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public void close() {
     pm.close();
+  }
+
+  private void setFilterPatterns(Query query, Map<String, Object> filterPatterns) {
+    for (Map.Entry<String, Object> entry : filterPatterns.entrySet()) {
+      query.setFilter(entry.getKey() + ".matches('" + entry.getValue().toString() + "')");
+    }
   }
 }

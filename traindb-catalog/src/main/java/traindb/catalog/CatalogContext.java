@@ -16,6 +16,7 @@ package traindb.catalog;
 
 import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
@@ -30,6 +31,8 @@ public interface CatalogContext {
   MModeltype getModeltype(String name);
 
   Collection<MModeltype> getModeltypes() throws CatalogException;
+
+  Collection<MModeltype> getModeltypes(Map<String, Object> filterPatterns) throws CatalogException;
 
   MModeltype createModeltype(String name, String type, String location, String className,
                              String uri) throws CatalogException;
@@ -46,6 +49,8 @@ public interface CatalogContext {
 
   Collection<MModel> getModels() throws CatalogException;
 
+  Collection<MModel> getModels(Map<String, Object> filterPatterns) throws CatalogException;
+
   Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
       throws CatalogException;
 
@@ -61,6 +66,8 @@ public interface CatalogContext {
 
   Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable) throws CatalogException;
 
+  Collection<MSynopsis> getAllSynopses(Map<String, Object> filterPatterns) throws CatalogException;
+
   boolean synopsisExists(String name);
 
   MSynopsis getSynopsis(String name);
@@ -68,14 +75,18 @@ public interface CatalogContext {
   void dropSynopsis(String name) throws CatalogException;
 
   /* Querylog */
-  Collection<MQueryLog> getQueryLog() throws CatalogException;
+  Collection<MQueryLog> getQueryLogs() throws CatalogException;
+
+  Collection<MQueryLog> getQueryLogs(Map<String, Object> filterPatterns) throws CatalogException;
 
   MQueryLog insertQueryLog(String start, String user, String query) throws CatalogException;
 
   void deleteQueryLogs(Integer cnt) throws CatalogException;
 
   /* Task */
-  Collection<MTask> getTaskLog() throws CatalogException;
+  Collection<MTask> getTaskLogs() throws CatalogException;
+
+  Collection<MTask> getTaskLogs(Map<String, Object> filterPatterns) throws CatalogException;
 
   MTask insertTask(String time, Integer idx, String task, String status) throws CatalogException;
 
