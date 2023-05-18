@@ -56,7 +56,7 @@ public final class MModel {
   private List<String> columns;
 
   @Persistent
-  private byte[] options;
+  private byte[] model_options;
 
   public MModel(
       MModeltype modeltype, String modelName, String schemaName, String tableName,
@@ -69,7 +69,7 @@ public final class MModel {
     this.columns = columns;
     this.table_rows = (baseTableRows == null) ? 0 : baseTableRows;
     this.trained_rows = (trainedRows == null) ? 0 : trainedRows;
-    this.options = options.getBytes();
+    this.model_options = options.getBytes();
   }
 
   public String getModelName() {
@@ -100,7 +100,7 @@ public final class MModel {
     return trained_rows;
   }
 
-  public String getOptions() {
-    return new String(options);
+  public String getModelOptions() {
+    return new String(model_options);
   }
 }

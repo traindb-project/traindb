@@ -386,7 +386,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showModels() throws Exception {
     List<String> header = Arrays.asList("model_name", "modeltype_name", "schema_name", "table_name",
-        "columns", "table_rows", "trained_rows", "options");
+        "columns", "table_rows", "trained_rows", "model_options");
     List<List<Object>> modelInfo = new ArrayList<>();
 
     T_tracer.startTaskTracer("show models");
@@ -396,7 +396,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       modelInfo.add(Arrays.asList(mModel.getModelName(), mModel.getModeltype().getModeltypeName(),
           mModel.getSchemaName(), mModel.getTableName(),
           mModel.getColumnNames().toString(), mModel.getTableRows(),
-          mModel.getTrainedRows(), mModel.getOptions()));
+          mModel.getTrainedRows(), mModel.getModelOptions()));
     }
 
     T_tracer.closeTaskTime("SUCCESS");
