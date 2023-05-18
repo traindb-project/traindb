@@ -293,13 +293,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
 
-    AbstractTrainDBModelRunner runner = createModelRunner(mModeltype.getName(), modelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(mModeltype.getModeltypeName(), modelName);
     String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
     runner.generateSynopsis(outputPath, limitNumber);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create synopsis");
-    double ratio = (double) limitNumber / (double) mModel.getBaseTableRows();
+    double ratio = (double) limitNumber / (double) mModel.getTableRows();
     catalogContext.createSynopsis(synopsisName, modelName, limitNumber, ratio);
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -365,14 +365,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showModeltypes() throws Exception {
-    List<String> header = Arrays.asList("modeltype", "category", "location", "class", "uri");
+    List<String> header = Arrays.asList("modeltype_name", "category", "location", "class_name",
+        "uri");
     List<List<Object>> modeltypeInfo = new ArrayList<>();
 
-    T_tracer.startTaskTracer("show modelstypes");
+    T_tracer.startTaskTracer("show modeltypes");
     T_tracer.openTaskTime("scan : modeltype");
 
     for (MModeltype mModeltype : catalogContext.getModeltypes()) {
-      modeltypeInfo.add(Arrays.asList(mModeltype.getName(), mModeltype.getType(),
+      modeltypeInfo.add(Arrays.asList(mModeltype.getModeltypeName(), mModeltype.getCategory(),
           mModeltype.getLocation(), mModeltype.getClassName(), mModeltype.getUri()));
     }
 
@@ -384,17 +385,17 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showModels() throws Exception {
-    List<String> header = Arrays.asList("model", "modeltype", "schema", "table", "columns",
-        "base_table_rows", "trained_rows", "options");
+    List<String> header = Arrays.asList("model_name", "modeltype_name", "schema_name", "table_name",
+        "columns", "table_rows", "trained_rows", "options");
     List<List<Object>> modelInfo = new ArrayList<>();
 
     T_tracer.startTaskTracer("show models");
     T_tracer.openTaskTime("scan : model");
 
     for (MModel mModel : catalogContext.getModels()) {
-      modelInfo.add(Arrays.asList(mModel.getName(), mModel.getModeltype().getName(),
+      modelInfo.add(Arrays.asList(mModel.getModelName(), mModel.getModeltype().getModeltypeName(),
           mModel.getSchemaName(), mModel.getTableName(),
-          mModel.getColumnNames().toString(), mModel.getBaseTableRows(),
+          mModel.getColumnNames().toString(), mModel.getTableRows(),
           mModel.getTrainedRows(), mModel.getOptions()));
     }
 
@@ -406,16 +407,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showSynopses() throws Exception {
-    List<String> header = Arrays.asList("synopsis", "model", "schema", "table", "columns",
-        "rows", "ratio");
+    List<String> header = Arrays.asList("synopsis_name", "model_name", "schema_name", "table_name",
+        "columns", "rows", "ratio");
     List<List<Object>> synopsisInfo = new ArrayList<>();
 
-    T_tracer.startTaskTracer("show sysnopeses");
+    T_tracer.startTaskTracer("show synopses");
     T_tracer.openTaskTime("scan : synopsis");
 
     for (MSynopsis mSynopsis : catalogContext.getAllSynopses()) {
       MModel mModel = mSynopsis.getModel();
-      synopsisInfo.add(Arrays.asList(mSynopsis.getName(), mModel.getName(),
+      synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mModel.getModelName(),
           mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames(),
           mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio())));
     }

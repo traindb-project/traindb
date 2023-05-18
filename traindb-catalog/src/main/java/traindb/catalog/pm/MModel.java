@@ -14,7 +14,6 @@
 
 package traindb.catalog.pm;
 
-import java.util.Arrays;
 import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -34,24 +33,24 @@ public final class MModel {
   @Persistent
   @Unique(name = "NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String name;
+  private String model_name;
 
   @Persistent(dependent = "false")
   private MModeltype modeltype;
 
   @Persistent
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String schemaName;
+  private String schema_name;
 
   @Persistent
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String tableName;
+  private String table_name;
 
   @Persistent
-  private long baseTableRows;
+  private long table_rows;
 
   @Persistent
-  private long trainedRows;
+  private long trained_rows;
 
   @Persistent
   private List<String> columns;
@@ -64,17 +63,17 @@ public final class MModel {
       List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows,
       String options) {
     this.modeltype = modeltype;
-    this.name = modelName;
-    this.schemaName = schemaName;
-    this.tableName = tableName;
+    this.model_name = modelName;
+    this.schema_name = schemaName;
+    this.table_name = tableName;
     this.columns = columns;
-    this.baseTableRows = (baseTableRows == null) ? 0 : baseTableRows;
-    this.trainedRows = (trainedRows == null) ? 0 : trainedRows;
+    this.table_rows = (baseTableRows == null) ? 0 : baseTableRows;
+    this.trained_rows = (trainedRows == null) ? 0 : trainedRows;
     this.options = options.getBytes();
   }
 
-  public String getName() {
-    return name;
+  public String getModelName() {
+    return model_name;
   }
 
   public MModeltype getModeltype() {
@@ -82,23 +81,23 @@ public final class MModel {
   }
 
   public String getSchemaName() {
-    return schemaName;
+    return schema_name;
   }
 
   public String getTableName() {
-    return tableName;
+    return table_name;
   }
 
   public List<String> getColumnNames() {
     return columns;
   }
 
-  public long getBaseTableRows() {
-    return baseTableRows;
+  public long getTableRows() {
+    return table_rows;
   }
 
   public long getTrainedRows() {
-    return trainedRows;
+    return trained_rows;
   }
 
   public String getOptions() {

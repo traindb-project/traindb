@@ -142,7 +142,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
   public RelOptTable getSynopsisTable(MSynopsis synopsis, RelOptTable baseTable) {
     List<String> qualifiedSynopsisName = new ArrayList(Arrays.asList(
         baseTable.getQualifiedName().get(0), baseTable.getQualifiedName().get(1),
-        synopsis.getName()));
+        synopsis.getSynopsisName()));
     double ratio = synopsis.getRatio();
     if (ratio == 0d) {
       ratio = DEFAULT_SYNOPSIS_SIZE_RATIO;
@@ -161,7 +161,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
           continue;
         }
         for (MSynopsis synopsis : synopses) {
-          if (hintSynopsisNames.contains(synopsis.getName())) {
+          if (hintSynopsisNames.contains(synopsis.getSynopsisName())) {
             hintSynopses.add(synopsis);
           }
         }

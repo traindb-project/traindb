@@ -47,8 +47,7 @@ public final class JDOCatalogContext implements CatalogContext {
   public @Nullable MModeltype getModeltype(String name) {
     try {
       Query query = pm.newQuery(MModeltype.class);
-      query.setFilter("name == modeltypeName");
-      query.declareParameters("String modeltypeName");
+      setFilterPatterns(query, ImmutableMap.of("modeltype_name", name));
       query.setUnique(true);
 
       return (MModeltype) query.execute(name);
@@ -157,15 +156,8 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public Collection<MModel> getInferenceModels(String baseSchema, String baseTable)
       throws CatalogException {
-    try {
-      Query query = pm.newQuery(MModel.class);
-      query.setFilter(
-          "schemaName == baseSchema && tableName == baseTable && modeltype.type == \"INFERENCE\"");
-      query.declareParameters("String baseSchema, String baseTable");
-      return (List<MModel>) query.execute(baseSchema, baseTable);
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get models", e);
-    }
+    return getModels(ImmutableMap.of(
+        "schema_name", baseSchema, "table_name", baseTable, "modeltype.category", "INFERENCE"));
   }
 
   @Override
@@ -177,8 +169,7 @@ public final class JDOCatalogContext implements CatalogContext {
   public @Nullable MModel getModel(String name) {
     try {
       Query query = pm.newQuery(MModel.class);
-      query.setFilter("name == modelName");
-      query.declareParameters("String modelName");
+      setFilterPatterns(query, ImmutableMap.of("model_name", name));
       query.setUnique(true);
 
       return (MModel) query.execute(name);
@@ -207,15 +198,8 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable)
       throws CatalogException {
-    try {
-      Query query = pm.newQuery(MSynopsis.class);
-      query.setFilter("model.schemaName == baseSchema && model.tableName == baseTable");
-      query.declareParameters("String baseSchema, String baseTable");
-      Collection<MSynopsis> ret = (List<MSynopsis>) query.execute(baseSchema, baseTable);
-      return ret;
-    } catch (RuntimeException e) {
-      throw new CatalogException("failed to get synopses", e);
-    }
+    return getAllSynopses(ImmutableMap.of(
+        "model.schema_name", baseSchema, "model.table_name", baseTable));
   }
 
   @Override
@@ -239,8 +223,7 @@ public final class JDOCatalogContext implements CatalogContext {
   public @Nullable MSynopsis getSynopsis(String name) {
     try {
       Query query = pm.newQuery(MSynopsis.class);
-      query.setFilter("name == synopsisName");
-      query.declareParameters("String synopsisName");
+      setFilterPatterns(query, ImmutableMap.of("synopsis_name", name));
       query.setUnique(true);
 
       return (MSynopsis) query.execute(name);

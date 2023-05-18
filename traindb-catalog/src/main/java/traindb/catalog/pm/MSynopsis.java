@@ -29,9 +29,9 @@ public final class MSynopsis {
   private long id;
 
   @Persistent
-  @Unique(name = "NAME_IDX")
+  @Unique(name = "SYNOPSIS_NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String name;
+  private String synopsis_name;
 
   @Persistent
   private int rows;
@@ -43,14 +43,14 @@ public final class MSynopsis {
   private MModel model;
 
   public MSynopsis(String name, Integer rows, Double ratio, MModel model) {
-    this.name = name;
+    this.synopsis_name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
     this.model = model;
   }
 
-  public String getName() {
-    return name;
+  public String getSynopsisName() {
+    return synopsis_name;
   }
 
   public int getRows() {

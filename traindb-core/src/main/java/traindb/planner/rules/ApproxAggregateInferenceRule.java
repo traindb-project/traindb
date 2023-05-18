@@ -119,7 +119,8 @@ public class ApproxAggregateInferenceRule
 
     AbstractTrainDBModelRunner runner =
         new TrainDBFileModelRunner(null, planner.getCatalogContext(),
-            bestInferenceModel.getModeltype().getName(), bestInferenceModel.getName());
+            bestInferenceModel.getModeltype().getModeltypeName(),
+            bestInferenceModel.getModelName());
 
     PythonMLAggregateModel modelTable = new PythonMLAggregateModel(runner,
         aggregate.getAggCallList(), aggregate.getGroupSet(), aggregate.getInput().getRowType(),

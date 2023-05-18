@@ -31,13 +31,13 @@ public final class MModeltype {
   private long id;
 
   @Persistent
-  @Unique(name = "NAME_IDX")
+  @Unique(name = "MODELTYPE_NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String name;
+  private String modeltype_name;
 
   @Persistent
   @Column(length = 10) // "synopsis" or "inference"
-  private String type;
+  private String category;
 
   @Persistent
   @Column(length = 7) // "local" or "remote"
@@ -45,7 +45,7 @@ public final class MModeltype {
 
   @Persistent
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String className;
+  private String class_name;
 
   @Persistent
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
@@ -55,19 +55,19 @@ public final class MModeltype {
   private Collection<MModel> model;
 
   public MModeltype(String name, String type, String location, String className, String uri) {
-    this.name = name;
-    this.type = type;
+    this.modeltype_name = name;
+    this.category = type;
     this.location = location;
-    this.className = className;
+    this.class_name = className;
     this.uri = uri;
   }
 
-  public String getName() {
-    return name;
+  public String getModeltypeName() {
+    return modeltype_name;
   }
 
-  public String getType() {
-    return type;
+  public String getCategory() {
+    return category;
   }
 
   public String getLocation() {
@@ -75,7 +75,7 @@ public final class MModeltype {
   }
 
   public String getClassName() {
-    return className;
+    return class_name;
   }
 
   public String getUri() {
