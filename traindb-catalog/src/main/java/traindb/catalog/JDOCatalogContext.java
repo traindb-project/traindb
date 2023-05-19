@@ -366,7 +366,12 @@ public final class JDOCatalogContext implements CatalogContext {
 
   private void setFilterPatterns(Query query, Map<String, Object> filterPatterns) {
     for (Map.Entry<String, Object> entry : filterPatterns.entrySet()) {
-      query.setFilter(entry.getKey() + ".matches('" + entry.getValue().toString() + "')");
+      Object v = entry.getValue();
+      if (v instanceof String) {
+        query.setFilter(entry.getKey() + ".matches('" + v + "')");
+      } else {
+        query.setFilter(entry.getKey() + " == " + v + " ");
+      }
     }
   }
 }
