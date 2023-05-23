@@ -208,6 +208,7 @@ error
         }
     ;
 
+K_AND : A N D ;
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
