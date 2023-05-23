@@ -126,4 +126,26 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     return outputPath;
   }
 
+  @Override
+  public String listHyperparameters(String className, String uri) throws Exception {
+
+    Path modelPath = getModelPath();
+    Files.createDirectories(modelPath);
+    String outputPath = modelPath.toString() + "/hyperparams.json";
+
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "list",
+        className, TrainDBConfiguration.absoluteUri(uri), outputPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
+
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to train model");
+    }
+
+    String hyperparamsInfo =
+        new String(Files.readAllBytes(Paths.get(outputPath)), StandardCharsets.UTF_8);
+    return hyperparamsInfo;
+  }
+
 }

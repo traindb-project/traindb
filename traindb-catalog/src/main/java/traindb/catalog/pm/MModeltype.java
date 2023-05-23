@@ -51,15 +51,17 @@ public final class MModeltype {
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
   private String uri;
 
-  @Persistent(mappedBy = "modeltype", dependentElement = "true")
-  private Collection<MModel> model;
+  @Persistent
+  private byte[] hyperparameters;
 
-  public MModeltype(String name, String type, String location, String className, String uri) {
+  public MModeltype(String name, String type, String location, String className, String uri,
+                    String hyperparameters) {
     this.modeltype_name = name;
     this.category = type;
     this.location = location;
     this.class_name = className;
     this.uri = uri;
+    this.hyperparameters = hyperparameters.getBytes();
   }
 
   public String getModeltypeName() {
@@ -82,7 +84,7 @@ public final class MModeltype {
     return uri;
   }
 
-  public Collection<MModel> getModel() {
-    return new ArrayList<MModel>(model);
+  public String getHyperparameters() {
+    return new String(hyperparameters);
   }
 }

@@ -35,7 +35,7 @@ public interface CatalogContext {
   Collection<MModeltype> getModeltypes(Map<String, Object> filterPatterns) throws CatalogException;
 
   MModeltype createModeltype(String name, String type, String location, String className,
-                             String uri) throws CatalogException;
+                             String uri, String hyperparameters) throws CatalogException;
 
   void dropModeltype(String name) throws CatalogException;
 

@@ -132,6 +132,11 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     throw new TrainDBException("Not supported yet in Py4J model runner");
   }
 
+  @Override
+  public String listHyperparameters(String className, String uri) throws Exception {
+    return null; // TODO
+  }
+
   private int getAvailablePort() throws Exception {
     ServerSocket s;
     try {

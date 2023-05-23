@@ -76,7 +76,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create modeltype");
-    catalogContext.createModeltype(name, category, location, className, uri);
+    AbstractTrainDBModelRunner runner = createModelRunner(name, "");
+    String hyperparamsInfo = runner.listHyperparameters(className, uri);
+    catalogContext.createModeltype(name, category, location, className, uri, hyperparamsInfo);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();
