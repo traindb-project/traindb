@@ -104,6 +104,9 @@ public final class TrainDBSql {
       case SHOW_TABLES:
         TrainDBSqlShowCommand showTables = (TrainDBSqlShowCommand) command;
         return runner.showTables(showTables.getWhereExpressionMap());
+      case SHOW_HYPERPARAMETERS:
+        TrainDBSqlShowCommand showHyperparams = (TrainDBSqlShowCommand) command;
+        return runner.showHyperparameters(showHyperparams.getWhereExpressionMap());
       case USE_SCHEMA:
         TrainDBSqlUseSchema useSchema = (TrainDBSqlUseSchema) command;
         runner.useSchema(useSchema.getSchemaName());
@@ -197,6 +200,8 @@ public final class TrainDBSql {
         commands.add(new TrainDBSqlShowCommand.Schemas(whereExprMap));
       } else if (showTarget.equals("TABLES")) {
         commands.add(new TrainDBSqlShowCommand.Tables(whereExprMap));
+      } else if (showTarget.equals("HYPERPARAMETERS")) {
+        commands.add(new TrainDBSqlShowCommand.Hyperparameters(whereExprMap));
       } else if (showTarget.equals("QUERYLOGS")) {
         commands.add(new TrainDBSqlShowCommand.QueryLogs(whereExprMap));
       } else if (showTarget.equals("TASKS")) {

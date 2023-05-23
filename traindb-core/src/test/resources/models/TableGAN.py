@@ -16,7 +16,7 @@ import logging
 import rdt
 from sdgym.synthesizers import TableGAN as SDGymTableGAN
 from sdgym.errors import UnsupportedDataset
-from TrainDBBaseModel import TrainDBSynopsisModel
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 import pandas as pd
 
 import torch
@@ -30,7 +30,7 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
                  num_channels=64,
                  l2scale=1e-5,
                  batch_size=500,
-                 epochs=1):
+                 epochs=300):
  
         self.ht = rdt.HyperTransformer(default_data_type_transformers={
             'categorical': 'LabelEncodingTransformer',
@@ -75,6 +75,15 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
         self.transformer = saved_model['transformer']
         self.generator = saved_model['generator']
         self.columns = saved_model['columns']
+
+    def list_hyperparameters():
+        hparams = []
+        hparams.append(TrainDBModel.createHyperparameter('random_dim', 'int', '100', 'the size of the random sample passed to the generator'))
+        hparams.append(TrainDBModel.createHyperparameter('num_channels', 'int', '64', 'the number of channels'))
+        hparams.append(TrainDBModel.createHyperparameter('l2scale', 'float', '1e-5', 'regularization term'))
+        hparams.append(TrainDBModel.createHyperparameter('batch_size', 'int', '500', 'the number of samples to process in each step'))
+        hparams.append(TrainDBModel.createHyperparameter('epochs', 'int', '300', 'the number of training epochs'))
+        return hparams
 
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)

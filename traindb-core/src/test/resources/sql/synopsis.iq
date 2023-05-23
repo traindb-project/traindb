@@ -18,6 +18,20 @@ SHOW MODELTYPES;
 
 !ok
 
+SHOW HYPERPARAMETERS WHERE modeltype_name = 'tablegan';
++----------------+---------------------+------------+---------------+-------------------------------------------------------+
+| modeltype_name | hyperparameter_name | value_type | default_value | description                                           |
++----------------+---------------------+------------+---------------+-------------------------------------------------------+
+| tablegan       | random_dim          | int        | 100           | the size of the random sample passed to the generator |
+| tablegan       | num_channels        | int        | 64            | the number of channels                                |
+| tablegan       | l2scale             | float      | 1e-5          | regularization term                                   |
+| tablegan       | batch_size          | int        | 500           | the number of samples to process in each step         |
+| tablegan       | epochs              | int        | 300           | the number of training epochs                         |
++----------------+---------------------+------------+---------------+-------------------------------------------------------+
+(5 rows)
+
+!ok
+
 CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' IN 'models/TableGAN.py';
 
 modeltype 'tablegan' already exists
