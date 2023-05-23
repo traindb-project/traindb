@@ -14,14 +14,23 @@
 
 package traindb.sql;
 
+import java.util.Map;
+
 abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
 
-  protected TrainDBSqlShowCommand() {
+  Map<String, Object> whereExprMap;
+
+  protected TrainDBSqlShowCommand(Map<String, Object> whereExprMap) {
+    this.whereExprMap = whereExprMap;
+  }
+
+  public Map<String, Object> getWhereExpressionMap() {
+    return whereExprMap;
   }
 
   static class Modeltypes extends TrainDBSqlShowCommand {
-    Modeltypes() {
-      super();
+    Modeltypes(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -31,8 +40,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class Models extends TrainDBSqlShowCommand {
-    Models() {
-      super();
+    Models(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -42,8 +51,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class Synopses extends TrainDBSqlShowCommand {
-    Synopses() {
-      super();
+    Synopses(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -53,8 +62,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class Schemas extends TrainDBSqlShowCommand {
-    Schemas() {
-      super();
+    Schemas(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -64,8 +73,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class Tables extends TrainDBSqlShowCommand {
-    Tables() {
-      super();
+    Tables(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -75,8 +84,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class QueryLogs extends TrainDBSqlShowCommand {
-    QueryLogs() {
-      super();
+    QueryLogs(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override
@@ -86,8 +95,8 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
   }
 
   static class Tasks extends TrainDBSqlShowCommand {
-    Tasks() {
-      super();
+    Tasks(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
     }
 
     @Override

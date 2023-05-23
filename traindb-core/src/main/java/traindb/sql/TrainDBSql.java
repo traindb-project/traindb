@@ -26,7 +26,6 @@ import org.antlr.v4.runtime.misc.Interval;
 import org.antlr.v4.runtime.tree.ParseTreeWalker;
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.sql.parser.SqlParser;
-import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 
@@ -72,10 +71,10 @@ public final class TrainDBSql {
         break;
       case SHOW_MODELTYPES:
         TrainDBSqlShowCommand showModeltypes = (TrainDBSqlShowCommand) command;
-        return runner.showModeltypes();
+        return runner.showModeltypes(showModeltypes.getWhereExpressionMap());
       case SHOW_MODELS:
         TrainDBSqlShowCommand showModels = (TrainDBSqlShowCommand) command;
-        return runner.showModels();
+        return runner.showModels(showModels.getWhereExpressionMap());
       case TRAIN_MODEL:
         TrainDBSqlTrainModel trainModel = (TrainDBSqlTrainModel) command;
         runner.trainModel(
@@ -98,13 +97,13 @@ public final class TrainDBSql {
         break;
       case SHOW_SYNOPSES:
         TrainDBSqlShowCommand showSynopses = (TrainDBSqlShowCommand) command;
-        return runner.showSynopses();
+        return runner.showSynopses(showSynopses.getWhereExpressionMap());
       case SHOW_SCHEMAS:
         TrainDBSqlShowCommand showSchemas = (TrainDBSqlShowCommand) command;
-        return runner.showSchemas();
+        return runner.showSchemas(showSchemas.getWhereExpressionMap());
       case SHOW_TABLES:
         TrainDBSqlShowCommand showTables = (TrainDBSqlShowCommand) command;
-        return runner.showTables();
+        return runner.showTables(showTables.getWhereExpressionMap());
       case USE_SCHEMA:
         TrainDBSqlUseSchema useSchema = (TrainDBSqlUseSchema) command;
         runner.useSchema(useSchema.getSchemaName());
@@ -118,10 +117,10 @@ public final class TrainDBSql {
         break;
       case SHOW_QUERY_LOGS:
         TrainDBSqlShowCommand showQueryLogs = (TrainDBSqlShowCommand) command;
-        return runner.showQueryLogs();
+        return runner.showQueryLogs(showQueryLogs.getWhereExpressionMap());
       case SHOW_TASKS:
         TrainDBSqlShowCommand showTasks = (TrainDBSqlShowCommand) command;
-        return runner.showTasks();
+        return runner.showTasks(showTasks.getWhereExpressionMap());
       case DELETE_QUERY_LOGS:
         TrainDBSqlDeleteQueryLogs deleteQueryLogs = (TrainDBSqlDeleteQueryLogs) command;
         runner.deleteQueryLogs(deleteQueryLogs.getRowCount());
@@ -173,7 +172,7 @@ public final class TrainDBSql {
       String className = ctx.modeltypeSpecClause().modeltypeClassName().getText();
       String uri = ctx.modeltypeSpecClause().modeltypeUri().getText();
       LOG.debug("CREATE MODELTYPE: name=" + name + " category=" + category
-          + " location=" + location + " class=" + className  + " uri=" + uri);
+          + " location=" + location + " class=" + className + " uri=" + uri);
       commands.add(new TrainDBSqlCreateModeltype(name, category, location, className, uri));
     }
 
@@ -185,13 +184,24 @@ public final class TrainDBSql {
     }
 
     @Override
-    public void exitShowModeltypes(TrainDBSqlParser.ShowModeltypesContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Modeltypes());
-    }
-
-    @Override
-    public void exitShowModels(TrainDBSqlParser.ShowModelsContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Models());
+    public void exitShowStmt(TrainDBSqlParser.ShowStmtContext ctx) {
+      String showTarget = ctx.showTargets().getText().toUpperCase();
+      Map<String, Object> whereExprMap = getShowWhereExpressionMap(ctx.showWhereClause());
+      if (showTarget.equals("MODELTYPES")) {
+        commands.add(new TrainDBSqlShowCommand.Modeltypes(whereExprMap));
+      } else if (showTarget.equals("MODELS")) {
+        commands.add(new TrainDBSqlShowCommand.Models(whereExprMap));
+      } else if (showTarget.equals("SYNOPSES")) {
+        commands.add(new TrainDBSqlShowCommand.Synopses(whereExprMap));
+      } else if (showTarget.equals("SCHEMAS")) {
+        commands.add(new TrainDBSqlShowCommand.Schemas(whereExprMap));
+      } else if (showTarget.equals("TABLES")) {
+        commands.add(new TrainDBSqlShowCommand.Tables(whereExprMap));
+      } else if (showTarget.equals("QUERYLOGS")) {
+        commands.add(new TrainDBSqlShowCommand.QueryLogs(whereExprMap));
+      } else if (showTarget.equals("TASKS")) {
+        commands.add(new TrainDBSqlShowCommand.Tasks(whereExprMap));
+      }
     }
 
     @Override
@@ -208,17 +218,8 @@ public final class TrainDBSql {
       if (ctx.trainModelOptionsClause() != null) {
         for (TrainDBSqlParser.OptionKeyValueContext optionKeyValue
             : ctx.trainModelOptionsClause().optionKeyValueList().optionKeyValue()) {
-          Object value;
-          if (optionKeyValue.optionValue().STRING_LITERAL() == null) {
-            if (optionKeyValue.optionValue().getText().contains(".")) {
-              value = Double.valueOf(optionKeyValue.optionValue().getText());
-            } else {
-              value = Integer.valueOf(optionKeyValue.optionValue().getText());
-            }
-          } else {
-            value = optionKeyValue.optionValue().getText();
-          }
-          trainOptions.put(optionKeyValue.optionKey().getText(), value);
+          trainOptions.put(optionKeyValue.optionKey().getText(),
+              getOptionValueObject(optionKeyValue.optionValue(), false));
         }
       }
       LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
@@ -251,31 +252,6 @@ public final class TrainDBSql {
       String synopsisName = ctx.synopsisName().getText();
       LOG.debug("DROP SYNOPSIS: name=" + synopsisName);
       commands.add(new TrainDBSqlDropSynopsis(synopsisName));
-    }
-
-    @Override
-    public void exitShowSynopses(TrainDBSqlParser.ShowSynopsesContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Synopses());
-    }
-
-    @Override
-    public void exitShowSchemas(TrainDBSqlParser.ShowSchemasContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Schemas());
-    }
-
-    @Override
-    public void exitShowTables(TrainDBSqlParser.ShowTablesContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Tables());
-    }
-
-    @Override
-    public void exitShowQueryLogs(TrainDBSqlParser.ShowQueryLogsContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.QueryLogs());
-    }
-
-    @Override
-    public void exitShowTasks(TrainDBSqlParser.ShowTasksContext ctx) {
-      commands.add(new TrainDBSqlShowCommand.Tasks());
     }
 
     @Override
@@ -313,6 +289,78 @@ public final class TrainDBSql {
       String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
       LOG.debug("BYPASS DDL: stmt=" + stmt);
       commands.add(new TrainDBSqlBypassDdlStmt(stmt));
+    }
+
+    private Object getOptionValueObject(TrainDBSqlParser.OptionValueContext ctx,
+                                        boolean convertPattern) {
+      if (ctx.STRING_LITERAL() == null) {
+        if (ctx.getText().contains(".")) {
+          return Double.valueOf(ctx.getText());
+        } else {
+          return Integer.valueOf(ctx.getText());
+        }
+      }
+      if (convertPattern) {
+        return convertPattern(ctx.getText());
+      }
+      return ctx.getText();
+    }
+
+    /**
+     * Convert a pattern containing JDBC catalog search wildcards into
+     * Java regex patterns.
+     *
+     * @param pattern input which may contain '%' or '_' wildcard characters
+     * @return replace %/_ with regex search characters, also handle escaped characters.
+     */
+    private String convertPattern(final String pattern) {
+      final char searchStringEscape = '\\';
+
+      String convertedPattern;
+      if (pattern == null) {
+        convertedPattern = ".*";
+      } else {
+        StringBuilder result = new StringBuilder(pattern.length());
+
+        boolean escaped = false;
+        for (int i = 0; i < pattern.length(); i++) {
+          char c = pattern.charAt(i);
+          if (escaped) {
+            if (c != searchStringEscape) {
+              escaped = false;
+            }
+            result.append(c);
+          } else {
+            if (c == searchStringEscape) {
+              escaped = true;
+            } else if (c == '%') {
+              result.append(".*");
+            } else if (c == '_') {
+              result.append('.');
+            } else {
+              result.append(c);
+            }
+          }
+        }
+
+        convertedPattern = result.toString();
+      }
+
+      return convertedPattern;
+    }
+
+    private Map<String, Object> getShowWhereExpressionMap(
+        TrainDBSqlParser.ShowWhereClauseContext ctx) {
+      Map<String, Object> showWhereExpressionMap = new HashMap<>();
+      if (ctx != null) {
+        for (TrainDBSqlParser.ShowWhereExpressionContext showWhereExprCtx
+            : ctx.showWhereExpressionList().showWhereExpression()) {
+          String op = showWhereExprCtx.showFilterOperator().getText();
+          showWhereExpressionMap.put(showWhereExprCtx.showFilterKey().getText(),
+              getOptionValueObject(showWhereExprCtx.optionValue(), op.equalsIgnoreCase("LIKE")));
+        }
+      }
+      return showWhereExpressionMap;
     }
 
     List<TrainDBSqlCommand> getSqlCommands() {
