@@ -150,6 +150,19 @@ limitations under the License.
             <artifactId>quidem</artifactId>
             <scope>test</scope>
         </dependency>
+        <!-- To use the Kairos JDBC driver in tests,
+         the kairos JDBC driver file should be installed into the local repository by
+             $> mvn install:install-file -Dfile=traindb-project/src/main/resources/lib/kairosjdbc.jar \
+                -DgroupId=kr.co.realtimetech.kairos -DartifactId=kairos-jdbc -Dversion=5.0.0 \
+                -Dpackaging=jar -DlocalRepositoryPath=traindb-lib -->
+        <!--
+        <dependency>
+            <groupId>kr.co.realtimetech.kairos</groupId>
+            <artifactId>kairos-jdbc</artifactId>
+            <version>5.0.0</version>
+            <scope>test</scope>
+        </dependency>
+        -->
     </dependencies>
 
     <profiles>
