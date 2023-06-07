@@ -185,6 +185,9 @@ limitations under the License.
                             <systemPropertyVariables>
                                 <TRAINDB_PREFIX>${project.build.directory}/test-classes</TRAINDB_PREFIX>
                             </systemPropertyVariables>
+                            <excludes>
+                                <exclude>**/spt/**Test.java</exclude>
+                            </excludes>
                         </configuration>
                     </plugin>
                 </plugins>
@@ -309,6 +312,9 @@ limitations under the License.
                     <systemPropertyVariables>
                         <TRAINDB_PREFIX>${project.build.directory}/test-classes</TRAINDB_PREFIX>
                     </systemPropertyVariables>
+                    <excludes>
+                        <exclude>**/spt/**Test.java</exclude>
+                    </excludes>
                 </configuration>
             </plugin>
         </plugins>

@@ -29,7 +29,7 @@ import org.json.simple.parser.JSONParser;
 /**
  * Test that runs every Quidem file in the "core" module as a test.
  */
-class TrainDBCoreQuidemTest extends QuidemTest {
+public class TrainDBCoreQuidemTest extends QuidemTest {
   /**
    * Runs a test from the command line.
    *
