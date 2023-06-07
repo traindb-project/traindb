@@ -124,6 +124,7 @@ showTargets
     | K_SYNOPSES
     | K_SCHEMAS
     | K_TABLES
+    | K_HYPERPARAMETERS
     | K_QUERYLOGS
     | K_TASKS
     ;
@@ -208,6 +209,7 @@ error
         }
     ;
 
+K_AND : A N D ;
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
@@ -218,6 +220,7 @@ K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
+K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
 K_LIKE : L I K E ;

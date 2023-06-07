@@ -75,9 +75,9 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public MModeltype createModeltype(String name, String type, String location, String className,
-                                    String uri) throws CatalogException {
+                                    String uri, String hyperparameters) throws CatalogException {
     try {
-      MModeltype mModeltype = new MModeltype(name, type, location, className, uri);
+      MModeltype mModeltype = new MModeltype(name, type, location, className, uri, hyperparameters);
       pm.makePersistent(mModeltype);
       return mModeltype;
     } catch (RuntimeException e) {

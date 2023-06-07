@@ -25,6 +25,8 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.sql.SqlDialect;
+import org.codehaus.jackson.annotate.JsonIgnoreProperties;
+import org.codehaus.jackson.map.ObjectMapper;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
@@ -76,7 +78,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create modeltype");
-    catalogContext.createModeltype(name, category, location, className, uri);
+    AbstractTrainDBModelRunner runner = createModelRunner(name, "");
+    String hyperparamsInfo = runner.listHyperparameters(className, uri);
+    catalogContext.createModeltype(name, category, location, className, uri, hyperparamsInfo);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();
@@ -476,6 +480,36 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public TrainDBListResultSet showHyperparameters(Map<String, Object> filterPatterns)
+      throws Exception {
+    List<String> header = Arrays.asList("modeltype_name", "hyperparameter_name", "value_type",
+        "default_value", "description");
+    checkShowWhereColumns(filterPatterns, Arrays.asList("modeltype_name"));
+
+    T_tracer.startTaskTracer("show hyperparameters");
+    T_tracer.openTaskTime("scan : modeltype");
+
+    ObjectMapper objectMapper = new ObjectMapper();
+    List<List<Object>> hyperparamInfo = new ArrayList<>();
+    for (MModeltype mModeltype : catalogContext.getModeltypes(filterPatterns)) {
+      if (mModeltype.getHyperparameters().equals("null")) {
+        continue;
+      }
+      List<Hyperparameter> hyperparameterList = Arrays.asList(
+          objectMapper.readValue(mModeltype.getHyperparameters(), Hyperparameter[].class));
+      for (Hyperparameter hyperparam : hyperparameterList) {
+        hyperparamInfo.add(Arrays.asList(mModeltype.getModeltypeName(), hyperparam.getName(),
+            hyperparam.getType(), hyperparam.getDefaultValue(), hyperparam.getDescription()));
+      }
+    }
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, hyperparamInfo);
+  }
+
+  @Override
   public void useSchema(String schemaName) throws Exception {
     T_tracer.startTaskTracer("use " + schemaName);
     T_tracer.openTaskTime("use schema");
@@ -591,7 +625,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throws TrainDBException {
     for (String key : patterns.keySet()) {
       if (!columns.contains(key)) {
-        throw new TrainDBException("column '" + key + "' does not exist");
+        throw new TrainDBException("column '" + key + "' does not exist. "
+            + "Only " + String.join(",", columns) + " can be specified.");
       }
     }
   }
@@ -602,6 +637,30 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       if (columns.contains(key)) {
         patterns.put(prefix + "." + key, patterns.remove(key));
       }
+    }
+  }
+
+  @JsonIgnoreProperties(ignoreUnknown = true)
+  static class Hyperparameter {
+    private String name;
+    private String type;
+    private String defaultValue;
+    private String description;
+
+    public String getName() {
+      return name;
+    }
+
+    public String getType() {
+      return type;
+    }
+
+    public String getDefaultValue() {
+      return defaultValue;
+    }
+
+    public String getDescription() {
+      return description;
     }
   }
 }

@@ -48,6 +48,8 @@ public abstract class AbstractTrainDBModelRunner {
   public abstract String infer(String aggregateExpression, String groupByColumn,
                                String whereCondition) throws Exception;
 
+  public abstract String listHyperparameters(String className, String uri) throws Exception;
+
   public Path getModelPath() {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
         modeltypeName, modelName);

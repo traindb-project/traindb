@@ -13,9 +13,13 @@
 """
 
 import abc
+import collections
 
 class TrainDBModel(abc.ABC):
   """Base class for all the ``TrainDB`` models."""
+
+  Hyperparameter = collections.namedtuple("Hyperparameter", "name type defaultValue description")
+
   def get_columns(self, real_data, table_metadata):
     model_columns = []
     categorical_columns = []
@@ -36,6 +40,9 @@ class TrainDBModel(abc.ABC):
 
     return model_columns, categorical_columns
 
+  def createHyperparameter(name, datatype, default_value, comment):
+    return TrainDBModel.Hyperparameter(name, datatype, default_value, comment)._asdict()
+
   def train(self, real_data, table_metadata): 
     pass
 
@@ -45,9 +52,17 @@ class TrainDBModel(abc.ABC):
   def load(self, input_path):
     pass
 
+  def list_hyperparameters():
+    pass
 
 class TrainDBSynopsisModel(TrainDBModel, abc.ABC):
   """Base class for all the ``TrainDB`` synopsis generation models."""
 
   def synopsis(self, row_count):
+    pass
+
+class TrainDBInferenceModel(TrainDBModel, abc.ABC):
+  """Base class for all the ``TrainDB`` inference models."""
+
+  def infer(self, agg_expr, group_by_column, where_condition):
     pass
