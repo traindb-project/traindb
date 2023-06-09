@@ -73,6 +73,12 @@ public class TrainDBListResultSet {
         return Types.VARCHAR;
       } else if (o instanceof Integer) {
         return Types.INTEGER;
+      } else if (o instanceof Long) {
+        return Types.BIGINT;
+      } else if (o instanceof Float) {
+        return Types.FLOAT;
+      } else if (o instanceof Double) {
+        return Types.DOUBLE;
       } else {
         return Types.JAVA_OBJECT;
       }
