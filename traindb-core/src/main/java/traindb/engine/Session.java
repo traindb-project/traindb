@@ -149,7 +149,11 @@ public final class Session implements Runnable {
             newTokens.add(tokens[i]);
           }
         }
-        newUrl = Joiner.on(":").join(newTokens);
+        if (tokens.length >= 3 && tokens[2].startsWith("//")) {
+          newUrl = null; // no datasource connection
+        } else {
+          newUrl = Joiner.on(":").join(newTokens);
+        }
         String[] suffixTokens = url.split("\\?");
         urlPrefixLength = suffixTokens[0].length();
       }
@@ -192,6 +196,9 @@ public final class Session implements Runnable {
         }
       } catch (SQLException e) {
         LOG.debug("old connection close error");
+      }
+      if (newConn == null) {
+        return;
       }
       conn = newConn;
       queryEngine = new TrainDBQueryEngine(newConn);

@@ -161,8 +161,13 @@ public abstract class TrainDBConnectionImpl
     this.cfg = new TrainDBConfiguration(info);
     this.cfg.loadConfiguration();
     this.schemaManager = schemaManager;
-    this.dataSource = dataSource(url, info);
-    schemaManager.loadDataSource(dataSource);
+    if (url == null) {  // traindb-only mode (no datasource)
+      // TODO load datasource from catalog
+    } else {
+      this.dataSource = dataSource(url, info);
+      schemaManager.loadDataSource(dataSource);
+      addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
+    }
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
@@ -171,7 +176,6 @@ public abstract class TrainDBConnectionImpl
 
     this.prepareFactory = driver.prepareFactory;
     this.typeFactory = getTypeFactory(typeFactory, cfg);
-    addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
   }
 
   private BasicDataSource dataSource(String url, Properties info) {
