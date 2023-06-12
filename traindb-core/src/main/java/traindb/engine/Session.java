@@ -245,12 +245,7 @@ public final class Session implements Runnable {
           // stmt.setFetchSize(0);
           ResultSet rs = stmt.executeQuery(sqlQuery);
           sendRowDesc(rs.getMetaData());
-          if (rs.next()) {
-            rs.beforeFirst();
-            sendDataRow(rs);
-          } else {
-            sendNoData();
-          }
+          sendDataRow(rs);
           sendCommandComplete("SELECT"); // FIXME
         }
       } catch (IOException ioe) {
@@ -294,6 +289,7 @@ public final class Session implements Runnable {
     try {
       ResultSetMetaData md = rs.getMetaData();
       int columnCount = md.getColumnCount();
+      boolean noData = true;
       while (rs.next()) {
         Message.Builder msgBld = Message.builder('D').putShort((short) columnCount);
         // Column Data
@@ -326,8 +322,12 @@ public final class Session implements Runnable {
             default:
               throw new TrainDBException("Not supported data type: " + type);
           }
+          noData = false;
         }
         messageStream.putMessage(msgBld.build());
+      }
+      if (noData) {
+        sendNoData();
       }
     } catch (SQLException e) {
       sendError(e);
