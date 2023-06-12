@@ -245,7 +245,12 @@ public final class Session implements Runnable {
           // stmt.setFetchSize(0);
           ResultSet rs = stmt.executeQuery(sqlQuery);
           sendRowDesc(rs.getMetaData());
-          sendDataRow(rs);
+          if (rs.next()) {
+            rs.beforeFirst();
+            sendDataRow(rs);
+          } else {
+            sendNoData();
+          }
           sendCommandComplete("SELECT"); // FIXME
         }
       } catch (IOException ioe) {
@@ -329,6 +334,11 @@ public final class Session implements Runnable {
     } catch (TrainDBException e) {
       sendError(e);
     }
+  }
+
+  private void sendNoData() throws IOException {
+    LOG.debug("send NoData message");
+    messageStream.putMessage(Message.builder('n').build());
   }
 
   private int getTypeSize(int type) {
