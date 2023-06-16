@@ -24,12 +24,14 @@ import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.pm.MModeltype;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
+import traindb.schema.TrainDBTable;
 
 public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
 
@@ -44,9 +46,12 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public String trainModel(String schemaName, String tableName, List<String> columnNames,
-                           Map<String, Object> trainOptions) throws Exception {
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions);
+  public String trainModel(TrainDBTable table, List<String> columnNames,
+                           Map<String, Object> trainOptions, JavaTypeFactory typeFactory) throws Exception {
+    String schemaName = table.getSchema().getName();
+    String tableName = table.getName();
+    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
+        table.getRowType(typeFactory));
     // write metadata for model training scripts in python
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);

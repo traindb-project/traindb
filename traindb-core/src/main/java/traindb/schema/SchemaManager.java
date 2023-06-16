@@ -141,6 +141,20 @@ public final class SchemaManager extends AbstractService {
     return traindbDataSource.getDialect();
   }
 
+  public TrainDBTable getTable(String schemaName, String tableName) {
+    List<TrainDBSchema> schemaList = schemaMap.get(schemaName);
+    if (schemaList == null) {
+      return null;
+    }
+    for (int i = 0; i < schemaList.size(); i++) {
+      TrainDBSchema schema = schemaList.get(i);
+      TrainDBTable table = (TrainDBTable) schema.getTable(tableName);
+      if (table != null) {
+        return table;
+      }
+    }
+    return null;
+  }
   /*
    * lockRead()/unlockRead() are used to protect rootSchema returned by
    * getCurrentSchema() because we don't know how long the schema will be used

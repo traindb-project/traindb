@@ -16,14 +16,16 @@ package traindb.engine;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.sql.Types;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBConfiguration;
 import traindb.jdbc.TrainDBConnectionImpl;
+import traindb.schema.TrainDBTable;
 
 public abstract class AbstractTrainDBModelRunner {
 
@@ -40,8 +42,9 @@ public abstract class AbstractTrainDBModelRunner {
     this.modelName = modelName;
   }
 
-  public abstract String trainModel(String schemaName, String tableName, List<String> columnNames,
-                                    Map<String, Object> trainOptions) throws Exception;
+  public abstract String trainModel(
+      TrainDBTable table, List<String> columnNames, Map<String, Object> trainOptions,
+      JavaTypeFactory typeFactory) throws Exception;
 
   public abstract void generateSynopsis(String synopsisName, int rows) throws Exception;
 
@@ -74,27 +77,11 @@ public abstract class AbstractTrainDBModelRunner {
 
   protected JSONObject buildTableMetadata(
       String schemaName, String tableName, List<String> columnNames,
-      Map<String, Object> trainOptions) throws Exception {
-    // query to get table metadata
-    StringBuilder sb = new StringBuilder();
-    sb.append("SELECT ");
-    for (String columnName : columnNames) {
-      sb.append(columnName);
-      sb.append(",");
-    }
-    sb.deleteCharAt(sb.lastIndexOf(","));
-    sb.append(" FROM ");
-    sb.append(schemaName);
-    sb.append(".");
-    sb.append(tableName);
-    sb.append(" WHERE 1<0");
-
-    String sql = sb.toString();
-    ResultSet res = conn.executeQueryInternal(sql);
-
+      Map<String, Object> trainOptions, RelDataType relDataType) {
     JSONObject root = new JSONObject();
     JSONObject fields = new JSONObject();
-    for (int i = 1; i <= res.getMetaData().getColumnCount(); i++) {
+    for (int i = 0; i < columnNames.size(); i++) {
+      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
       JSONObject typeInfo = new JSONObject();
 
       /* datatype (type, subtype)
@@ -108,32 +95,32 @@ public abstract class AbstractTrainDBModelRunner {
         ('id', 'integer'): 'int',
         ('id', 'string'): 'str'
        */
-      switch (res.getMetaData().getColumnType(i)) {
-        case Types.CHAR:
-        case Types.VARCHAR:
+      switch (field.getType().getSqlTypeName()) {
+        case CHAR:
+        case VARCHAR:
           typeInfo.put("type", "categorical");
           break;
-        case Types.NUMERIC:
-        case Types.DECIMAL:
-        case Types.INTEGER:
-        case Types.BIGINT:
-        case Types.TINYINT:
-        case Types.SMALLINT:
+        case DECIMAL:
+        case INTEGER:
+        case BIGINT:
+        case TINYINT:
+        case SMALLINT:
           typeInfo.put("type", "numerical");
           typeInfo.put("subtype", "integer");
           break;
-        case Types.FLOAT:
-        case Types.DOUBLE:
+        case FLOAT:
+        case DOUBLE:
           typeInfo.put("type", "numerical");
           typeInfo.put("subtype", "float");
           break;
-        case Types.BOOLEAN:
+        case BOOLEAN:
           typeInfo.put("type", "boolean");
           break;
-        case Types.DATE:
-        case Types.TIME:
-        case Types.TIMESTAMP:
-        case Types.TIMESTAMP_WITH_TIMEZONE:
+        case DATE:
+        case TIME:
+        case TIME_WITH_LOCAL_TIME_ZONE:
+        case TIMESTAMP:
+        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
           typeInfo.put("type", "datetime");
           break;
         default:
@@ -141,7 +128,7 @@ public abstract class AbstractTrainDBModelRunner {
           break;
       }
 
-      fields.put(res.getMetaData().getColumnName(i), typeInfo);
+      fields.put(columnNames.get(i), typeInfo);
     }
     root.put("fields", fields);
     root.put("schema", schemaName);
@@ -151,7 +138,6 @@ public abstract class AbstractTrainDBModelRunner {
     options.putAll(trainOptions);
     root.put("options", options);
 
-    res.close();
     return root;
   }
 

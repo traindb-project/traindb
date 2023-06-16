@@ -41,6 +41,7 @@ import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
+import traindb.schema.TrainDBTable;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
 
@@ -140,9 +141,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       schemaName = conn.getSchema();
     }
 
+    TrainDBTable table = schemaManager.getTable(schemaName, tableName);
+    if (table == null) {
+      throw new TrainDBException("cannot find the table '" + schemaName + "'.'" + tableName + "'");
+    }
+
     T_tracer.openTaskTime("train model");
     AbstractTrainDBModelRunner runner = createModelRunner(modeltypeName, modelName);
-    String trainInfo = runner.trainModel(schemaName, tableName, columnNames, trainOptions);
+    String trainInfo = runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert model info");
