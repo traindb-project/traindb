@@ -15,8 +15,6 @@
 package traindb.engine;
 
 import java.nio.channels.SocketChannel;
-import org.apache.hadoop.conf.Configuration;
-import traindb.catalog.CatalogStore;
 import traindb.schema.SchemaManager;
 
 public class SessionFactory {
