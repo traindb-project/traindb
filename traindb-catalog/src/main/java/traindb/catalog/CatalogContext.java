@@ -81,6 +81,10 @@ public interface CatalogContext {
   /* Schema & Table */
   MSchema getSchema(String name);
 
+  Collection<MSchema> getSchemas() throws CatalogException;
+
+  Collection<MSchema> getSchemas(Map<String, Object> filterPatterns) throws CatalogException;
+
   MTable getTable(String schemaName, String tableName);
 
   /* Querylog */

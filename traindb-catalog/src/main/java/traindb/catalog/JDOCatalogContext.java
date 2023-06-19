@@ -294,6 +294,23 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public Collection<MSchema> getSchemas() throws CatalogException {
+    return getSchemas(ImmutableMap.of());
+  }
+
+  @Override
+  public Collection<MSchema> getSchemas(Map<String, Object> filterPatterns)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MSchema.class);
+      setFilterPatterns(query, filterPatterns);
+      return (List<MSchema>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get schemas", e);
+    }
+  }
+
+  @Override
   public @Nullable MTable getTable(String schemaName, String tableName) {
     try {
       Query query = pm.newQuery(MTable.class);
