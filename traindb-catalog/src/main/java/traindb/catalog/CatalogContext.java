@@ -81,7 +81,7 @@ public interface CatalogContext {
   /* Schema & Table */
   MSchema getSchema(String name);
 
-  MTable getTable(String name);
+  MTable getTable(String schemaName, String tableName);
 
   /* Querylog */
   Collection<MQueryLog> getQueryLogs() throws CatalogException;

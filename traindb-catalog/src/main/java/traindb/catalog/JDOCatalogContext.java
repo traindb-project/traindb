@@ -120,7 +120,7 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.makePersistent(mSchema);
       }
 
-      MTable mTable = getTable(tableName);
+      MTable mTable = getTable(schemaName, tableName);
       if (mTable == null) {
         mTable = new MTable(tableName, "TABLE", mSchema);
         pm.makePersistent(mTable);
@@ -294,13 +294,14 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public @Nullable MTable getTable(String name) {
+  public @Nullable MTable getTable(String schemaName, String tableName) {
     try {
       Query query = pm.newQuery(MTable.class);
-      setFilterPatterns(query, ImmutableMap.of("table_name", name));
+      setFilterPatterns(query,
+          ImmutableMap.of("table_name", tableName, "schema.schema_name", schemaName));
       query.setUnique(true);
 
-      return (MTable) query.execute(name);
+      return (MTable) query.execute(tableName, schemaName);
     } catch (RuntimeException e) {
     }
     return null;
