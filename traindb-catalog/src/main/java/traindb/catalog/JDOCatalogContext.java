@@ -21,11 +21,16 @@ import java.util.Map;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.catalog.pm.MColumn;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
+import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.common.TrainDBLogger;
 
@@ -106,9 +111,34 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, @Nullable Long baseTableRows, @Nullable Long trainedRows,
-      @Nullable String options) throws CatalogException {
+      List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
+      @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
     try {
+      MSchema mSchema = getSchema(schemaName);
+      if (mSchema == null) {
+        mSchema = new MSchema(schemaName);
+        pm.makePersistent(mSchema);
+      }
+
+      MTable mTable = getTable(tableName);
+      if (mTable == null) {
+        mTable = new MTable(tableName, "TABLE", mSchema);
+        pm.makePersistent(mTable);
+      }
+
+      List<RelDataTypeField> fields = dataType.getFieldList();
+      for (int i = 0; i < dataType.getFieldCount(); i++) {
+        RelDataTypeField field = fields.get(i);
+        MColumn mColumn = new MColumn(field.getName(),
+            field.getType().getSqlTypeName().getJdbcOrdinal(),
+            field.getType().getPrecision(),
+            field.getType().getScale(),
+            field.getType().isNullable(),
+            mTable);
+
+        pm.makePersistent(mColumn);
+      }
+
       MModel mModel = new MModel(
           getModeltype(modeltypeName), modelName, schemaName, tableName, columnNames,
           baseTableRows, trainedRows, options == null ? "" : options);
@@ -248,6 +278,32 @@ public final class JDOCatalogContext implements CatalogContext {
         tx.rollback();
       }
     }
+  }
+
+  @Override
+  public @Nullable MSchema getSchema(String name) {
+    try {
+      Query query = pm.newQuery(MSchema.class);
+      setFilterPatterns(query, ImmutableMap.of("schema_name", name));
+      query.setUnique(true);
+
+      return (MSchema) query.execute(name);
+    } catch (RuntimeException e) {
+    }
+    return null;
+  }
+
+  @Override
+  public @Nullable MTable getTable(String name) {
+    try {
+      Query query = pm.newQuery(MTable.class);
+      setFilterPatterns(query, ImmutableMap.of("table_name", name));
+      query.setUnique(true);
+
+      return (MTable) query.execute(name);
+    } catch (RuntimeException e) {
+    }
+    return null;
   }
 
   @Override

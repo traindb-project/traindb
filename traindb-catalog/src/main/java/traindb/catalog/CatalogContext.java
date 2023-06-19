@@ -17,10 +17,14 @@ package traindb.catalog;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import org.apache.calcite.rel.type.RelDataType;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
+import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 
 public interface CatalogContext {
@@ -42,8 +46,8 @@ public interface CatalogContext {
   /* Model */
   MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, Long baseTableRows, Long trainedRows, String options)
-      throws CatalogException;
+      List<String> columnNames, RelDataType dataType, Long baseTableRows, Long trainedRows,
+      String options) throws CatalogException;
 
   void dropModel(String name) throws CatalogException;
 
@@ -73,6 +77,11 @@ public interface CatalogContext {
   MSynopsis getSynopsis(String name);
 
   void dropSynopsis(String name) throws CatalogException;
+
+  /* Schema & Table */
+  MSchema getSchema(String name);
+
+  MTable getTable(String name);
 
   /* Querylog */
   Collection<MQueryLog> getQueryLogs() throws CatalogException;

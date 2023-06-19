@@ -160,7 +160,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     JSONObject options = new JSONObject();
     options.putAll(trainOptions);
     catalogContext.trainModel(modeltypeName, modelName, schemaName, tableName, columnNames,
-        baseTableRows, trainedRows, options.toString());
+        table.getRowType(conn.getTypeFactory()), baseTableRows, trainedRows, options.toString());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();
