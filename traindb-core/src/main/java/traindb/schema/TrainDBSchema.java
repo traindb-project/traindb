@@ -16,8 +16,13 @@ package traindb.schema;
 
 import com.google.common.collect.ImmutableMap;
 import java.util.Map;
+import javax.annotation.Nullable;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.util.Util;
 
 public abstract class TrainDBSchema extends AbstractSchema {
   private final String name;
@@ -49,5 +54,83 @@ public abstract class TrainDBSchema extends AbstractSchema {
 
   public final TrainDBDataSource getDataSource() {
     return dataSource;
+  }
+
+  protected static RelDataType sqlType(RelDataTypeFactory typeFactory, int dataType,
+                                       int precision, int scale, boolean nullable,
+                                       @Nullable String typeString) {
+    // Fall back to ANY if type is unknown
+    final SqlTypeName sqlTypeName =
+        Util.first(SqlTypeName.getNameForJdbcType(dataType), SqlTypeName.ANY);
+    switch (sqlTypeName) {
+      case ARRAY:
+        RelDataType component = null;
+        if (typeString != null && typeString.endsWith(" ARRAY")) {
+          // E.g. hsqldb gives "INTEGER ARRAY", so we deduce the component type
+          // "INTEGER".
+          final String remaining = typeString.substring(0,
+              typeString.length() - " ARRAY".length());
+          component = parseTypeString(typeFactory, remaining);
+        }
+        if (component == null) {
+          component = typeFactory.createTypeWithNullability(
+              typeFactory.createSqlType(SqlTypeName.ANY), true);
+        }
+        return typeFactory.createArrayType(component, -1);
+      case ANY:
+        if (typeString.startsWith("ST_")) {
+          return typeFactory.createTypeWithNullability(
+              typeFactory.createSqlType(SqlTypeName.GEOMETRY), nullable);
+        }
+        break;
+      default:
+        break;
+    }
+    if (precision >= 0
+        && scale >= 0
+        && sqlTypeName.allowsPrecScale(true, true)) {
+      return typeFactory.createSqlType(sqlTypeName, precision, scale);
+    } else if (precision >= 0 && sqlTypeName.allowsPrecNoScale()) {
+      return typeFactory.createSqlType(sqlTypeName, precision);
+    } else {
+      assert sqlTypeName.allowsNoPrecNoScale();
+      return typeFactory.createSqlType(sqlTypeName);
+    }
+  }
+
+  /**
+   * Given "INTEGER", returns BasicSqlType(INTEGER).
+   * Given "VARCHAR(10)", returns BasicSqlType(VARCHAR, 10).
+   * Given "NUMERIC(10, 2)", returns BasicSqlType(NUMERIC, 10, 2).
+   */
+  protected static RelDataType parseTypeString(RelDataTypeFactory typeFactory, String typeString) {
+    int precision = -1;
+    int scale = -1;
+    int open = typeString.indexOf("(");
+    if (open >= 0) {
+      int close = typeString.indexOf(")", open);
+      if (close >= 0) {
+        String rest = typeString.substring(open + 1, close);
+        typeString = typeString.substring(0, open);
+        int comma = rest.indexOf(",");
+        if (comma >= 0) {
+          precision = Integer.parseInt(rest.substring(0, comma));
+          scale = Integer.parseInt(rest.substring(comma));
+        } else {
+          precision = Integer.parseInt(rest);
+        }
+      }
+    }
+    try {
+      final SqlTypeName typeName = SqlTypeName.valueOf(typeString);
+      return typeName.allowsPrecScale(true, true)
+          ? typeFactory.createSqlType(typeName, precision, scale)
+          : typeName.allowsPrecScale(true, false)
+          ? typeFactory.createSqlType(typeName, precision)
+          : typeFactory.createSqlType(typeName);
+    } catch (IllegalArgumentException e) {
+      return typeFactory.createTypeWithNullability(
+          typeFactory.createSqlType(SqlTypeName.ANY), true);
+    }
   }
 }
