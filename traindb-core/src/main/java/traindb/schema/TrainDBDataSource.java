@@ -18,6 +18,7 @@ import com.google.common.collect.ImmutableMap;
 import java.util.Map;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.impl.AbstractSchema;
+import org.apache.calcite.sql.SqlDialect;
 
 public abstract class TrainDBDataSource extends AbstractSchema {
 
@@ -45,4 +46,6 @@ public abstract class TrainDBDataSource extends AbstractSchema {
   public final void setSubSchemaMap(ImmutableMap<String, Schema> subSchemaMap) {
     this.subSchemaMap = subSchemaMap;
   }
+
+  public abstract SqlDialect getDialect();
 }

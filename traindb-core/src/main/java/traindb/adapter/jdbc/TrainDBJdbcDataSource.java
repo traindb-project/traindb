@@ -85,6 +85,7 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
     return dataSource;
   }
 
+  @Override
   public SqlDialect getDialect() {
     return dialect;
   }

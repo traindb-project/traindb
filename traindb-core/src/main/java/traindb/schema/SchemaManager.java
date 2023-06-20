@@ -41,7 +41,7 @@ public final class SchemaManager extends AbstractService {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(SchemaManager.class);
   private static SchemaManager singletonInstance;
   private final CatalogStore catalogStore;
-  private TrainDBJdbcDataSource traindbDataSource;
+  private TrainDBDataSource traindbDataSource;
 
   private final Map<String, List<TrainDBDataSource>> dataSourceMap;
   private final Map<String, List<TrainDBSchema>> schemaMap;
@@ -83,6 +83,18 @@ public final class SchemaManager extends AbstractService {
     return singletonInstance;
   }
 
+  public void loadCatalogDataSource() {
+    SchemaPlus newRootSchema = Frameworks.createRootSchema(true);
+    TrainDBCatalogDataSource catalogDataSource = new TrainDBCatalogDataSource(getCatalogContext());
+    newRootSchema.add(catalogDataSource.getName(), catalogDataSource);
+    addDataSourceToMaps(catalogDataSource);
+
+    writeLock.lock();
+    this.traindbDataSource = catalogDataSource;
+    this.rootSchema = newRootSchema;
+    writeLock.unlock();
+  }
+
   public void loadDataSource(DataSource dataSource) {
     SchemaPlus newRootSchema = Frameworks.createRootSchema(true);
     TrainDBJdbcDataSource newJdbcDataSource = new TrainDBJdbcDataSource(newRootSchema, dataSource);
@@ -100,7 +112,11 @@ public final class SchemaManager extends AbstractService {
     dataSourceMap.clear();
     schemaMap.clear();
     tableMap.clear();
-    loadDataSource(traindbDataSource.getDataSource());
+    if (traindbDataSource instanceof TrainDBJdbcDataSource) {
+      loadDataSource(((TrainDBJdbcDataSource) traindbDataSource).getDataSource());
+    } else if (traindbDataSource instanceof TrainDBCatalogDataSource) {
+      loadCatalogDataSource();
+    }
     writeLock.unlock();
   }
 
