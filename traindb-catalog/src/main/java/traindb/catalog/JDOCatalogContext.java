@@ -124,19 +124,19 @@ public final class JDOCatalogContext implements CatalogContext {
       if (mTable == null) {
         mTable = new MTable(tableName, "TABLE", mSchema);
         pm.makePersistent(mTable);
-      }
 
-      List<RelDataTypeField> fields = dataType.getFieldList();
-      for (int i = 0; i < dataType.getFieldCount(); i++) {
-        RelDataTypeField field = fields.get(i);
-        MColumn mColumn = new MColumn(field.getName(),
-            field.getType().getSqlTypeName().getJdbcOrdinal(),
-            field.getType().getPrecision(),
-            field.getType().getScale(),
-            field.getType().isNullable(),
-            mTable);
+        List<RelDataTypeField> fields = dataType.getFieldList();
+        for (int i = 0; i < dataType.getFieldCount(); i++) {
+          RelDataTypeField field = fields.get(i);
+          MColumn mColumn = new MColumn(field.getName(),
+              field.getType().getSqlTypeName().getJdbcOrdinal(),
+              field.getType().getPrecision(),
+              field.getType().getScale(),
+              field.getType().isNullable(),
+              mTable);
 
-        pm.makePersistent(mColumn);
+          pm.makePersistent(mColumn);
+        }
       }
 
       MModel mModel = new MModel(
