@@ -151,13 +151,33 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public void dropModel(String name) throws CatalogException {
+    MModel mModel = getModel(name);
+    String baseSchema = mModel.getSchemaName();
+    String baseTable = mModel.getTableName();
+
     Transaction tx = pm.currentTransaction();
     try {
       tx.begin();
-
-      pm.deletePersistent(getModel(name));
-
+      pm.deletePersistent(mModel);
       tx.commit();
+
+      Collection<MModel> baseTableModels =
+          getModels(ImmutableMap.of("schema_name", baseSchema, "table_name", baseTable));
+      if (baseTableModels == null || baseTableModels.size() == 0) {
+        MTable mTable = getTable(baseSchema, baseTable);
+        tx.begin();
+        pm.deletePersistent(mTable);
+        tx.commit();
+      }
+
+      Collection<MModel> baseSchemaModels = getModels(ImmutableMap.of("schema_name", baseSchema));
+      if (baseSchemaModels == null || baseSchemaModels.size() == 0) {
+        MSchema mSchema = getSchema(baseSchema);
+        tx.begin();
+        pm.deletePersistent(mSchema);
+        tx.commit();
+      }
+
     } catch (RuntimeException e) {
       throw new CatalogException("failed to drop model '" + name + "'", e);
     } finally {
