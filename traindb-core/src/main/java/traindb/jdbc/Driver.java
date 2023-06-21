@@ -37,15 +37,16 @@ import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalciteFactory;
 import org.apache.calcite.jdbc.CalcitePrepare;
+import org.apache.calcite.jdbc.CalcitePrepare.Context;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.prepare.TrainDBPrepareImpl;
 import traindb.schema.SchemaManager;
 
 public class Driver extends UnregisteredDriver {
   public static final String CONNECT_STRING_PREFIX = "jdbc:traindb:";
-  Function0<CalcitePrepare> DEFAULT_TRAINDB_FACTORY = TrainDBPrepareImpl::new;
+  Function1<Context, CalcitePrepare> DEFAULT_TRAINDB_FACTORY = TrainDBPrepareImpl::new;
 
   static {
     try {
@@ -56,7 +57,7 @@ public class Driver extends UnregisteredDriver {
     }
   }
 
-  final Function0<CalcitePrepare> prepareFactory;
+  final Function1<Context, CalcitePrepare> prepareFactory;
 
   @SuppressWarnings("method.invocation.invalid")
   public Driver() {
@@ -64,7 +65,7 @@ public class Driver extends UnregisteredDriver {
     this.prepareFactory = createPrepareFactory();
   }
 
-  protected Function0<CalcitePrepare> createPrepareFactory() {
+  protected Function1<Context, CalcitePrepare> createPrepareFactory() {
     return DEFAULT_TRAINDB_FACTORY;
   }
 

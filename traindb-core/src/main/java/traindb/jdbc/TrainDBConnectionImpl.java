@@ -61,7 +61,7 @@ import org.apache.calcite.linq4j.Enumerator;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
-import org.apache.calcite.linq4j.function.Function0;
+import org.apache.calcite.linq4j.function.Function1;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.materialize.Lattice;
 import org.apache.calcite.materialize.MaterializationService;
@@ -110,7 +110,7 @@ public abstract class TrainDBConnectionImpl
   private SchemaManager schemaManager;
   private BasicDataSource dataSource;
 
-  final Function0<CalcitePrepare> prepareFactory;
+  final Function1<Context, CalcitePrepare> prepareFactory;
   final CalciteServer server = new CalciteServerImpl();
   CalciteSchema rootSchema;
 
@@ -369,7 +369,7 @@ public abstract class TrainDBConnectionImpl
       Context prepareContext, long maxRowCount) {
     CalcitePrepare.Dummy.push(prepareContext);
     try {
-      final CalcitePrepare prepare = prepareFactory.apply();
+      final CalcitePrepare prepare = prepareFactory.apply(prepareContext);
       return prepare.prepareSql(prepareContext, query, Object[].class,
           maxRowCount);
     } finally {

@@ -67,7 +67,6 @@ public abstract class TrainDBStatement extends AvaticaStatement {
   public <T> CalcitePrepare.CalciteSignature<T> prepare(
       Queryable<T> queryable) {
     final TrainDBConnectionImpl calciteConnection = getConnection();
-    final CalcitePrepare prepare = calciteConnection.prepareFactory.apply();
     final CalciteServerStatement serverStatement;
     try {
       serverStatement = calciteConnection.server.getStatement(handle);
@@ -76,6 +75,7 @@ public abstract class TrainDBStatement extends AvaticaStatement {
     }
     final CalcitePrepare.Context prepareContext =
         serverStatement.createPrepareContext();
+    final CalcitePrepare prepare = calciteConnection.prepareFactory.apply(prepareContext);
     return prepare.prepareQueryable(prepareContext, queryable);
   }
 

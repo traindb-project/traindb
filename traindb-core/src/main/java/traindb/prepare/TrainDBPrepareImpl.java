@@ -144,7 +144,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
    * plan. If not, enumerable convention is the default. */
   public final boolean enableBindable = Hook.ENABLE_BINDABLE.get(false);
 
-  public TrainDBPrepareImpl() {
+  private TrainDBQueryEngine queryEngine;
+
+  public TrainDBPrepareImpl(Context context) {
+    queryEngine = new TrainDBQueryEngine(
+        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider());
   }
 
   @Override public ParseResult parse(
@@ -620,19 +624,18 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       String currentUser = conn.getProperties().getProperty("user");
 
       if (commands != null && commands.size() > 0) {
-        TrainDBQueryEngine engine = new TrainDBQueryEngine(conn);
         try {
           // INSERT QUERY LOGS
-          engine.insertQueryLogs(currentTime, currentUser, query.sql);
+          queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
 
           return convertResultToSignature(context, query.sql,
-              TrainDBSql.run(commands.get(0), engine));
+              TrainDBSql.run(commands.get(0), queryEngine));
         } catch (Exception e) {
           throw new RuntimeException(
               "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
         } finally {
           try {
-            engine.insertTask();
+            queryEngine.insertTask();
           } catch ( Exception e) {
             throw new RuntimeException(
                     "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
@@ -652,8 +655,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
       // INSERT QUERY LOGS
       try {
-        TrainDBQueryEngine engine = new TrainDBQueryEngine(conn);
-        engine.insertQueryLogs(currentTime, currentUser, query.sql);
+        queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
       } catch (Exception e) {
         throw new RuntimeException(
                 "failed to query logging: " + query + "\nerror msg: " + e.getMessage());
