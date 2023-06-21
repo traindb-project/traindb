@@ -171,13 +171,11 @@ public final class Session implements Runnable {
   class SessionHandler {
     private TrainDBConnectionImpl conn;
     private TrainDBStatement stmt;
-    private TrainDBQueryEngine queryEngine;
     private SqlParser.Config parserConfig;
 
     SessionHandler() {
       this.conn = null;
       this.stmt = null;
-      this.queryEngine = null;
     }
 
     private void checkConnection() throws TrainDBException {
@@ -201,7 +199,6 @@ public final class Session implements Runnable {
         return;
       }
       conn = newConn;
-      queryEngine = new TrainDBQueryEngine(newConn);
 
       final CalciteConnectionConfig config = conn.config();
       parserConfig = SqlParser.config()
