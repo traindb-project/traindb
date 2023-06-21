@@ -14,7 +14,9 @@
 
 package traindb.schema;
 
+import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
+import java.util.List;
 import java.util.Map;
 import javax.annotation.Nullable;
 import org.apache.calcite.rel.type.RelDataType;
@@ -78,7 +80,10 @@ public abstract class TrainDBSchema extends AbstractSchema {
         }
         return typeFactory.createArrayType(component, -1);
       case ANY:
-        if (typeString.startsWith("ST_")) {
+      case BINARY:
+        List<String> geomTypes = ImmutableList.of("GEOMETRY", "POINT", "LINESTRING", "POLYGON",
+            "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION");
+        if (typeString.startsWith("ST_") || geomTypes.contains(typeString)) {
           return typeFactory.createTypeWithNullability(
               typeFactory.createSqlType(SqlTypeName.GEOMETRY), nullable);
         }
