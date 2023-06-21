@@ -118,7 +118,6 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
-import org.apache.calcite.sql2rel.StandardConvertletTable;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.Holder;
@@ -356,64 +355,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
   /** Factory method for default SQL parser. */
   protected SqlParser createParser(String sql) {
-    return createParser(sql,
-        createParserConfig().setParserFactory(TrainDBSqlCalciteParserImpl.FACTORY));
-  }
-
-  /** Factory method for SQL parser with a given configuration. */
-  protected SqlParser createParser(String sql, SqlParser.Config parserConfig) {
-    return SqlParser.create(sql, parserConfig);
-  }
-
-  @Deprecated // to be removed before 2.0
-  protected SqlParser createParser(String sql,
-      SqlParser.ConfigBuilder parserConfig) {
-    return createParser(sql, parserConfig.build());
-  }
-
-  /** Factory method for SQL parser configuration. */
-  protected SqlParser.Config parserConfig() {
-    return SqlParser.config();
-  }
-
-  @Deprecated // to be removed before 2.0
-  protected SqlParser.ConfigBuilder createParserConfig() {
-    return SqlParser.configBuilder();
-  }
-
-  /** Factory method for default convertlet table. */
-  protected SqlRexConvertletTable createConvertletTable() {
-    return StandardConvertletTable.INSTANCE;
-  }
-
-  /** Factory method for cluster. */
-  protected RelOptCluster createCluster(RelOptPlanner planner,
-      RexBuilder rexBuilder) {
-    return RelOptCluster.create(planner, rexBuilder);
-  }
-
-  /** Creates a collection of planner factories.
-   *
-   * <p>The collection must have at least one factory, and each factory must
-   * create a planner. If the collection has more than one planner, Calcite will
-   * try each planner in turn.</p>
-   *
-   * <p>One of the things you can do with this mechanism is to try a simpler,
-   * faster, planner with a smaller rule set first, then fall back to a more
-   * complex planner for complex and costly queries.</p>
-   *
-   * <p>The default implementation returns a factory that calls
-   * {@link #createPlanner(org.apache.calcite.jdbc.CalcitePrepare.Context)}.</p>
-   */
-  protected List<Function1<Context, RelOptPlanner>> createPlannerFactories() {
-    return Collections.singletonList(
-        context -> createPlanner(context, null, null));
-  }
-
-  /** Creates a query planner and initializes it with a default set of
-   * rules. */
-  protected RelOptPlanner createPlanner(CalcitePrepare.Context prepareContext) {
-    return createPlanner(prepareContext, null, null);
+    return SqlParser.create(sql,
+        SqlParser.config().withParserFactory(TrainDBSqlCalciteParserImpl.FACTORY));
   }
 
   /** Creates a query planner and initializes it with a default set of
