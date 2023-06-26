@@ -160,8 +160,8 @@ class LixToRelTranslator {
     List<RexNode> list =
         Collections.singletonList(
             rexBuilder.makeRangeReference(child));
-    TrainDBPrepareImpl.ScalarTranslator translator =
-        TrainDBPrepareImpl.EmptyScalarTranslator
+    ScalarTranslators.ScalarTranslator translator =
+        ScalarTranslators.EmptyScalarTranslator
             .empty(rexBuilder)
             .bind(getParameterList(expression), list);
     final List<RexNode> rexList = new ArrayList<>();
@@ -190,7 +190,7 @@ class LixToRelTranslator {
     for (RelNode input : inputs) {
       list.add(rexBuilder.makeRangeReference(input));
     }
-    return TrainDBPrepareImpl.EmptyScalarTranslator.empty(rexBuilder)
+    return ScalarTranslators.EmptyScalarTranslator.empty(rexBuilder)
         .bind(getParameterList(expression), list)
         .toRexList(getBody(expression));
   }
@@ -203,7 +203,7 @@ class LixToRelTranslator {
     for (RelNode input : inputs) {
       list.add(rexBuilder.makeRangeReference(input));
     }
-    return TrainDBPrepareImpl.EmptyScalarTranslator.empty(rexBuilder)
+    return ScalarTranslators.EmptyScalarTranslator.empty(rexBuilder)
         .bind(getParameterList(expression), list)
         .toRex(getBody(expression));
   }

@@ -47,7 +47,7 @@ import static java.util.Objects.requireNonNull;
 /**
  * Context for populating a {@link TrainDBPrepareImpl.TrainDBMaterialization}.
  */
-class CalciteMaterializer extends TrainDBPrepareImpl.TrainDBPreparingStmt {
+class CalciteMaterializer extends TrainDBPreparingStmt {
   CalciteMaterializer(TrainDBPrepareImpl prepare,
       CalcitePrepare.Context context,
       CatalogReader catalogReader, CalciteSchema schema,

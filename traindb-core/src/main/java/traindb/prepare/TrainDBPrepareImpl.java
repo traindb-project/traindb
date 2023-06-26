@@ -14,56 +14,33 @@
 
 package traindb.prepare;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.util.Static.RESOURCE;
 
-import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
-import java.math.BigDecimal;
 import java.sql.DatabaseMetaData;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
-import java.util.Collections;
 import java.util.HashMap;
-import java.util.LinkedHashMap;
 import java.util.List;
 import java.util.Map;
-import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
-import org.apache.calcite.adapter.enumerable.RexToLixTranslator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.interpreter.BindableConvention;
-import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
-import org.apache.calcite.jdbc.CalciteSchema.LatticeEntry;
 import org.apache.calcite.linq4j.Linq4j;
 import org.apache.calcite.linq4j.Ord;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.function.Function1;
-import org.apache.calcite.linq4j.tree.BinaryExpression;
-import org.apache.calcite.linq4j.tree.BlockStatement;
-import org.apache.calcite.linq4j.tree.Blocks;
-import org.apache.calcite.linq4j.tree.ConstantExpression;
-import org.apache.calcite.linq4j.tree.Expression;
-import org.apache.calcite.linq4j.tree.Expressions;
-import org.apache.calcite.linq4j.tree.MemberExpression;
-import org.apache.calcite.linq4j.tree.MethodCallExpression;
-import org.apache.calcite.linq4j.tree.NewExpression;
-import org.apache.calcite.linq4j.tree.ParameterExpression;
-import org.apache.calcite.linq4j.tree.PseudoField;
-import org.apache.calcite.materialize.MaterializationService;
 import org.apache.calcite.plan.Contexts;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
@@ -75,12 +52,10 @@ import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
-import org.apache.calcite.rel.RelCollations;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
-import org.apache.calcite.rel.core.Sort;
 import org.apache.calcite.rel.core.TableModify;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.type.RelDataType;
@@ -89,23 +64,16 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.Typed;
 import org.apache.calcite.schema.SchemaPlus;
-import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.StarTable;
 import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
-import org.apache.calcite.sql.SqlBinaryOperator;
-import org.apache.calcite.sql.SqlExplain;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
-import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -114,26 +82,21 @@ import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.type.ExtraSqlTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
-import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogContext;
-import traindb.common.TrainDBLogger;
 import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
 import traindb.jdbc.TrainDBConnectionImpl;
+import traindb.planner.TrainDBPlanner;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
-import traindb.planner.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
 
@@ -461,6 +424,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
   }
 
+  protected RelOptCluster createCluster(RelOptPlanner planner, RexBuilder rexBuilder) {
+    return RelOptCluster.create(planner, rexBuilder);
+  }
+
   CalciteSignature convertResultToSignature(Context context, String sql, TrainDBListResultSet res) {
     if (res.isEmpty()) {
       return new CalciteSignature<>(sql,
@@ -677,7 +644,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     return new CalciteSignature<>(
         query.sql,
         parameters,
-        preparingStmt.internalParameters,
+        preparingStmt.getParameters(),
         jdbcType,
         columns,
         cursorFactory,
@@ -690,7 +657,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType);
   }
 
-  private static SqlValidator createSqlValidator(Context context,
+  public static SqlValidator createSqlValidator(Context context,
       TrainDBCatalogReader catalogReader) {
     final SqlOperatorTable opTab0 =
         context.config().fun(SqlOperatorTable.class,
@@ -869,7 +836,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
   }
 
-  private static RelDataType makeStruct(
+  static RelDataType makeStruct(
       RelDataTypeFactory typeFactory,
       RelDataType type) {
     if (type.isStruct()) {
@@ -910,536 +877,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         prepareContext.getRootSchema().plus(), statement);
   }
 
-  /** Holds state for the process of preparing a SQL statement. */
-  static class TrainDBPreparingStmt extends Prepare
-      implements RelOptTable.ViewExpander {
-    private TrainDBLogger LOG = TrainDBLogger.getLogger(this.getClass());
-    protected final RelOptPlanner planner;
-    protected final RexBuilder rexBuilder;
-    protected final TrainDBPrepareImpl prepare;
-    protected final CalciteSchema schema;
-    protected final RelDataTypeFactory typeFactory;
-    protected final SqlRexConvertletTable convertletTable;
-    private final EnumerableRel.@Nullable Prefer prefer;
-    private final RelOptCluster cluster;
-    private final Map<String, Object> internalParameters =
-        new LinkedHashMap<>();
-    @SuppressWarnings("unused")
-    private int expansionDepth;
-    private @Nullable SqlValidator sqlValidator;
-
-    TrainDBPreparingStmt(TrainDBPrepareImpl prepare,
-                         Context context,
-                         Prepare.CatalogReader catalogReader,
-                         RelDataTypeFactory typeFactory,
-                         CalciteSchema schema,
-                         EnumerableRel.@Nullable Prefer prefer,
-                         RelOptCluster cluster,
-                         Convention resultConvention,
-                         SqlRexConvertletTable convertletTable) {
-      super(context, catalogReader, resultConvention);
-      this.prepare = prepare;
-      this.schema = schema;
-      this.prefer = prefer;
-      this.cluster = cluster;
-      this.planner = cluster.getPlanner();
-      this.rexBuilder = cluster.getRexBuilder();
-      this.typeFactory = typeFactory;
-      this.convertletTable = convertletTable;
-    }
-
-    @Override protected void init(Class runtimeContextClass) {
-    }
-
-    public PreparedResult prepareQueryable(
-        final Queryable queryable,
-        RelDataType resultType) {
-      return prepare_(() -> {
-        final RelOptCluster cluster =
-            prepare.createCluster(planner, rexBuilder);
-        return new LixToRelTranslator(cluster, TrainDBPreparingStmt.this)
-            .translate(queryable);
-      }, resultType);
-    }
-
-    public PreparedResult prepareRel(final RelNode rel) {
-      return prepare_(() -> rel, rel.getRowType());
-    }
-
-    private PreparedResult prepare_(Supplier<RelNode> fn,
-        RelDataType resultType) {
-      Class runtimeContextClass = Object.class;
-      init(runtimeContextClass);
-
-      final RelNode rel = fn.get();
-      final RelDataType rowType = rel.getRowType();
-      final List<Pair<Integer, String>> fields =
-          Pair.zip(ImmutableIntList.identity(rowType.getFieldCount()),
-              rowType.getFieldNames());
-      final RelCollation collation =
-          rel instanceof Sort
-              ? ((Sort) rel).collation
-              : RelCollations.EMPTY;
-      RelRoot root = new RelRoot(rel, resultType, SqlKind.SELECT, fields,
-          collation, new ArrayList<>());
-
-      if (timingTracer != null) {
-        timingTracer.traceTime("end sql2rel");
-      }
-
-      final RelDataType jdbcType =
-          makeStruct(rexBuilder.getTypeFactory(), resultType);
-      fieldOrigins = Collections.nCopies(jdbcType.getFieldCount(), null);
-      parameterRowType = rexBuilder.getTypeFactory().builder().build();
-
-      // Structured type flattening, view expansion, and plugging in
-      // physical storage.
-      root = root.withRel(flattenTypes(root.rel, true));
-
-      // Trim unused fields.
-      root = trimUnusedFields(root);
-
-      final List<Materialization> materializations = ImmutableList.of();
-      final List<CalciteSchema.LatticeEntry> lattices = ImmutableList.of();
-      root = optimize(root, materializations, lattices);
-
-      if (timingTracer != null) {
-        timingTracer.traceTime("end optimization");
-      }
-
-      return implement(root);
-    }
-
-    @Override
-    public Prepare.PreparedResult prepareSql(
-        SqlNode sqlQuery, SqlNode sqlNodeOriginal, Class runtimeContextClass,
-        SqlValidator validator, boolean needsValidation) {
-      init(runtimeContextClass);
-      SqlToRelConverter.Config config =
-          SqlToRelConverter.config()
-              .withExpand(castNonNull(THREAD_EXPAND.get()))
-              .withInSubQueryThreshold(castNonNull(THREAD_INSUBQUERY_THRESHOLD.get()))
-              .withHintStrategyTable(TrainDBHintStrategyTable.HINT_STRATEGY_TABLE)
-              .withExplain(sqlQuery.getKind() == SqlKind.EXPLAIN);
-      Holder<SqlToRelConverter.Config> configHolder = Holder.of(config);
-      Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.run(configHolder);
-      SqlToRelConverter sqlToRelConverter =
-          getSqlToRelConverter(validator, this.catalogReader, configHolder.get());
-
-      SqlExplain sqlExplain = null;
-      if (sqlQuery.getKind() == SqlKind.EXPLAIN) {
-        sqlExplain = (SqlExplain)sqlQuery;
-        sqlQuery = sqlExplain.getExplicandum();
-        sqlToRelConverter.setDynamicParamCountInExplain(sqlExplain.getDynamicParamCount());
-      }
-
-      RelRoot root = sqlToRelConverter.convertQuery(sqlQuery, needsValidation, true);
-      Hook.CONVERTED.run(root.rel);
-      if (this.timingTracer != null) {
-        this.timingTracer.traceTime("end sql2rel");
-      }
-
-      RelDataType resultType = validator.getValidatedNodeType(sqlQuery);
-      this.fieldOrigins = validator.getFieldOrigins(sqlQuery);
-      assert this.fieldOrigins.size() == resultType.getFieldCount();
-
-      this.parameterRowType = validator.getParameterRowType(sqlQuery);
-
-      // Display logical plans before view expansion, plugging in physical
-      // storage and decorrelation
-      if (sqlExplain != null) {
-        SqlExplain.Depth explainDepth = sqlExplain.getDepth();
-        SqlExplainFormat format = sqlExplain.getFormat();
-        SqlExplainLevel detailLevel = sqlExplain.getDetailLevel();
-        switch(explainDepth) {
-          case TYPE:
-            return createPreparedExplanation(resultType, this.parameterRowType, null,
-                format, detailLevel);
-          case LOGICAL:
-            return createPreparedExplanation(null, this.parameterRowType, root, format,
-                detailLevel);
-          default:
-        }
-      }
-      LOG.debug(RelOptUtil.dumpPlan("Logical plan: ", root.rel, SqlExplainFormat.TEXT,
-          SqlExplainLevel.ALL_ATTRIBUTES));
-
-      // Structured type flattening, view expansion, and plugging in physical storage.
-      root = root.withRel(this.flattenTypes(root.rel, true));
-
-      if (this.context.config().forceDecorrelate()) {
-        // Sub-query decorrelation.
-        root = root.withRel(this.decorrelate(sqlToRelConverter, sqlQuery, root.rel));
-      }
-
-      if (sqlExplain != null) {
-        switch(sqlExplain.getDepth()) {
-          case PHYSICAL:
-          default:
-            root = this.optimize(root, this.getMaterializations(), this.getLattices());
-            return this.createPreparedExplanation(null, this.parameterRowType, root,
-                sqlExplain.getFormat(), sqlExplain.getDetailLevel());
-        }
-      }
-
-      root = this.optimize(root, this.getMaterializations(), this.getLattices());
-
-      if (this.timingTracer != null) {
-        this.timingTracer.traceTime("end optimization");
-      }
-
-      // For transformation from DML -> DML, use result of rewrite
-      // (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT),
-      // use original kind.
-      if (!root.kind.belongsTo(SqlKind.DML)) {
-        root = root.withKind(sqlNodeOriginal.getKind());
-      }
-      return this.implement(root);
-    }
-
-    @Override protected SqlToRelConverter getSqlToRelConverter(
-        SqlValidator validator,
-        CatalogReader catalogReader,
-        SqlToRelConverter.Config config) {
-      return new SqlToRelConverter(this, validator, catalogReader, cluster,
-          convertletTable, config);
-    }
-
-    @Override public RelNode flattenTypes(
-        RelNode rootRel,
-        boolean restructure) {
-      final SparkHandler spark = context.spark();
-      if (spark.enabled()) {
-        return spark.flattenTypes(planner, rootRel, restructure);
-      }
-      return rootRel;
-    }
-
-    @Override protected RelNode decorrelate(SqlToRelConverter sqlToRelConverter,
-        SqlNode query, RelNode rootRel) {
-      return sqlToRelConverter.decorrelate(query, rootRel);
-    }
-
-    @Override public RelRoot expandView(RelDataType rowType, String queryString,
-        List<String> schemaPath, @Nullable List<String> viewPath) {
-      expansionDepth++;
-
-      SqlParser parser = prepare.createParser(queryString);
-      SqlNode sqlNode;
-      try {
-        sqlNode = parser.parseQuery();
-      } catch (SqlParseException e) {
-        throw new RuntimeException("parse failed", e);
-      }
-      // View may have different schema path than current connection.
-      final CatalogReader catalogReader =
-          this.catalogReader.withSchemaPath(schemaPath);
-      SqlValidator validator = createSqlValidator(catalogReader);
-      final SqlToRelConverter.Config config =
-          SqlToRelConverter.config().withTrimUnusedFields(true);
-      SqlToRelConverter sqlToRelConverter =
-          getSqlToRelConverter(validator, catalogReader, config);
-      RelRoot root =
-          sqlToRelConverter.convertQuery(sqlNode, true, true);
-
-      --expansionDepth;
-      return root;
-    }
-
-    protected SqlValidator createSqlValidator(CatalogReader catalogReader) {
-      return TrainDBPrepareImpl.createSqlValidator(context,
-          (TrainDBCatalogReader) catalogReader);
-    }
-
-    @Override protected SqlValidator getSqlValidator() {
-      if (sqlValidator == null) {
-        sqlValidator = createSqlValidator(catalogReader);
-      }
-      return sqlValidator;
-    }
-
-    @Override protected PreparedResult createPreparedExplanation(
-        @Nullable RelDataType resultType,
-        RelDataType parameterRowType,
-        @Nullable RelRoot root,
-        SqlExplainFormat format,
-        SqlExplainLevel detailLevel) {
-      return new CalcitePreparedExplain(resultType, parameterRowType, root,
-          format, detailLevel);
-    }
-
-    @Override protected PreparedResult implement(RelRoot root) {
-      Hook.PLAN_BEFORE_IMPLEMENTATION.run(root);
-      RelDataType resultType = root.rel.getRowType();
-      boolean isDml = root.kind.belongsTo(SqlKind.DML);
-      final Bindable bindable;
-      if (resultConvention == BindableConvention.INSTANCE) {
-        bindable = Interpreters.bindable(root.rel);
-      } else {
-        EnumerableRel enumerable = (EnumerableRel) root.rel;
-        if (!root.isRefTrivial()) {
-          final List<RexNode> projects = new ArrayList<>();
-          final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
-          for (int field : Pair.left(root.fields)) {
-            projects.add(rexBuilder.makeInputRef(enumerable, field));
-          }
-          RexProgram program = RexProgram.create(enumerable.getRowType(),
-              projects, null, root.validatedRowType, rexBuilder);
-          enumerable = EnumerableCalc.create(enumerable, program);
-        }
-
-        LOG.debug(RelOptUtil.dumpPlan("Physical plan: ", enumerable, SqlExplainFormat.TEXT,
-            SqlExplainLevel.ALL_ATTRIBUTES));
-
-        try {
-          CatalogReader.THREAD_LOCAL.set(catalogReader);
-          final SqlConformance conformance = context.config().conformance();
-          internalParameters.put("_conformance", conformance);
-          bindable = EnumerableInterpretable.toBindable(internalParameters,
-              context.spark(), enumerable,
-              requireNonNull(prefer, "EnumerableRel.Prefer prefer"));
-        } finally {
-          CatalogReader.THREAD_LOCAL.remove();
-        }
-      }
-
-      if (timingTracer != null) {
-        timingTracer.traceTime("end codegen");
-      }
-
-      if (timingTracer != null) {
-        timingTracer.traceTime("end compilation");
-      }
-
-      return new PreparedResultImpl(
-          resultType,
-          requireNonNull(parameterRowType, "parameterRowType"),
-          requireNonNull(fieldOrigins, "fieldOrigins"),
-          root.collation.getFieldCollations().isEmpty()
-              ? ImmutableList.of()
-              : ImmutableList.of(root.collation),
-          root.rel,
-          mapTableModOp(isDml, root.kind),
-          isDml) {
-        @Override public String getCode() {
-          throw new UnsupportedOperationException();
-        }
-
-        @Override public Bindable getBindable(Meta.CursorFactory cursorFactory) {
-          return bindable;
-        }
-
-        @Override public Type getElementType() {
-          return ((Typed) bindable).getElementType();
-        }
-      };
-    }
-
-    @Override protected List<Materialization> getMaterializations() {
-      final List<Prepare.Materialization> materializations =
-          context.config().materializationsEnabled()
-              ? MaterializationService.instance().query(schema)
-              : ImmutableList.of();
-      for (Prepare.Materialization materialization : materializations) {
-        prepare.populateMaterializations(context, cluster, materialization);
-      }
-      return materializations;
-    }
-
-    @Override protected List<LatticeEntry> getLattices() {
-      return Schemas.getLatticeEntries(schema);
-    }
-
-    protected Convention getResultConvention() {
-      return resultConvention;
-    }
-  }
-
-  /** An {@code EXPLAIN} statement, prepared and ready to execute. */
-  private static class CalcitePreparedExplain extends Prepare.PreparedExplain {
-    CalcitePreparedExplain(
-        @Nullable RelDataType resultType,
-        RelDataType parameterRowType,
-        @Nullable RelRoot root,
-        SqlExplainFormat format,
-        SqlExplainLevel detailLevel) {
-      super(resultType, parameterRowType, root, format, detailLevel);
-    }
-
-    @Override public Bindable getBindable(final Meta.CursorFactory cursorFactory) {
-      final String explanation = getCode();
-      return dataContext -> {
-        switch (cursorFactory.style) {
-        case ARRAY:
-          return Linq4j.singletonEnumerable(new String[] {explanation});
-        case OBJECT:
-        default:
-          return Linq4j.singletonEnumerable(explanation);
-        }
-      };
-    }
-  }
-
-  /** Translator from Java AST to {@link RexNode}. */
-  interface ScalarTranslator {
-    RexNode toRex(BlockStatement statement);
-    List<RexNode> toRexList(BlockStatement statement);
-    RexNode toRex(Expression expression);
-    ScalarTranslator bind(List<ParameterExpression> parameterList,
-        List<RexNode> values);
-  }
-
-  /** Basic translator. */
-  static class EmptyScalarTranslator implements ScalarTranslator {
-    private final RexBuilder rexBuilder;
-
-    EmptyScalarTranslator(RexBuilder rexBuilder) {
-      this.rexBuilder = rexBuilder;
-    }
-
-    public static ScalarTranslator empty(RexBuilder builder) {
-      return new EmptyScalarTranslator(builder);
-    }
-
-    @Override public List<RexNode> toRexList(BlockStatement statement) {
-      final List<Expression> simpleList = simpleList(statement);
-      final List<RexNode> list = new ArrayList<>();
-      for (Expression expression1 : simpleList) {
-        list.add(toRex(expression1));
-      }
-      return list;
-    }
-
-    @Override public RexNode toRex(BlockStatement statement) {
-      return toRex(Blocks.simple(statement));
-    }
-
-    private static List<Expression> simpleList(BlockStatement statement) {
-      Expression simple = Blocks.simple(statement);
-      if (simple instanceof NewExpression) {
-        NewExpression newExpression = (NewExpression) simple;
-        return newExpression.arguments;
-      } else {
-        return Collections.singletonList(simple);
-      }
-    }
-
-    @Override public RexNode toRex(Expression expression) {
-      switch (expression.getNodeType()) {
-      case MemberAccess:
-        // Case-sensitive name match because name was previously resolved.
-        MemberExpression memberExpression = (MemberExpression) expression;
-        PseudoField field = memberExpression.field;
-        Expression targetExpression = requireNonNull(memberExpression.expression,
-            () -> "static field access is not implemented yet."
-                + " field.name=" + field.getName()
-                + ", field.declaringClass=" + field.getDeclaringClass());
-        return rexBuilder.makeFieldAccess(
-            toRex(targetExpression),
-            field.getName(),
-            true);
-      case GreaterThan:
-        return binary(expression, SqlStdOperatorTable.GREATER_THAN);
-      case LessThan:
-        return binary(expression, SqlStdOperatorTable.LESS_THAN);
-      case Parameter:
-        return parameter((ParameterExpression) expression);
-      case Call:
-        MethodCallExpression call = (MethodCallExpression) expression;
-        SqlOperator operator =
-            RexToLixTranslator.JAVA_TO_SQL_METHOD_MAP.get(call.method);
-        if (operator != null) {
-          return rexBuilder.makeCall(
-              type(call),
-              operator,
-              toRex(
-                  Expressions.<Expression>list()
-                      .appendIfNotNull(call.targetExpression)
-                      .appendAll(call.expressions)));
-        }
-        throw new RuntimeException(
-            "Could translate call to method " + call.method);
-      case Constant:
-        final ConstantExpression constant =
-            (ConstantExpression) expression;
-        Object value = constant.value;
-        if (value instanceof Number) {
-          Number number = (Number) value;
-          if (value instanceof Double || value instanceof Float) {
-            return rexBuilder.makeApproxLiteral(
-                BigDecimal.valueOf(number.doubleValue()));
-          } else if (value instanceof BigDecimal) {
-            return rexBuilder.makeExactLiteral((BigDecimal) value);
-          } else {
-            return rexBuilder.makeExactLiteral(
-                BigDecimal.valueOf(number.longValue()));
-          }
-        } else if (value instanceof Boolean) {
-          return rexBuilder.makeLiteral((Boolean) value);
-        } else {
-          return rexBuilder.makeLiteral(constant.toString());
-        }
-      default:
-        throw new UnsupportedOperationException(
-            "unknown expression type " + expression.getNodeType() + " "
-            + expression);
-      }
-    }
-
-    private RexNode binary(Expression expression, SqlBinaryOperator op) {
-      BinaryExpression call = (BinaryExpression) expression;
-      return rexBuilder.makeCall(type(call), op,
-          toRex(ImmutableList.of(call.expression0, call.expression1)));
-    }
-
-    private List<RexNode> toRex(List<Expression> expressions) {
-      final List<RexNode> list = new ArrayList<>();
-      for (Expression expression : expressions) {
-        list.add(toRex(expression));
-      }
-      return list;
-    }
-
-    protected RelDataType type(Expression expression) {
-      final Type type = expression.getType();
-      return ((JavaTypeFactory) rexBuilder.getTypeFactory()).createType(type);
-    }
-
-    @Override public ScalarTranslator bind(
-        List<ParameterExpression> parameterList, List<RexNode> values) {
-      return new LambdaScalarTranslator(
-          rexBuilder, parameterList, values);
-    }
-
-    public RexNode parameter(ParameterExpression param) {
-      throw new RuntimeException("unknown parameter " + param);
-    }
-  }
-
-  /** Translator that looks for parameters. */
-  private static class LambdaScalarTranslator extends EmptyScalarTranslator {
-    private final List<ParameterExpression> parameterList;
-    private final List<RexNode> values;
-
-    LambdaScalarTranslator(
-        RexBuilder rexBuilder,
-        List<ParameterExpression> parameterList,
-        List<RexNode> values) {
-      super(rexBuilder);
-      this.parameterList = parameterList;
-      this.values = values;
-    }
-
-    @Override public RexNode parameter(ParameterExpression param) {
-      int i = parameterList.indexOf(param);
-      if (i >= 0) {
-        return values.get(i);
-      }
-      throw new RuntimeException("unknown parameter " + param);
-    }
-  }
-
-
   public static class TrainDBMaterialization extends Prepare.Materialization {
 
     final CalciteSchema.TableEntry materializedTable_;
@@ -1472,7 +909,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
   public static class TrainDBPreparedResultImpl extends Prepare.PreparedResultImpl {
 
-    protected TrainDBPreparedResultImpl(RelDataType rowType, RelDataType parameterRowType, List<? extends List<String>> fieldOrigins, List<RelCollation> collations, RelNode rootRel, TableModify.Operation tableModOp, boolean isDml) {
+    protected TrainDBPreparedResultImpl(RelDataType rowType, RelDataType parameterRowType,
+                                        List<? extends List<String>> fieldOrigins,
+                                        List<RelCollation> collations,
+                                        RelNode rootRel,
+                                        TableModify.Operation tableModOp,
+                                        boolean isDml) {
       super(rowType, parameterRowType, fieldOrigins, collations, rootRel, tableModOp, isDml);
 
     }
@@ -1495,7 +937,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     public List<RelCollation> getCollations() {
       return collations;
     }
-
   }
 
 }
