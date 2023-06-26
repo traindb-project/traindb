@@ -45,7 +45,7 @@ import java.util.List;
 import static java.util.Objects.requireNonNull;
 
 /**
- * Context for populating a {@link TrainDBPrepareImpl.TrainDBMaterialization}.
+ * Context for populating a {@link TrainDBMaterialization}.
  */
 class CalciteMaterializer extends TrainDBPreparingStmt {
   CalciteMaterializer(TrainDBPrepareImpl prepare,
@@ -60,7 +60,7 @@ class CalciteMaterializer extends TrainDBPreparingStmt {
   /** Populates a materialization record, converting a table path
    * (essentially a list of strings, like ["hr", "sales"]) into a table object
    * that can be used in the planning process. */
-  void populate(TrainDBPrepareImpl.TrainDBMaterialization materialization) {
+  void populate(TrainDBMaterialization materialization) {
     SqlParser parser = SqlParser.create(materialization.sql_);
     SqlNode node;
     try {
@@ -95,7 +95,7 @@ class CalciteMaterializer extends TrainDBPreparingStmt {
   /** Converts a relational expression to use a
    * {@link StarTable} defined in {@code schema}.
    * Uses the first star table that fits. */
-  private void useStar(CalciteSchema schema, TrainDBPrepareImpl.TrainDBMaterialization materialization) {
+  private void useStar(CalciteSchema schema, TrainDBMaterialization materialization) {
     RelNode queryRel = requireNonNull(materialization.queryRel_, "materialization.queryRel");
     for (Callback x : useStar(schema, queryRel)) {
       // Success -- we found a star table that matches.

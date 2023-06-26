@@ -404,9 +404,9 @@ public class TrainDBPreparingStmt extends Prepare
             ? MaterializationService.instance().query(schema)
             : ImmutableList.of();
     for (Prepare.Materialization materialization : materializations) {
-      if (materialization instanceof TrainDBPrepareImpl.TrainDBMaterialization) {
+      if (materialization instanceof TrainDBMaterialization) {
         prepare.populateMaterializations(context, cluster,
-            (TrainDBPrepareImpl.TrainDBMaterialization) materialization);
+            (TrainDBMaterialization) materialization);
       } else {
         throw new RuntimeException("get materialization failed");
       }

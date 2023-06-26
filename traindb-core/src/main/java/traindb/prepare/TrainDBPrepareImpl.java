@@ -877,36 +877,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         prepareContext.getRootSchema().plus(), statement);
   }
 
-  public static class TrainDBMaterialization extends Prepare.Materialization {
-
-    final CalciteSchema.TableEntry materializedTable_;
-    final String sql_;
-    final List<String> viewSchemaPath_;
-
-    @Nullable
-    RelNode tableRel_;
-    @Nullable
-    RelNode queryRel_;
-    @Nullable
-    private RelOptTable starRelOptTable_;
-
-    public TrainDBMaterialization(CalciteSchema.TableEntry materializedTable, String sql,
-                                  List<String> viewSchemaPath) {
-      super(materializedTable, sql, viewSchemaPath);
-      this.materializedTable_ = materializedTable;
-      this.sql_ = sql;
-      this.viewSchemaPath_ = viewSchemaPath;
-    }
-
-    @Override
-    public void materialize(RelNode queryRel, RelOptTable starRelOptTable) {
-      this.queryRel_ = queryRel;
-      this.starRelOptTable_ = starRelOptTable;
-
-      assert starRelOptTable.maybeUnwrap(StarTable.class).isPresent();
-    }
-  }
-
   public static class TrainDBPreparedResultImpl extends Prepare.PreparedResultImpl {
 
     protected TrainDBPreparedResultImpl(RelDataType rowType, RelDataType parameterRowType,
