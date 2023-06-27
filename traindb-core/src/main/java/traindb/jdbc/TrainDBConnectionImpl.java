@@ -162,7 +162,7 @@ public abstract class TrainDBConnectionImpl
     this.cfg.loadConfiguration();
     this.schemaManager = schemaManager;
     if (url == null) {  // traindb-only mode (no datasource)
-      // TODO load datasource from catalog
+      schemaManager.loadCatalogDataSource();
     } else {
       this.dataSource = dataSource(url, info);
       schemaManager.loadDataSource(dataSource);
