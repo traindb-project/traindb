@@ -16,6 +16,7 @@ package traindb.engine;
 
 import static java.lang.Thread.sleep;
 
+import java.io.ByteArrayOutputStream;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -24,6 +25,10 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
+import org.apache.commons.exec.CommandLine;
+import org.apache.commons.exec.DefaultExecuteResultHandler;
+import org.apache.commons.exec.DefaultExecutor;
+import org.apache.commons.exec.PumpStreamHandler;
 import org.json.simple.JSONObject;
 import py4j.GatewayServer;
 import traindb.catalog.CatalogContext;
@@ -45,6 +50,29 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     return TrainDBConfiguration.getTrainDBPrefixPath() + "/models/TrainDBPy4JModelRunner.py";
   }
 
+  private GatewayServer startGatewayServer() throws Exception {
+    int javaPort = getAvailablePort();
+    int pythonPort = getAvailablePort();
+
+    ByteArrayOutputStream outputStream = new ByteArrayOutputStream();
+    PumpStreamHandler pumpStreamHandler = new PumpStreamHandler(outputStream);
+    DefaultExecutor executor = new DefaultExecutor();
+    executor.setStreamHandler(pumpStreamHandler);
+
+    CommandLine cmdLine = CommandLine.parse("python");
+    cmdLine.addArgument(getModelRunnerPath());
+    cmdLine.addArgument(String.valueOf(javaPort));
+    cmdLine.addArgument(String.valueOf(pythonPort));
+
+    DefaultExecuteResultHandler resultHandler = new DefaultExecuteResultHandler();
+    executor.execute(cmdLine, resultHandler);
+
+    sleep(1000); // FIXME waiting the python process
+    GatewayServer server = new GatewayServer(null, javaPort, pythonPort, 0, 0, null);
+    server.start();
+    return server;
+  }
+
   @Override
   public String trainModel(
       TrainDBTable table, List<String> columnNames, Map<String, Object> trainOptions,
@@ -57,27 +85,15 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);
 
-    int javaPort = getAvailablePort();
-    int pythonPort = getAvailablePort();
-
     // train ML model
-    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(),
-        String.valueOf(javaPort), String.valueOf(pythonPort));
-    pb.inheritIO();
-    Process process = pb.start();
-
-    sleep(1000); // FIXME waiting the python process
-    GatewayServer server = new GatewayServer(null, javaPort, pythonPort, 0, 0, null);
-    server.start();
-
-    TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
-        new Class[] { TrainDBModelRunner.class });
-
+    GatewayServer server = startGatewayServer();
     BasicDataSource ds = conn.getDataSource();
     Class jdbcClass = Class.forName(ds.getDriverClassName());
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     String trainInfo;
     try {
+      TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
+          new Class[] { TrainDBModelRunner.class });
       modelRunner.connect(
           ds.getDriverClassName(), ds.getUrl(), ds.getUsername(), ds.getPassword(),
           jdbcClass.getProtectionDomain().getCodeSource().getLocation().getPath());
@@ -87,12 +103,10 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
           tableMetadata.toJSONString(), modelPath.toString());
     } catch (Exception e) {
       server.shutdown();
-      process.destroy();
       e.printStackTrace();
       throw new TrainDBException("failed to train model");
     }
     server.shutdown();
-    process.destroy();
 
     return trainInfo;
   }
@@ -102,34 +116,19 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
 
     // generate synopsis from ML model
-    int javaPort = getAvailablePort();
-    int pythonPort = getAvailablePort();
-
-    // train ML model
-    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(),
-        String.valueOf(javaPort), String.valueOf(pythonPort));
-    pb.inheritIO();
-    Process process = pb.start();
-
-    sleep(1000); // FIXME waiting the python process
-    GatewayServer server = new GatewayServer(null, javaPort, pythonPort, 0, 0, null);
-    server.start();
-
-    TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
-        new Class[] { TrainDBModelRunner.class });
-
+    GatewayServer server = startGatewayServer();
     try {
+      TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
+          new Class[] { TrainDBModelRunner.class });
       modelRunner.generateSynopsis(
           mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
           modelPath, rows, outputPath);
     } catch (Exception e) {
       server.shutdown();
-      process.destroy();
       e.printStackTrace();
       throw new TrainDBException("failed to create synopsis");
     }
     server.shutdown();
-    process.destroy();
   }
 
   @Override
