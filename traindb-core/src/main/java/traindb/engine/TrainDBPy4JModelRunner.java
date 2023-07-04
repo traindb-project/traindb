@@ -139,7 +139,20 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
 
   @Override
   public String listHyperparameters(String className, String uri) throws Exception {
-    return null; // TODO
+    GatewayServer server = startGatewayServer();
+    String hyperparamsInfo;
+    try {
+      TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
+          new Class[] { TrainDBModelRunner.class });
+      hyperparamsInfo = modelRunner.listHyperparameters(className,
+          TrainDBConfiguration.absoluteUri(uri));
+    } catch (Exception e) {
+      server.shutdown();
+      e.printStackTrace();
+      throw new TrainDBException("failed to list hyperparameters");
+    }
+    server.shutdown();
+    return hyperparamsInfo;
   }
 
   private int getAvailablePort() throws Exception {

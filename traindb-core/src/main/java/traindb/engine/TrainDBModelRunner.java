@@ -26,4 +26,6 @@ public interface TrainDBModelRunner {
   void generateSynopsis(String modeltypeClass, String modeltypePath, String modelPath,
                         int rowCount, String outputFile);
 
+  String listHyperparameters(String modeltypeClass, String modeltypePath);
+
 }
