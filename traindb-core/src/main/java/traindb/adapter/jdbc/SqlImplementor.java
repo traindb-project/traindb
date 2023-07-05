@@ -57,6 +57,7 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlBinaryOperator;
 import org.apache.calcite.sql.SqlCall;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlDynamicParam;
 import org.apache.calcite.sql.SqlIdentifier;
@@ -121,6 +122,7 @@ import java.util.Set;
 import java.util.function.Function;
 import java.util.function.IntFunction;
 import java.util.function.Predicate;
+import traindb.adapter.TrainDBSqlDialect;
 
 import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
@@ -658,6 +660,14 @@ public abstract class SqlImplementor {
         }
 
       case LITERAL:
+          if (((RexLiteral) rex).getTypeName() == SqlTypeName.BINARY
+            && dialect instanceof TrainDBSqlDialect
+            && ((TrainDBSqlDialect) dialect).useCustomBinaryString()) {
+          return ((TrainDBSqlDialect) dialect).convertToBinaryString(
+              castNonNull(((RexLiteral)rex).getValueAs(byte[].class)), POS);
+          } else if (((RexLiteral)rex).getTypeName() == SqlTypeName.BINARY) {
+            return SqlCharStringLiteral.createBinaryString(castNonNull(((RexLiteral)rex).getValueAs(byte[].class)), POS);
+          }
         return SqlImplementor.toSql(program, (RexLiteral) rex);
 
       case CASE:

@@ -14,9 +14,16 @@
 
 package traindb.adapter;
 
+import static org.apache.calcite.util.Static.RESOURCE;
+
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.NullCollation;
+import org.apache.calcite.sql.SqlBinaryStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.parser.SqlParserPos;
+import org.apache.calcite.util.BitString;
+import traindb.sql.SqlZeroXBinaryStringLiteral;
 
 public class KairosSqlDialect extends TrainDBSqlDialect {
   public static final Context DEFAULT_CONTEXT;
@@ -50,5 +57,19 @@ public class KairosSqlDialect extends TrainDBSqlDialect {
   @Override
   public boolean supportCreateTableAsSelect() {
     return false;
+  }
+
+  public boolean useCustomBinaryString() {
+    return true;
+  }
+
+  public SqlBinaryStringLiteral convertToBinaryString(byte[] value, SqlParserPos pos) {
+    BitString bits;
+    try {
+      bits = BitString.createFromBytes(value);
+    } catch (NumberFormatException e) {
+      throw SqlUtil.newContextException(pos, RESOURCE.binaryLiteralInvalid());
+    }
+    return new SqlZeroXBinaryStringLiteral(bits, pos);
   }
 }

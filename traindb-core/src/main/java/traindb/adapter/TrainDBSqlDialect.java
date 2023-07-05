@@ -16,7 +16,10 @@ package traindb.adapter;
 
 import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.avatica.util.Quoting;
+import org.apache.calcite.sql.SqlBinaryStringLiteral;
+import org.apache.calcite.sql.SqlCharStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
 public abstract class TrainDBSqlDialect extends SqlDialect {
@@ -45,5 +48,14 @@ public abstract class TrainDBSqlDialect extends SqlDialect {
   @Override
   public @Nullable Quoting getQuoting() {
     return super.getQuoting();
+  }
+
+  public boolean useCustomBinaryString() {
+    return false;
+  }
+
+
+  public SqlBinaryStringLiteral convertToBinaryString(byte[] binaryValue, SqlParserPos POS) {
+    return SqlCharStringLiteral.createBinaryString(binaryValue, POS);
   }
 }

@@ -4401,7 +4401,12 @@ SqlNode StringLiteral() :
     <BINARY_STRING_LITERAL>
     {
         try {
-            p = SqlParserUtil.trim(token.image, "xX'");
+            if (token.image.startsWith("0") && token.image.length() > 1) {
+                p = token.image.substring(1);
+            } else {
+                p = token.image;
+            }
+            p = SqlParserUtil.trim(p, "xX'");
             frags = startList(SqlLiteral.createBinaryString(p, getPos()));
             nfrags++;
         } catch (NumberFormatException ex) {
@@ -8091,7 +8096,12 @@ void NonReservedKeyWord2of3() :
 |
     /* To improve error reporting, we allow all kinds of characters,
      * not just hexits, in a binary string literal. */
-    < BINARY_STRING_LITERAL: ["x","X"] <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+    < BINARY_STRING_LITERAL:
+    (<X_BINARY_STRING_LITERAL> | <ZEROX_BINARY_STRING_LITERAL>) >
+|
+    < #X_BINARY_STRING_LITERAL: ["x","X"] <QUOTE> ( (~["'"]) | ("''"))* <QUOTE> >
+|
+    < #ZEROX_BINARY_STRING_LITERAL: "0" ["x","X"] (<HEXDIGIT>)* >
 }
 
 // All databases except BigQuery support standard single-quoted literals,

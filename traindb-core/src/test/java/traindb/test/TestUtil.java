@@ -16,6 +16,7 @@ package traindb.test;
 
 import java.io.FileReader;
 import java.nio.file.Paths;
+import java.sql.Blob;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
@@ -83,7 +84,14 @@ public class TestUtil {
         sb.setLength(0);
         sb.append("| ");
         for (int i = 1; i <= columnCount; i++) {
-          sb.append(rs.getString(i) + " | ");
+          Object value = rs.getObject(i);
+          if (value instanceof byte[]) {
+            byte[] bytes = (byte[]) value;
+            String binaryString = bytesToHexString(bytes);
+            sb.append(binaryString + " | ");
+          } else {
+            sb.append(rs.getString(i) + " | ");
+          }
         }
         System.out.println(sb.toString());
       }
@@ -92,4 +100,13 @@ public class TestUtil {
       e.printStackTrace();
     }
   }
+
+  private static String bytesToHexString(byte[] bytes) {
+    StringBuilder sb = new StringBuilder();
+    for (byte b : bytes) {
+      sb.append(String.format("%02X", b));
+    }
+    return sb.toString();
+  }
+
 }
