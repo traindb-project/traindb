@@ -42,18 +42,6 @@ limitations under the License.
         <maven.compiler.target>8</maven.compiler.target>
     </properties>
 
-    <repositories>
-        <!-- To use the Kairos JDBC driver in tests,
-             the following jar file should be installed in traindb-lib/ by
-             $> mvn install:install-file -Dfile=traindb-project/src/main/resources/lib/kairosjdbc.jar \
-                -DgroupId=kr.co.realtimetech.kairos -DartifactId=kairos-jdbc -Dversion=5.0.0 \
-                -Dpackaging=jar -DlocalRepositoryPath=traindb-lib -->
-        <repository>
-            <id>Local repository</id>
-            <url>file://${basedir}/traindb-lib</url>
-        </repository>
-    </repositories>
-
     <modules>
         <module>traindb-project</module>
         <module>traindb-common</module>

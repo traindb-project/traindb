@@ -29,6 +29,18 @@ limitations under the License.
     <name>TrainDB Core</name>
     <description>TrainDB Core</description>
 
+    <repositories>
+        <!-- To use the Kairos JDBC driver in tests,
+             the following jar file should be installed in traindb-lib/ by
+             $> mvn install:install-file -Dfile=../traindb-project/src/main/resources/lib/kairosjdbc.jar \
+                -DgroupId=kr.co.realtimetech.kairos -DartifactId=kairos-jdbc -Dversion=5.0.0 \
+                -Dpackaging=jar -DlocalRepositoryPath=traindb-lib -->
+        <repository>
+            <id>Local repository</id>
+            <url>file://${basedir}/traindb-lib</url>
+        </repository>
+    </repositories>
+
     <dependencies>
         <dependency>
             <groupId>${project.groupId}</groupId>
