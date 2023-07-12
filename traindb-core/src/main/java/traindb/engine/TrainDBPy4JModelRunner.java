@@ -74,7 +74,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public String trainModel(
+  public void trainModel(
       TrainDBTable table, List<String> columnNames, Map<String, Object> trainOptions,
       JavaTypeFactory typeFactory) throws Exception {
     String schemaName = table.getSchema().getName();
@@ -90,14 +90,13 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     BasicDataSource ds = conn.getDataSource();
     Class jdbcClass = Class.forName(ds.getDriverClassName());
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
-    String trainInfo;
     try {
       TrainDBModelRunner modelRunner = (TrainDBModelRunner) server.getPythonServerEntryPoint(
           new Class[] { TrainDBModelRunner.class });
       modelRunner.connect(
           ds.getDriverClassName(), ds.getUrl(), ds.getUsername(), ds.getPassword(),
           jdbcClass.getProtectionDomain().getCodeSource().getLocation().getPath());
-      trainInfo = modelRunner.trainModel(
+      modelRunner.trainModel(
           buildSelectTrainingDataQuery(schemaName, tableName, columnNames),
           mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
           tableMetadata.toJSONString(), modelPath.toString());
@@ -107,8 +106,6 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
       throw new TrainDBException("failed to train model");
     }
     server.shutdown();
-
-    return trainInfo;
   }
 
   public void generateSynopsis(String outputPath, int rows) throws Exception {

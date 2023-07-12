@@ -20,6 +20,7 @@ import com.opencsv.CSVReaderBuilder;
 import java.io.FileReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -145,18 +146,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (table == null) {
       throw new TrainDBException("cannot find the table '" + schemaName + "'.'" + tableName + "'");
     }
+    Long baseTableRows = getTableRowCount(schemaName, tableName);
+    Long trainedRows = baseTableRows; // TODO
 
     T_tracer.openTaskTime("train model");
     AbstractTrainDBModelRunner runner = createModelRunner(modeltypeName, modelName);
-    String trainInfo = runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
+    runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert model info");
-    JSONParser jsonParser = new JSONParser();
-    JSONObject jsonTrainInfo = (JSONObject) jsonParser.parse(trainInfo);
-    Long baseTableRows = (Long) jsonTrainInfo.get("base_table_rows");
-    Long trainedRows = (Long) jsonTrainInfo.get("trained_rows");
-
     JSONObject options = new JSONObject();
     options.putAll(trainOptions);
     catalogContext.trainModel(modeltypeName, modelName, schemaName, tableName, columnNames,
@@ -223,6 +221,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String sql = sb.toString();
     conn.executeInternal(sql);
     conn.refreshRootSchema();
+  }
+
+  private long getTableRowCount(String schemaName, String tableName) throws SQLException {
+    String sql = "SELECT count(*) FROM " + schemaName + "." + tableName;
+    ResultSet rs = conn.executeQueryInternal(sql);
+    long rowCount = 0;
+    while (rs.next()) {
+      rowCount = rs.getLong(1);
+    }
+    return rowCount;
   }
 
   private void loadSynopsisIntoTable(String synopsisName, MModel mModel,

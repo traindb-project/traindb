@@ -42,7 +42,7 @@ public abstract class AbstractTrainDBModelRunner {
     this.modelName = modelName;
   }
 
-  public abstract String trainModel(
+  public abstract void trainModel(
       TrainDBTable table, List<String> columnNames, Map<String, Object> trainOptions,
       JavaTypeFactory typeFactory) throws Exception;
 

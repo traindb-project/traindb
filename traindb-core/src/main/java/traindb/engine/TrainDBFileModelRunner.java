@@ -46,8 +46,9 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public String trainModel(TrainDBTable table, List<String> columnNames,
-                           Map<String, Object> trainOptions, JavaTypeFactory typeFactory) throws Exception {
+  public void trainModel(TrainDBTable table, List<String> columnNames,
+                         Map<String, Object> trainOptions, JavaTypeFactory typeFactory)
+      throws Exception {
     String schemaName = table.getSchema().getName();
     String tableName = table.getName();
     JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
@@ -84,10 +85,6 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     if (process.exitValue() != 0) {
       throw new TrainDBException("failed to train model");
     }
-
-    Path trainInfoFilePath = Paths.get(outputPath, "train_info.json");
-    String trainInfo = new String(Files.readAllBytes(trainInfoFilePath), StandardCharsets.UTF_8);
-    return trainInfo;
   }
 
   @Override
