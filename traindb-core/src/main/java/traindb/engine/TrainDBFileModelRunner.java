@@ -142,7 +142,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     process.waitFor();
 
     if (process.exitValue() != 0) {
-      throw new TrainDBException("failed to train model");
+      throw new TrainDBException("failed to list hyperparameters");
     }
 
     String hyperparamsInfo =
