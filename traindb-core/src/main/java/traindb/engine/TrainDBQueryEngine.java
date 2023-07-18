@@ -80,7 +80,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create modeltype");
-    AbstractTrainDBModelRunner runner = createModelRunner(name, "");
+    AbstractTrainDBModelRunner runner = createModelRunner(name, "", location);
     String hyperparamsInfo = runner.listHyperparameters(className, uri);
     catalogContext.createModeltype(name, category, location, className, uri, hyperparamsInfo);
     T_tracer.closeTaskTime("SUCCESS");
@@ -150,7 +150,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Long trainedRows = baseTableRows; // TODO
 
     T_tracer.openTaskTime("train model");
-    AbstractTrainDBModelRunner runner = createModelRunner(modeltypeName, modelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(
+        modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
     runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -271,13 +272,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
   }
 
-  private AbstractTrainDBModelRunner createModelRunner(String modeltypeName, String modelName) {
-    String modelrunner = conn.cfg.getModelRunner();
-    if (modelrunner.equals("py4j")) {
-      return new TrainDBPy4JModelRunner(conn, catalogContext, modeltypeName, modelName);
-    }
-
-    return new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
+  private AbstractTrainDBModelRunner createModelRunner(String modeltypeName, String modelName,
+                                                       String location) {
+    return AbstractTrainDBModelRunner.createModelRunner(
+        conn, catalogContext, conn.cfg, modeltypeName, modelName, location);
   }
 
   @Override
@@ -312,7 +310,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
 
-    AbstractTrainDBModelRunner runner = createModelRunner(mModeltype.getModeltypeName(), modelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(
+        mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
     String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
     runner.generateSynopsis(outputPath, limitNumber);
     T_tracer.closeTaskTime("SUCCESS");

@@ -58,6 +58,21 @@ public abstract class AbstractTrainDBModelRunner {
         modeltypeName, modelName);
   }
 
+  public static AbstractTrainDBModelRunner createModelRunner(
+      TrainDBConnectionImpl conn, CatalogContext catalogContext, TrainDBConfiguration config,
+      String modeltypeName, String modelName, String location) {
+    if (location.equals("REMOTE")) {
+      return new TrainDBFastApiModelRunner(conn, catalogContext, modeltypeName, modelName);
+    }
+    // location.equals("LOCAL")
+    if (config.getModelRunner().equals("py4j")) {
+      return new TrainDBPy4JModelRunner(conn, catalogContext, modeltypeName, modelName);
+    }
+
+    return new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
+  }
+
+
   protected String buildSelectTrainingDataQuery(String schemaName, String tableName,
                                                 List<String> columnNames) {
     StringBuilder sb = new StringBuilder();

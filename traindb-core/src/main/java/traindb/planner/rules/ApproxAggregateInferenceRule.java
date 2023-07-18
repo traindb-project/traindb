@@ -42,7 +42,6 @@ import traindb.adapter.python.PythonMLAggregateModelScan;
 import traindb.adapter.python.PythonRel;
 import traindb.catalog.pm.MModel;
 import traindb.engine.AbstractTrainDBModelRunner;
-import traindb.engine.TrainDBFileModelRunner;
 import traindb.planner.TrainDBPlanner;
 
 @Value.Enclosing
@@ -116,11 +115,10 @@ public class ApproxAggregateInferenceRule
 
     // TODO choose the best inference model
     final MModel bestInferenceModel = candidateModels.iterator().next();
-
-    AbstractTrainDBModelRunner runner =
-        new TrainDBFileModelRunner(null, planner.getCatalogContext(),
-            bestInferenceModel.getModeltype().getModeltypeName(),
-            bestInferenceModel.getModelName());
+    AbstractTrainDBModelRunner runner = AbstractTrainDBModelRunner.createModelRunner(
+        null, planner.getCatalogContext(), planner.getConfig(),
+        bestInferenceModel.getModeltype().getModeltypeName(),
+        bestInferenceModel.getModelName(), bestInferenceModel.getModeltype().getLocation());
 
     PythonMLAggregateModel modelTable = new PythonMLAggregateModel(runner,
         aggregate.getAggCallList(), aggregate.getGroupSet(), aggregate.getInput().getRowType(),

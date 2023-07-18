@@ -93,6 +93,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
     Hook.PLANNER.run(this); // allow test to add or remove rules
   }
 
+  public TrainDBConfiguration getConfig() {
+    return (TrainDBConfiguration) catalogReader.getConfig();
+  }
+
   private CaqpExecutionTimePolicy createCaqpExecutionTimePolicy(CalciteConnectionConfig config)
       throws Exception {
     CaqpExecutionTimePolicyType policy;
