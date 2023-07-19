@@ -204,6 +204,11 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     return outputPath;
   }
 
+  private String unescapeString(String s) {
+    // remove beginning/ending double quotes and unescape
+    return StringEscapeUtils.unescapeJava(s.replaceAll("^\"|\"$", ""));
+  }
+
   @Override
   public String listHyperparameters(String className, String uri) throws Exception {
     URL url = new URL(checkTrailingSlash(uri) + "modeltype/" + className + "/hyperparams");
@@ -222,8 +227,32 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
       response.append(line);
     }
 
-    // remove beginning/ending double quotes and unescape
-    return StringEscapeUtils.unescapeJava(response.toString().replaceAll("^\"|\"$", ""));
+    return unescapeString(response.toString());
+  }
+
+  @Override
+  public boolean checkAvailable(String modelName) throws Exception {
+    MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
+    URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/status");
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("GET");
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to get model status");
+    }
+
+    StringBuilder response = new StringBuilder();
+    BufferedReader reader = new BufferedReader(
+        new InputStreamReader(httpConn.getInputStream(), StandardCharsets.UTF_8));
+    String line;
+    while ((line = reader.readLine()) != null) {
+      response.append(line);
+    }
+    String res = unescapeString(response.toString());
+    if (res.equalsIgnoreCase("FINISHED")) {
+      return true;
+    }
+    return false;
   }
 
 }

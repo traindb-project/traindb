@@ -53,6 +53,10 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract String listHyperparameters(String className, String uri) throws Exception;
 
+  public boolean checkAvailable(String modelName) throws Exception {
+    return true;
+  }
+
   public Path getModelPath() {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
         modeltypeName, modelName);
