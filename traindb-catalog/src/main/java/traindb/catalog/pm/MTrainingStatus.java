@@ -52,6 +52,10 @@ public final class MTrainingStatus {
     this.model = model;
   }
 
+  public String getModelName() {
+    return model_name;
+  }
+
   public Timestamp getStartTime() {
     return start_time;
   }

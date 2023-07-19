@@ -29,7 +29,6 @@ import org.apache.calcite.sql.SqlDialect;
 import org.codehaus.jackson.annotate.JsonIgnoreProperties;
 import org.codehaus.jackson.map.ObjectMapper;
 import org.json.simple.JSONObject;
-import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
@@ -38,6 +37,8 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTask;
+import traindb.catalog.pm.MTrainingStatus;
+import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
 import traindb.jdbc.TrainDBConnectionImpl;
@@ -531,6 +532,41 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public TrainDBListResultSet showTrainings(Map<String, Object> filterPatterns) throws Exception {
+    List<String> header = Arrays.asList("model_name", "model_server", "start_time", "status");
+    checkShowWhereColumns(filterPatterns, header);
+    replacePatternFilterColumn(filterPatterns, "model_server", "model.modeltype.uri");
+
+    T_tracer.startTaskTracer("show trainings");
+    T_tracer.openTaskTime("scan : training status");
+
+    List<List<Object>> trainingInfo = new ArrayList<>();
+    for (MTrainingStatus mTraining : catalogContext.getTrainingStatus(filterPatterns)) {
+      if (mTraining.getTrainingStatus().equals("TRAINING")) {
+        AbstractTrainDBModelRunner runner =
+            AbstractTrainDBModelRunner.createModelRunner(
+            conn, catalogContext, conn.cfg, mTraining.getModel().getModeltype().getModeltypeName(),
+            mTraining.getModelName(), mTraining.getModel().getModeltype().getLocation());
+        try {
+          if (runner.checkAvailable(mTraining.getModelName())) {
+            catalogContext.updateTrainingStatus(mTraining.getModelName(), "FINISHED");
+          }
+        } catch (Exception e) {
+          // ignore
+        }
+      }
+      trainingInfo.add(Arrays.asList(mTraining.getModelName(),
+          mTraining.getModel().getModeltype().getUri(), mTraining.getStartTime(),
+          mTraining.getTrainingStatus()));
+    }
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, trainingInfo);
+  }
+
+  @Override
   public void useSchema(String schemaName) throws Exception {
     T_tracer.startTaskTracer("use " + schemaName);
     T_tracer.openTaskTime("use schema");
@@ -657,6 +693,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     for (String key : patterns.keySet()) {
       if (columns.contains(key)) {
         patterns.put(prefix + "." + key, patterns.remove(key));
+      }
+    }
+  }
+
+  private void replacePatternFilterColumn(Map<String, Object> patterns,
+                                          String before, String after) {
+    for (String key : patterns.keySet()) {
+      if (key.equals(before)) {
+        patterns.put(after, patterns.remove(before));
+        return;
       }
     }
   }

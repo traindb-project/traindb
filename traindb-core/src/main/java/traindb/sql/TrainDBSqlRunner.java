@@ -46,6 +46,8 @@ public interface TrainDBSqlRunner {
 
   TrainDBListResultSet showHyperparameters(Map<String, Object> filterPatterns) throws Exception;
 
+  TrainDBListResultSet showTrainings(Map<String, Object> filterPatterns) throws Exception;
+
   void useSchema(String schemaName) throws Exception;
 
   TrainDBListResultSet describeTable(String schemaName, String tableName) throws Exception;
