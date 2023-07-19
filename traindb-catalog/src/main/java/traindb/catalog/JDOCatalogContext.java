@@ -15,7 +15,10 @@
 package traindb.catalog;
 
 import com.google.common.collect.ImmutableMap;
+import java.sql.Timestamp;
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
 import javax.jdo.PersistenceManager;
@@ -32,6 +35,7 @@ import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
+import traindb.catalog.pm.MTrainingStatus;
 import traindb.common.TrainDBLogger;
 
 public final class JDOCatalogContext implements CatalogContext {
@@ -139,10 +143,18 @@ public final class JDOCatalogContext implements CatalogContext {
         }
       }
 
+      MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
-          getModeltype(modeltypeName), modelName, schemaName, tableName, columnNames,
+          mModeltype, modelName, schemaName, tableName, columnNames,
           baseTableRows, trainedRows, options == null ? "" : options);
       pm.makePersistent(mModel);
+
+      if (mModeltype.getLocation().equals("REMOTE")) {
+        MTrainingStatus mTrainingStatus = new MTrainingStatus(modelName, "TRAINING",
+            new Timestamp(System.currentTimeMillis()), mModel);
+        pm.makePersistent(mTrainingStatus);
+      }
+
       return mModel;
     } catch (RuntimeException e) {
       throw new CatalogException("failed to train model '" + modelName + "'", e);
@@ -178,6 +190,13 @@ public final class JDOCatalogContext implements CatalogContext {
         tx.commit();
       }
 
+      Collection<MTrainingStatus> trainingStatus =
+          getTrainingStatus(ImmutableMap.of("model_name", name));
+      if (trainingStatus != null && trainingStatus.size() > 0) {
+        tx.begin();
+        pm.deletePersistentAll(trainingStatus);
+        tx.commit();
+      }
     } catch (RuntimeException e) {
       throw new CatalogException("failed to drop model '" + name + "'", e);
     } finally {
@@ -226,6 +245,33 @@ public final class JDOCatalogContext implements CatalogContext {
     } catch (RuntimeException e) {
     }
     return null;
+  }
+
+  @Override
+  public Collection<MTrainingStatus> getTrainingStatus(Map<String, Object> filterPatterns)
+      throws CatalogException {
+    try {
+      Query query = pm.newQuery(MTrainingStatus.class);
+      setFilterPatterns(query, filterPatterns);
+      return (List<MTrainingStatus>) query.execute();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get training status", e);
+    }
+  }
+
+  @Override
+  public void updateTrainingStatus(String modelName, String status) throws CatalogException {
+    try {
+      Query query = pm.newQuery(MTrainingStatus.class);
+      setFilterPatterns(query, ImmutableMap.of("model_name", modelName));
+      List<MTrainingStatus> trainingStatus = (List<MTrainingStatus>) query.execute();
+      Comparator<MTrainingStatus> comparator = Comparator.comparing(MTrainingStatus::getStartTime);
+      MTrainingStatus latestStatus = trainingStatus.stream().max(comparator).get();
+      latestStatus.setTrainingStatus(status);
+      pm.makePersistent(latestStatus);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get training status", e);
+    }
   }
 
   @Override
