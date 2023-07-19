@@ -17,6 +17,7 @@ package traindb.planner.rules;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.HashMap;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.plan.RelOptCluster;
@@ -41,6 +42,7 @@ import traindb.adapter.python.PythonMLAggregateModel;
 import traindb.adapter.python.PythonMLAggregateModelScan;
 import traindb.adapter.python.PythonRel;
 import traindb.catalog.pm.MModel;
+import traindb.common.TrainDBException;
 import traindb.engine.AbstractTrainDBModelRunner;
 import traindb.planner.TrainDBPlanner;
 
@@ -114,8 +116,32 @@ public class ApproxAggregateInferenceRule
     }
 
     // TODO choose the best inference model
-    final MModel bestInferenceModel = candidateModels.iterator().next();
-    AbstractTrainDBModelRunner runner = AbstractTrainDBModelRunner.createModelRunner(
+    // It is currently assumed that the candidate models are already sorted by cost
+    AbstractTrainDBModelRunner runner;
+    MModel bestInferenceModel = null;
+    for (Iterator<MModel> iter = candidateModels.iterator(); iter.hasNext(); ) {
+      bestInferenceModel = iter.next();
+      if (bestInferenceModel.isEnabled()) {
+        break;
+      }
+      try {
+        runner = AbstractTrainDBModelRunner.createModelRunner(
+            null, planner.getCatalogContext(), planner.getConfig(),
+            bestInferenceModel.getModeltype().getModeltypeName(),
+            bestInferenceModel.getModelName(), bestInferenceModel.getModeltype().getLocation());
+        if (runner.checkAvailable(bestInferenceModel.getModelName())) {
+          planner.getCatalogContext().updateTrainingStatus(bestInferenceModel.getModelName(), "FINISHED");
+          break;
+        }
+      } catch (Exception e) {
+        // ignore
+      }
+    }
+    if (bestInferenceModel == null || !bestInferenceModel.isEnabled()) {
+      return;
+    }
+
+    runner = AbstractTrainDBModelRunner.createModelRunner(
         null, planner.getCatalogContext(), planner.getConfig(),
         bestInferenceModel.getModeltype().getModeltypeName(),
         bestInferenceModel.getModelName(), bestInferenceModel.getModeltype().getLocation());
