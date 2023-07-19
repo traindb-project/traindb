@@ -312,6 +312,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     AbstractTrainDBModelRunner runner = createModelRunner(
         mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
+
+    if (!mModel.isEnabled()) {  // remote model
+      if (!runner.checkAvailable(modelName)) {
+        throw new TrainDBException(
+            "model '" + modelName + "' is not available (training is not finished)");
+      }
+      catalogContext.updateTrainingStatus(modelName, "FINISHED");
+    }
     String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
     runner.generateSynopsis(outputPath, limitNumber);
     T_tracer.closeTaskTime("SUCCESS");
