@@ -125,6 +125,7 @@ showTargets
     | K_SCHEMAS
     | K_TABLES
     | K_HYPERPARAMETERS
+    | K_TRAININGS
     | K_QUERYLOGS
     | K_TASKS
     ;
@@ -241,6 +242,7 @@ K_SYNOPSIS : S Y N O P S I S ;
 K_TABLES : T A B L E S ;
 K_TASKS : T A S K S ;
 K_TRAIN : T R A I N ;
+K_TRAININGS : T R A I N I N G S;
 K_USE : U S E ;
 K_WHERE : W H E R E ;
 
