@@ -25,6 +25,7 @@ import org.apache.calcite.schema.Table;
 import org.apache.calcite.schema.impl.AbstractSchema;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.util.Util;
+import traindb.sql.calcite.GeometryObjectSqlType;
 
 public abstract class TrainDBSchema extends AbstractSchema {
   private final String name;
@@ -84,8 +85,9 @@ public abstract class TrainDBSchema extends AbstractSchema {
         List<String> geomTypes = ImmutableList.of("GEOMETRY", "POINT", "LINESTRING", "POLYGON",
             "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION");
         if (typeString.startsWith("ST_") || geomTypes.contains(typeString)) {
-          return typeFactory.createTypeWithNullability(
-              typeFactory.createSqlType(SqlTypeName.GEOMETRY), nullable);
+          RelDataType geomDataType = typeFactory.createSqlType(SqlTypeName.GEOMETRY);
+          return new GeometryObjectSqlType(typeString, nullable,
+              geomDataType.getFieldList(), geomDataType.getComparability());
         }
         break;
       default:
