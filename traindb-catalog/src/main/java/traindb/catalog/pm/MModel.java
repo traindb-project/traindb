@@ -14,6 +14,8 @@
 
 package traindb.catalog.pm;
 
+import java.util.Collection;
+import java.util.Comparator;
 import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
@@ -57,6 +59,9 @@ public final class MModel {
 
   @Persistent
   private byte[] model_options;
+
+  @Persistent(mappedBy = "model", dependentElement = "true")
+  private Collection<MTrainingStatus> training_status;
 
   public MModel(
       MModeltype modeltype, String modelName, String schemaName, String tableName,
@@ -102,5 +107,18 @@ public final class MModel {
 
   public String getModelOptions() {
     return new String(model_options);
+  }
+
+  public Collection<MTrainingStatus> trainingStatus() {
+    return training_status;
+  }
+
+  public boolean isEnabled() {
+    if (training_status.isEmpty() || training_status.size() == 0) {
+      return true;
+    }
+    Comparator<MTrainingStatus> comparator = Comparator.comparing(MTrainingStatus::getStartTime);
+    MTrainingStatus latestStatus = training_status.stream().max(comparator).get();
+    return latestStatus.getTrainingStatus().equals("FINISHED");
   }
 }

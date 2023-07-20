@@ -22,6 +22,7 @@ public abstract class TrainDBSqlCommand {
     DROP_MODELTYPE,
     SHOW_MODELTYPES,
     SHOW_MODELS,
+    SHOW_TRAININGS,
     TRAIN_MODEL,
     DROP_MODEL,
     CREATE_SYNOPSIS,

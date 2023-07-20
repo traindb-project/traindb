@@ -26,6 +26,7 @@ import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
+import traindb.catalog.pm.MTrainingStatus;
 
 public interface CatalogContext {
 
@@ -61,6 +62,11 @@ public interface CatalogContext {
   boolean modelExists(String name);
 
   MModel getModel(String name);
+
+  Collection<MTrainingStatus> getTrainingStatus(Map<String, Object> filterPatterns)
+      throws CatalogException;
+
+  void updateTrainingStatus(String modelName, String status) throws CatalogException;
 
   /* Synopsis */
   MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)

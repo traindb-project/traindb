@@ -94,6 +94,17 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
+  static class Trainings extends TrainDBSqlShowCommand {
+    Trainings(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_TRAININGS;
+    }
+  }
+
   static class QueryLogs extends TrainDBSqlShowCommand {
     QueryLogs(Map<String, Object> whereExprMap) {
       super(whereExprMap);
