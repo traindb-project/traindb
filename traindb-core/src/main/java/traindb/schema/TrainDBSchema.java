@@ -86,8 +86,7 @@ public abstract class TrainDBSchema extends AbstractSchema {
             "MULTIPOINT", "MULTILINESTRING", "MULTIPOLYGON", "GEOMETRYCOLLECTION");
         if (typeString.startsWith("ST_") || geomTypes.contains(typeString)) {
           RelDataType geomDataType = typeFactory.createSqlType(SqlTypeName.GEOMETRY);
-          return new GeometryObjectSqlType(typeString, nullable,
-              geomDataType.getFieldList(), geomDataType.getComparability());
+          return new GeometryObjectSqlType(typeString, nullable, geomDataType.getComparability());
         }
         break;
       default:

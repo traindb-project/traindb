@@ -26,10 +26,9 @@ public class GeometryObjectSqlType extends ObjectSqlType {
 
   public GeometryObjectSqlType(String geometryTypeName,
                                boolean nullable,
-                               List<? extends RelDataTypeField> fields,
                                RelDataTypeComparability comparability) {
     super(SqlTypeName.GEOMETRY, new SqlIdentifier(geometryTypeName, SqlParserPos.ZERO), nullable,
-        fields, comparability);
+        null, comparability);
   }
 
   @Override
