@@ -24,6 +24,7 @@ import java.util.Map;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBConfiguration;
@@ -81,11 +82,17 @@ public abstract class AbstractTrainDBModelRunner {
 
 
   protected String buildSelectTrainingDataQuery(String schemaName, String tableName,
-                                                List<String> columnNames) {
+                                                List<String> columnNames, RelDataType relDataType) {
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
-    for (String columnName : columnNames) {
-      sb.append(columnName);
+    for (int i = 0; i < columnNames.size(); i++) {
+      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
+      if (field.getType().getSqlTypeName() == SqlTypeName.GEOMETRY) {
+        sb.append("ST_ASTEXT(").append(columnNames.get(i)).append(") AS ")
+            .append(columnNames.get(i));
+      } else {
+        sb.append(columnNames.get(i));
+      }
       sb.append(",");
     }
     sb.deleteCharAt(sb.lastIndexOf(","));

@@ -63,7 +63,8 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     fileWriter.flush();
     fileWriter.close();
 
-    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames);
+    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames,
+        table.getRowType(typeFactory));
     ResultSet trainingData = conn.executeQueryInternal(sql);
     String dataFilename = outputPath + "/data.csv";
     FileWriter datafileWriter = new FileWriter(dataFilename);
