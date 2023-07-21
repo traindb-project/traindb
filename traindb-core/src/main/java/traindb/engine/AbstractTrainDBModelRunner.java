@@ -16,6 +16,9 @@ package traindb.engine;
 
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.SQLException;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -113,6 +116,11 @@ public abstract class AbstractTrainDBModelRunner {
         ('id', None): 'int',
         ('id', 'integer'): 'int',
         ('id', 'string'): 'str'
+
+        // geometry types
+        ('geometry', 'point'): 'point',
+        ('geometry', 'linestring'): 'linestring',
+        ('geometry', 'polygon'): 'polygon'
        */
       switch (field.getType().getSqlTypeName()) {
         case CHAR:
@@ -142,6 +150,21 @@ public abstract class AbstractTrainDBModelRunner {
         case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
           typeInfo.put("type", "datetime");
           break;
+        case GEOMETRY: {
+          typeInfo.put("type", "geometry");
+          String subtype = "geometry";
+          try {
+            DatabaseMetaData md = conn.getMetaData();
+            ResultSet rs = md.getColumns("traindb", schemaName, tableName, field.getName());
+            while (rs.next()) {
+              subtype = rs.getString("TYPE_NAME");
+            }
+          } catch (SQLException e) {
+            // ignore
+          }
+          typeInfo.put("subtype", subtype.toLowerCase().replaceFirst("^st_", ""));
+          break;
+        }
         default:
           typeInfo.put("type", "unknown");
           break;
