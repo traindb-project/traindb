@@ -1314,13 +1314,11 @@ SqlSelect SqlSelect() :
     (
         <STREAM> {
             keywords.add(SqlSelectKeyword.STREAM.symbol(getPos()));
-            traindbKeywords.add(SqlSelectKeyword.STREAM.symbol(getPos()));
         }
     )?
     (
         keyword = AllOrDistinct() {
             keywords.add(keyword);
-            traindbKeywords.add(keyword);
         }
     )?
     {

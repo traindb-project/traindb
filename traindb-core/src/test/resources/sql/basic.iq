@@ -75,3 +75,24 @@ WHERE a.product_id = b.product_id;
 (1 row)
 
 !ok
+
+SELECT DISTINCT reordered FROM instacart_small.order_products ORDER BY reordered;
++-----------+
+| reordered |
++-----------+
+|         0 |
+|         1 |
++-----------+
+(2 rows)
+
+!ok
+
+SELECT count(DISTINCT reordered) as distinct_cnt FROM instacart_small.order_products;
++--------------+
+| distinct_cnt |
++--------------+
+|            2 |
++--------------+
+(1 row)
+
+!ok
