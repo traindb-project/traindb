@@ -30,7 +30,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
   public static final SqlFunction ST_AREA =
       new SqlFunction("st_area",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.DOUBLE_NULLABLE,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -78,9 +78,9 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_contains",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_ConvexHull()
@@ -98,7 +98,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_crosses",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -110,7 +110,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_Dimension()
@@ -128,7 +128,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_disjoint",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -138,7 +138,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_distance",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.DOUBLE_NULLABLE,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -168,9 +168,9 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_equals",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_ExteriorRing()
@@ -238,7 +238,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_Intersects()
@@ -246,7 +246,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_intersects",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -403,9 +403,9 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_overlaps",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_PointFromText()
@@ -490,7 +490,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_touches",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -502,7 +502,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
           SqlKind.OTHER_FUNCTION,
           ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
-          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
           SqlFunctionCategory.SYSTEM);
 
   //ST_Within()
@@ -510,7 +510,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_within",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
@@ -533,6 +533,183 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
           ReturnTypes.DOUBLE_NULLABLE,
           null,
           OperandTypes.family(SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_ENTERS()
+  public static final SqlFunction ST_ENTERS =
+      new SqlFunction(
+          "st_enters",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_FIRSTSUBSEQUENCE()
+  public static final SqlFunction ST_FIRSTSUBSEQUENCE =
+      new SqlFunction(
+          "st_firstsubsequence",
+          SqlKind.OTHER_FUNCTION,
+          //ReturnTypes.BOOLEAN,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.INTEGER),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_IMPORTFROMWKB()
+  public static final SqlFunction ST_IMPORTFROMWKB =
+      new SqlFunction("st_importfromwkb",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.BINARY),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_IMPORTFROMWKT()
+  public static final SqlFunction ST_IMPORTFROMWKT =
+      new SqlFunction(
+          "st_importfromwkt",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.CHARACTER),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_INSIDES()
+  public static final SqlFunction ST_INSIDES =
+      new SqlFunction(
+          "st_insides",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.INTEGER,
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_LASTSUBSEQUENCE()
+  public static final SqlFunction ST_LASTSUBSEQUENCE =
+      new SqlFunction("st_lastsubsequence",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.INTEGER),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_LEAVES()
+  public static final SqlFunction ST_LEAVES =
+      new SqlFunction("st_leaves",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_LIFETIME()
+  public static final SqlFunction ST_LIFETIME =
+      new SqlFunction(
+          "st_lifetime",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_MEETS()
+  public static final SqlFunction ST_MEETS =
+      new SqlFunction("st_meets",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_PASSES()
+  public static final SqlFunction ST_PASSES =
+      new SqlFunction(
+          "st_passes",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_POINTONSURFACE()
+  public static final SqlFunction ST_POINTONSURFACE =
+      new SqlFunction(
+          "st_pointonsurface",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_PRECEDES()
+  public static final SqlFunction ST_PRECEDES =
+      new SqlFunction(
+          "st_precedes",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.ANY, SqlTypeFamily.ANY),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_PROJECT()
+  public static final SqlFunction ST_PROJECT =
+      new SqlFunction(
+          "st_project",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_SLICE()
+  public static final SqlFunction ST_SLICE =
+      new SqlFunction(
+          "st_slice",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.ANY),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_SLICEBYVALUE()
+  public static final SqlFunction ST_SLICEBYVALUE =
+      new SqlFunction(
+          "st_slicebyvalue",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_SNAPSHOT()
+  public static final SqlFunction ST_SNAPSHOT =
+      new SqlFunction(
+          "st_snapshot",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.CHARACTER),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_SNAPSHOTBYVALUE()
+  public static final SqlFunction ST_SNAPSHOTBYVALUE =
+      new SqlFunction(
+          "st_snapshotbyvalue",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
+          SqlFunctionCategory.SYSTEM);
+
+  //ST_SUBSEQUENCE()
+  public static final SqlFunction ST_SUBSEQUENCE =
+      new SqlFunction(
+          "st_subsequence",
+          SqlKind.OTHER_FUNCTION,
+          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          null,
+          OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.CHARACTER),
           SqlFunctionCategory.SYSTEM);
 
   private static @MonotonicNonNull TrainDBSpatialOperatorTable instance;
