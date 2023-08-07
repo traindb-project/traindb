@@ -681,6 +681,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.deleteTasks(cnt);
   }
 
+  @Override
+  public TrainDBListResultSet exportModel(String modelName) throws Exception {
+    throw new TrainDBException("Not supported yet");
+  }
+
   private void checkShowWhereColumns(Map<String, Object> patterns, List<String> columns)
       throws TrainDBException {
     for (String key : patterns.keySet()) {

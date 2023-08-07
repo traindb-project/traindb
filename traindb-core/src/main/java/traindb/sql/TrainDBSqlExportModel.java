@@ -14,31 +14,19 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlExportModel extends TrainDBSqlCommand {
+  private final String modelName;
 
-  public enum Type {
-    CREATE_MODELTYPE,
-    DROP_MODELTYPE,
-    SHOW_MODELTYPES,
-    SHOW_MODELS,
-    SHOW_TRAININGS,
-    TRAIN_MODEL,
-    DROP_MODEL,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    SHOW_TABLES,
-    SHOW_HYPERPARAMETERS,
-    USE_SCHEMA,
-    DESCRIBE_TABLE,
-    BYPASS_DDL_STMT,
-    SHOW_QUERY_LOGS,
-    SHOW_TASKS,
-    DELETE_QUERY_LOGS,
-    DELETE_TASKS,
-    EXPORT_MODEL,
-    OTHER
+  TrainDBSqlExportModel(String modelName) {
+    this.modelName = modelName;
+  }
+
+  String getModelName() {
+    return modelName;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.EXPORT_MODEL;
   }
 }

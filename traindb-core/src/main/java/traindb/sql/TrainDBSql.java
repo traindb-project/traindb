@@ -135,6 +135,9 @@ public final class TrainDBSql {
         TrainDBSqlDeleteTasks deleteTasks = (TrainDBSqlDeleteTasks) command;
         runner.deleteTasks(deleteTasks.getRowCount());
         break;
+      case EXPORT_MODEL:
+        TrainDBSqlExportModel exportModel = (TrainDBSqlExportModel) command;
+        return runner.exportModel(exportModel.getModelName());
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -290,6 +293,13 @@ public final class TrainDBSql {
       }
       String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlDescribeTable(schemaName, tableName));
+    }
+
+    @Override
+    public void exitExportModel(TrainDBSqlParser.ExportModelContext ctx) {
+      String modelName = ctx.modelName().getText();
+      LOG.debug("EXPORT MODEL: name=" + modelName);
+      commands.add(new TrainDBSqlExportModel(modelName));
     }
 
     @Override

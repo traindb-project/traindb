@@ -41,6 +41,7 @@ traindbStmts
     | bypassDdlStmt
     | deleteQueryLogs
     | deleteTasks
+    | exportModel
     ;
 
 createModeltype
@@ -112,6 +113,10 @@ optionKey
 optionValue
     : STRING_LITERAL
     | NUMERIC_LITERAL
+    ;
+
+exportModel
+    : K_EXPORT K_MODEL modelName
     ;
 
 showStmt
@@ -219,6 +224,7 @@ K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
+K_EXPORT : E X P O R T ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
 K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;

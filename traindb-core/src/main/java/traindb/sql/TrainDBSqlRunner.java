@@ -65,5 +65,6 @@ public interface TrainDBSqlRunner {
   void deleteQueryLogs(Integer cnt) throws Exception;
 
   void deleteTasks(Integer cnt) throws Exception;
-}
 
+  TrainDBListResultSet exportModel(String modelName) throws Exception;
+}
