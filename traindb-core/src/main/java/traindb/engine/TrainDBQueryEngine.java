@@ -14,10 +14,16 @@
 
 package traindb.engine;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
+import java.io.File;
+import java.io.FileInputStream;
 import java.io.FileReader;
+import java.nio.file.Path;
+import java.nio.file.Paths;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -27,8 +33,6 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.sql.SqlDialect;
-import org.codehaus.jackson.annotate.JsonIgnoreProperties;
-import org.codehaus.jackson.map.ObjectMapper;
 import org.json.simple.JSONObject;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
@@ -39,14 +43,15 @@ import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
-import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.common.TrainDBLogger;
+import traindb.engine.nio.ByteArray;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
 import traindb.schema.TrainDBTable;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
+import traindb.util.ZipUtils;
 
 
 public class TrainDBQueryEngine implements TrainDBSqlRunner {
@@ -683,7 +688,68 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet exportModel(String modelName) throws Exception {
-    throw new TrainDBException("Not supported yet");
+    T_tracer.startTaskTracer("export model " + modelName);
+
+    T_tracer.openTaskTime("find : model");
+    if (!catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("export model");
+    MModel mModel = catalogContext.getModel(modelName);
+    MModeltype mModeltype = mModel.getModeltype();
+
+    AbstractTrainDBModelRunner runner = createModelRunner(
+        mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
+
+    if (!mModel.isEnabled()) {  // remote model
+      if (!runner.checkAvailable(modelName)) {
+        throw new TrainDBException(
+            "model '" + modelName + "' is not available (training is not finished)");
+      }
+      catalogContext.updateTrainingStatus(modelName, "FINISHED");
+    }
+
+    Path outputPath = Paths.get(runner.getModelPath().getParent().toString(), modelName + ".zip");
+    runner.exportModel(outputPath.toString());
+
+    ObjectMapper mapper = new ObjectMapper();
+    ZipUtils.addNewFileFromStringToZip("export_metadata.json",
+        mapper.writeValueAsString(mModel), outputPath);
+
+    List<String> header = Arrays.asList("export_model");
+    List<List<Object>> exportModelInfo = new ArrayList<>();
+    ByteArray byteArray = convertFileToByteArray(new File(outputPath.toString()));
+    exportModelInfo.add(Arrays.asList(byteArray));
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, exportModelInfo);
+  }
+
+  private ByteArray convertFileToByteArray(File file) throws Exception {
+    byte[] bytes;
+    FileInputStream inputStream = null;
+
+    try {
+      bytes = new byte[(int) file.length()];
+      inputStream = new FileInputStream(file);
+      inputStream.read(bytes);
+    } catch (Exception e) {
+      throw e;
+    } finally {
+      if (inputStream != null) {
+        inputStream.close();
+      }
+    }
+    return new ByteArray(bytes);
   }
 
   private void checkShowWhereColumns(Map<String, Object> patterns, List<String> columns)

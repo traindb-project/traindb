@@ -232,6 +232,11 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
+  public void exportModel(String outputPath) throws Exception {
+    throw new TrainDBException("Not supported yet");
+  }
+
+  @Override
   public boolean checkAvailable(String modelName) throws Exception {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
     URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/status");

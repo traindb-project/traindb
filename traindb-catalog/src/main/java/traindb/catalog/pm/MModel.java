@@ -63,10 +63,13 @@ public final class MModel {
   @Persistent(mappedBy = "model", dependentElement = "true")
   private Collection<MTrainingStatus> training_status;
 
+  @Persistent(dependent = "false")
+  private MTable table;
+
   public MModel(
       MModeltype modeltype, String modelName, String schemaName, String tableName,
       List<String> columns, @Nullable Long baseTableRows, @Nullable Long trainedRows,
-      String options) {
+      String options, MTable table) {
     this.modeltype = modeltype;
     this.model_name = modelName;
     this.schema_name = schemaName;
@@ -75,6 +78,7 @@ public final class MModel {
     this.table_rows = (baseTableRows == null) ? 0 : baseTableRows;
     this.trained_rows = (trainedRows == null) ? 0 : trainedRows;
     this.model_options = options.getBytes();
+    this.table = table;
   }
 
   public String getModelName() {
@@ -111,6 +115,10 @@ public final class MModel {
 
   public Collection<MTrainingStatus> trainingStatus() {
     return training_status;
+  }
+
+  public MTable getTable() {
+    return table;
   }
 
   public boolean isEnabled() {

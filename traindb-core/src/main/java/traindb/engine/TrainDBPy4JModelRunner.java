@@ -37,6 +37,7 @@ import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.TrainDBTable;
+import traindb.util.ZipUtils;
 
 public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
 
@@ -109,6 +110,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     server.shutdown();
   }
 
+  @Override
   public void generateSynopsis(String outputPath, int rows) throws Exception {
     String modelPath = getModelPath().toString();
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
@@ -151,6 +153,12 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
     }
     server.shutdown();
     return hyperparamsInfo;
+  }
+
+  @Override
+  public void exportModel(String outputPath) throws Exception {
+    String modelPath = getModelPath().toString();
+    ZipUtils.pack(modelPath, outputPath);
   }
 
   private int getAvailablePort() throws Exception {

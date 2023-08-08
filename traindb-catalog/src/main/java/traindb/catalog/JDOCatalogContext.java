@@ -16,7 +16,6 @@ package traindb.catalog;
 
 import com.google.common.collect.ImmutableMap;
 import java.sql.Timestamp;
-import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
@@ -117,6 +116,7 @@ public final class JDOCatalogContext implements CatalogContext {
       String modeltypeName, String modelName, String schemaName, String tableName,
       List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
       @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+    MTable mTable;
     try {
       MSchema mSchema = getSchema(schemaName);
       if (mSchema == null) {
@@ -124,7 +124,7 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.makePersistent(mSchema);
       }
 
-      MTable mTable = getTable(schemaName, tableName);
+      mTable = getTable(schemaName, tableName);
       if (mTable == null) {
         mTable = new MTable(tableName, "TABLE", mSchema);
         pm.makePersistent(mTable);
@@ -146,7 +146,7 @@ public final class JDOCatalogContext implements CatalogContext {
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
           mModeltype, modelName, schemaName, tableName, columnNames,
-          baseTableRows, trainedRows, options == null ? "" : options);
+          baseTableRows, trainedRows, options == null ? "" : options, mTable);
       pm.makePersistent(mModel);
 
       if (mModeltype.getLocation().equals("REMOTE")) {
