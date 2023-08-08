@@ -233,7 +233,25 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
 
   @Override
   public void exportModel(String outputPath) throws Exception {
-    throw new TrainDBException("Not supported yet");
+    MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
+    URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/export");
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("GET");
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to list hyperparameters");
+    }
+
+    Files.createDirectories(Paths.get(outputPath).getParent());
+    FileOutputStream fos = new FileOutputStream(outputPath);
+    InputStream is = httpConn.getInputStream();
+    int read;
+    byte[] buf = new byte[32768];
+    while ((read = is.read(buf)) > 0) {
+      fos.write(buf, 0, read);
+    }
+    fos.close();
+    is.close();
   }
 
   @Override
