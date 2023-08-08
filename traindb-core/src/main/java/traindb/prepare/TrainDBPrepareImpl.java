@@ -69,7 +69,6 @@ import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.Typed;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
-import org.apache.calcite.schema.impl.StarTable;
 import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlKind;
@@ -92,6 +91,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogContext;
 import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
+import traindb.engine.nio.ByteArray;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.planner.TrainDBPlanner;
 import traindb.sql.TrainDBSql;
@@ -461,6 +461,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       while (res.next()) {
         List<Object> r = new ArrayList<>();
         for (int j = 0; j < res.getColumnCount(); j++) {
+          if (res.getColumnType(j) == Types.VARBINARY) {
+            ByteArray byteArray = (ByteArray) res.getValue(j);
+            r.add(byteArray.getArray());
+          }
           r.add(res.getValue(j));
         }
         rows.add(r);

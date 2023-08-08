@@ -255,7 +255,9 @@ public final class Session implements Runnable {
   }
 
   private boolean isTrainDBStmtWithResultSet(TrainDBSqlCommand.Type type) {
-    return type.toString().startsWith("SHOW") || type.toString().startsWith("DESCRIBE");
+    return type.toString().startsWith("SHOW")
+        || type.toString().startsWith("DESCRIBE")
+        || type.toString().startsWith("EXPORT");
   }
 
   private void sendRowDesc(ResultSetMetaData md) {
@@ -311,10 +313,16 @@ public final class Session implements Runnable {
             case Types.DOUBLE:
               msgBld.putInt(getTypeSize(type)).putDouble(rs.getDouble(i));
               break;
-            case Types.VARCHAR:
+            case Types.VARCHAR: {
               byte[] bytes = rs.getString(i).getBytes(StandardCharsets.UTF_8);
               msgBld.putInt(bytes.length).putBytes(bytes);
               break;
+            }
+            case Types.VARBINARY: {
+              byte[] bytes = rs.getBytes(i);
+              msgBld.putInt(bytes.length).putBytes(bytes);
+              break;
+            }
             // TODO support more data types
             default:
               throw new TrainDBException("Not supported data type: " + type);
