@@ -21,6 +21,7 @@ import java.io.FileReader;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
@@ -540,6 +541,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.startTaskTracer("show trainings");
     T_tracer.openTaskTime("scan : training status");
 
+    DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
     List<List<Object>> trainingInfo = new ArrayList<>();
     for (MTrainingStatus mTraining : catalogContext.getTrainingStatus(filterPatterns)) {
       if (mTraining.getTrainingStatus().equals("TRAINING")) {
@@ -556,7 +558,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         }
       }
       trainingInfo.add(Arrays.asList(mTraining.getModelName(),
-          mTraining.getModel().getModeltype().getUri(), mTraining.getStartTime(),
+          mTraining.getModel().getModeltype().getUri(),
+          mTraining.getStartTime().toLocalDateTime().format(dtf),
           mTraining.getTrainingStatus()));
     }
 
