@@ -48,6 +48,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.UnregisteredDriver;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.avatica.util.Quoting;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.config.CalciteConnectionProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
@@ -89,7 +90,6 @@ import org.apache.calcite.util.Util;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.SourceDbmsProducts;
-import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
 import traindb.catalog.JDOCatalogStore;
@@ -149,7 +149,7 @@ public abstract class TrainDBConnectionImpl
 
     this.prepareFactory = driver.prepareFactory;
     this.typeFactory = getTypeFactory(typeFactory, cfg);
-    addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
+    addSqlDialectProperties(schemaManager.getDialect(), cfg);
   }
 
   protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,
@@ -166,7 +166,7 @@ public abstract class TrainDBConnectionImpl
     } else {
       this.dataSource = dataSource(url, info);
       schemaManager.loadDataSource(dataSource);
-      addTrainDBSqlDialectProperties(schemaManager.getDialect(), cfg);
+      addSqlDialectProperties(schemaManager.getDialect(), cfg);
     }
     this.rootSchema =
         requireNonNull(rootSchema != null
@@ -216,16 +216,36 @@ public abstract class TrainDBConnectionImpl
     return new JavaTypeFactoryImpl(typeSystem);
   }
 
-  private void addTrainDBSqlDialectProperties(SqlDialect dialect, TrainDBConfiguration cfg) {
-    if (!(dialect instanceof TrainDBSqlDialect)) {
-      return;
-    }
+  private void addSqlDialectProperties(SqlDialect dialect, TrainDBConfiguration cfg) {
     cfg.getProps().put(CalciteConnectionProperty.CASE_SENSITIVE.name(), dialect.isCaseSensitive());
     cfg.getProps().put(CalciteConnectionProperty.UNQUOTED_CASING.name(),
         dialect.getUnquotedCasing());
     cfg.getProps().put(CalciteConnectionProperty.QUOTED_CASING.name(), dialect.getQuotedCasing());
-    cfg.getProps().put(CalciteConnectionProperty.QUOTING.name(),
-        ((TrainDBSqlDialect) dialect).getQuoting());
+    // XXX dialect.getQuoting() cannot be called because it is a protected method
+    Quoting quoting = guessQuoting(dialect);
+    if (quoting != null) {
+      cfg.getProps().put(CalciteConnectionProperty.QUOTING.name(), quoting);
+    }
+  }
+
+  private Quoting guessQuoting(SqlDialect dialect) {
+    String quoted = dialect.quoteIdentifier("t");
+    if (quoted.startsWith("\"")) {
+      return Quoting.DOUBLE_QUOTE;
+    } else if (quoted.startsWith("\\\"")) {
+      return Quoting.DOUBLE_QUOTE_BACKSLASH;
+    } else if (quoted.equals("`")) {
+      return Quoting.SINGLE_QUOTE;
+    } else if (quoted.equals("\\`")) {
+      return Quoting.SINGLE_QUOTE_BACKSLASH;
+    } else if (quoted.equals("`")) {
+      return Quoting.BACK_TICK;
+    } else if (quoted.equals("\\`")) {
+      return Quoting.BACK_TICK_BACKSLASH;
+    } else if (quoted.equals("[")) {
+      return Quoting.BRACKET;
+    }
+    return null;
   }
 
   public BasicDataSource getDataSource() {
