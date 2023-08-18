@@ -134,7 +134,6 @@ public abstract class AbstractTrainDBModelRunner {
         case VARCHAR:
           typeInfo.put("type", "categorical");
           break;
-        case DECIMAL:
         case INTEGER:
         case BIGINT:
         case TINYINT:
@@ -144,6 +143,7 @@ public abstract class AbstractTrainDBModelRunner {
           break;
         case FLOAT:
         case DOUBLE:
+        case DECIMAL:
           typeInfo.put("type", "numerical");
           typeInfo.put("subtype", "float");
           break;
