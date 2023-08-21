@@ -5,7 +5,7 @@
         <file>${traindb.log.dir:-/tmp}/${traindb.log.file:-traindb.log}</file>
         <rollingPolicy class="ch.qos.logback.core.rolling.TimeBasedRollingPolicy">
             <!-- daily rollover -->
-            <fileNamePattern>traindb.%d{yyyy-MM-dd}.log</fileNamePattern>
+            <fileNamePattern>${traindb.log.dir:-/tmp}/traindb.%d{yyyy-MM-dd}.log</fileNamePattern>
             <!-- keep 30 days' worth of history capped at 1GB total size -->
             <maxHistory>30</maxHistory>
             <totalSizeCap>1GB</totalSizeCap>

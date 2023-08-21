@@ -32,6 +32,7 @@ import org.apache.calcite.rel.RelCollationTraitDef;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
+import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.runtime.Hook;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcConvention;
@@ -86,6 +87,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
     addRule(TrainDBRules.APPROX_AGGREGATE_INFERENCE);
 
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
+    removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
     addRelTraitDef(ConventionTraitDef.INSTANCE);
     addRelTraitDef(RelCollationTraitDef.INSTANCE);
     setTopDownOpt(false);

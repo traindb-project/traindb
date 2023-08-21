@@ -15,6 +15,7 @@
 package traindb.engine;
 
 import com.opencsv.CSVWriter;
+import com.opencsv.ResultSetHelperService;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -70,6 +71,10 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     String dataFilename = outputPath + "/data.csv";
     FileWriter datafileWriter = new FileWriter(dataFilename);
     CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
+    ResultSetHelperService resultSetHelperService= new ResultSetHelperService();
+    resultSetHelperService.setDateFormat("yyyy-MM-dd");
+    resultSetHelperService.setDateTimeFormat("yyyy-MM-dd HH:MI:SS");
+    csvWriter.setResultService(resultSetHelperService);
     csvWriter.writeAll(trainingData, true);
     csvWriter.close();
     trainingData.close();
