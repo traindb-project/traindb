@@ -67,4 +67,6 @@ public interface TrainDBSqlRunner {
   void deleteTasks(Integer cnt) throws Exception;
 
   TrainDBListResultSet exportModel(String modelName) throws Exception;
+
+  TrainDBListResultSet importModel(String modelName, String modelBinaryString) throws Exception;
 }

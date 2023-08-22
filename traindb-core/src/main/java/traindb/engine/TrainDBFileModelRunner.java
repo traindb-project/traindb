@@ -162,4 +162,10 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     String modelPath = getModelPath().toString();
     ZipUtils.pack(modelPath, outputPath);
   }
+
+  @Override
+  public void importModel(byte[] zipModel, String uri) throws Exception {
+    String modelPath = getModelPath().toString();
+    ZipUtils.unpack(zipModel, modelPath);
+  }
 }

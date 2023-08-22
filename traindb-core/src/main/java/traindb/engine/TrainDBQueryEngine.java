@@ -22,6 +22,7 @@ import com.opencsv.CSVReaderBuilder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.PreparedStatement;
@@ -33,7 +34,9 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.commons.codec.binary.Hex;
 import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
@@ -732,6 +735,71 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.endTaskTracer();
 
     return new TrainDBListResultSet(header, exportModelInfo);
+  }
+
+  @Override
+  public TrainDBListResultSet importModel(String modelName, String modelBinaryString)
+      throws Exception {
+    T_tracer.startTaskTracer("import model " + modelName);
+
+    T_tracer.openTaskTime("find : model");
+    if (catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' already exists";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("decode model binary string");
+    byte[] zipModel = Hex.decodeHex(modelBinaryString);
+    byte[] exportMetadata = ZipUtils.extractZipEntry(zipModel, "export_metadata.json");
+    if (exportMetadata == null) {
+      throw new TrainDBException(
+          "exported metadata for the model '" + modelName + "' does not found");
+    }
+    String metadata = new String(exportMetadata, StandardCharsets.UTF_8);
+    JSONParser parser = new JSONParser();
+    JSONObject json = (JSONObject) parser.parse(metadata);
+    JSONObject jsonModeltype = (JSONObject) json.get("modeltype");
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("find : modeltype");
+    String modeltypeName = (String) ((JSONObject) json.get("modeltype")).get("modeltypeName");
+    if (!catalogContext.modeltypeExists(modeltypeName)) {
+      String msg = "modeltype '" + modelName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
+    if (!mModeltype.getClassName().equals(jsonModeltype.get("className"))) {
+      String msg = "the class name of the modeltype '" + modelName + "' is different";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("import model");
+    AbstractTrainDBModelRunner runner = createModelRunner(
+        mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
+    runner.importModel(zipModel, mModeltype.getUri());
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("insert model info");
+    catalogContext.importModel(modeltypeName, modelName, json);
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return TrainDBListResultSet.empty();
   }
 
   private ByteArray convertFileToByteArray(File file) throws Exception {

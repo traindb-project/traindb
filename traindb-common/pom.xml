@@ -55,6 +55,10 @@ limitations under the License.
             <artifactId>calcite-core</artifactId>
         </dependency>
         <dependency>
+            <groupId>commons-io</groupId>
+            <artifactId>commons-io</artifactId>
+        </dependency>
+        <dependency>
             <groupId>sqlline</groupId>
             <artifactId>sqlline</artifactId>
         </dependency>

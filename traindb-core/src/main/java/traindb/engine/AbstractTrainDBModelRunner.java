@@ -60,6 +60,8 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void exportModel(String outputPath) throws Exception;
 
+  public abstract void importModel(byte[] zipModel, String uri) throws Exception;
+
   public boolean checkAvailable(String modelName) throws Exception {
     return true;
   }

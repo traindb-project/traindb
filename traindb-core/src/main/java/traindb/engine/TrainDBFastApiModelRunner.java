@@ -239,7 +239,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     httpConn.setRequestMethod("GET");
 
     if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-      throw new TrainDBException("failed to list hyperparameters");
+      throw new TrainDBException("failed to export model");
     }
 
     Files.createDirectories(Paths.get(outputPath).getParent());
@@ -252,6 +252,37 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     }
     fos.close();
     is.close();
+  }
+
+  @Override
+  public void importModel(byte[] zipModel, String uri) throws Exception {
+    URL url = new URL(checkTrailingSlash(uri) + "model/" + modelName + "/import");
+
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("POST");
+    httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+    httpConn.setDoOutput(true);
+
+    OutputStream outputStream = httpConn.getOutputStream();
+    DataOutputStream request = new DataOutputStream(outputStream);
+
+    addString(request, "model_name", modelName);
+
+    StringBuilder sb = new StringBuilder();
+    sb.append(DOUBLE_HYPHEN).append(BOUNDARY).append(CRLF);
+    sb.append("Content-Disposition: form-data; ");
+    sb.append("name=\"model_file\"; filename=\"model.zip\"").append(CRLF);
+    sb.append("Content-Type: application/zip").append(CRLF);
+    sb.append(CRLF);
+    request.writeBytes(sb.toString());
+    request.write(zipModel, 0, zipModel.length);
+    request.writeBytes(CRLF);
+
+    finishMultipartRequest(request);
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to import model");
+    }
   }
 
   @Override

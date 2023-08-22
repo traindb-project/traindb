@@ -14,6 +14,9 @@
 
 package traindb.util;
 
+import java.io.ByteArrayInputStream;
+import java.io.File;
+import java.io.FileOutputStream;
 import java.io.IOException;
 import java.io.Writer;
 import java.net.URI;
@@ -27,7 +30,9 @@ import java.nio.file.StandardOpenOption;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.zip.ZipEntry;
+import java.util.zip.ZipInputStream;
 import java.util.zip.ZipOutputStream;
+import org.apache.commons.io.IOUtils;
 
 public final class ZipUtils {
 
@@ -74,6 +79,56 @@ public final class ZipUtils {
       Path p = fs.getPath(newFilename);
       try (Writer writer = Files.newBufferedWriter(p, StandardOpenOption.CREATE)) {
         writer.write(contents);
+      }
+    }
+  }
+
+  public static byte[] extractZipEntry(byte[] content, String filename) throws IOException {
+    ZipInputStream zis = null;
+    byte[] bytes = null;
+    try {
+      zis = new ZipInputStream(new ByteArrayInputStream(content));
+      ZipEntry zipEntry;
+      while ((zipEntry = zis.getNextEntry()) != null) {
+        if (zipEntry.getName().equals(filename)) {
+          bytes = IOUtils.readFully(zis, (int) zipEntry.getSize());
+          break;
+        }
+      }
+    } finally {
+      if (zis != null) {
+        zis.close();
+      }
+    }
+    return bytes;
+  }
+
+  public static void unpack(byte[] content, String outputPath) throws IOException {
+    ZipInputStream zis = null;
+
+    try {
+      File dir = new File(outputPath);
+      if (!dir.exists()) {
+        dir.mkdirs();
+      }
+      byte[] buffer = new byte[8192];
+      zis = new ZipInputStream(new ByteArrayInputStream(content));
+      ZipEntry zipEntry;
+      while ((zipEntry = zis.getNextEntry()) != null) {
+        String fileName = zipEntry.getName();
+        File newFile = new File(outputPath + File.separator + fileName);
+        new File(newFile.getParent()).mkdirs(); //create directories for sub directories in zip
+        FileOutputStream fos = new FileOutputStream(newFile);
+        int len;
+        while ((len = zis.read(buffer)) > 0) {
+          fos.write(buffer, 0, len);
+        }
+        fos.close();
+        zis.closeEntry();
+      }
+    } finally {
+      if (zis != null) {
+        zis.close();
       }
     }
   }
