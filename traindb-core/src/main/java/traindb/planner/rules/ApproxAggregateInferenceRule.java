@@ -130,7 +130,8 @@ public class ApproxAggregateInferenceRule
             bestInferenceModel.getModeltype().getModeltypeName(),
             bestInferenceModel.getModelName(), bestInferenceModel.getModeltype().getLocation());
         if (runner.checkAvailable(bestInferenceModel.getModelName())) {
-          planner.getCatalogContext().updateTrainingStatus(bestInferenceModel.getModelName(), "FINISHED");
+          planner.getCatalogContext().updateTrainingStatus(
+              bestInferenceModel.getModelName(), "FINISHED");
           break;
         }
       } catch (Exception e) {

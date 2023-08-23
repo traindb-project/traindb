@@ -57,7 +57,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   private void addString(DataOutputStream request, String key, String value) throws Exception {
     StringBuilder sb = new StringBuilder();
     sb.append(DOUBLE_HYPHEN).append(BOUNDARY).append(CRLF);
-    sb.append("Content-Disposition: form-data; name=\""+ key +"\"").append(CRLF);
+    sb.append("Content-Disposition: form-data; name=\"" + key + "\"").append(CRLF);
     sb.append("Content-Type: plain/text").append(CRLF);
     sb.append(CRLF).append(value).append(CRLF);
     request.writeBytes(sb.toString());

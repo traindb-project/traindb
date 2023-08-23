@@ -171,6 +171,7 @@ public final class SchemaManager extends AbstractService {
     }
     return null;
   }
+
   /*
    * lockRead()/unlockRead() are used to protect rootSchema returned by
    * getCurrentSchema() because we don't know how long the schema will be used

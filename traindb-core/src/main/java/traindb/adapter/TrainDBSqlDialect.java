@@ -55,7 +55,7 @@ public abstract class TrainDBSqlDialect extends SqlDialect {
   }
 
 
-  public SqlBinaryStringLiteral convertToBinaryString(byte[] binaryValue, SqlParserPos POS) {
-    return SqlCharStringLiteral.createBinaryString(binaryValue, POS);
+  public SqlBinaryStringLiteral convertToBinaryString(byte[] binaryValue, SqlParserPos pos) {
+    return SqlCharStringLiteral.createBinaryString(binaryValue, pos);
   }
 }

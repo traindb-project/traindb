@@ -25,9 +25,7 @@ public final class NetUtils {
   }
 
   /**
-   * Util method to build socket addr from either:
-   * <host>:<port>
-   * <scheme>://<host>:<port>/<path>
+   * Util method to build socket addr from either [host]:[port] or [scheme]://[host]:[port]/[path].
    */
   public static InetSocketAddress createSocketAddr(String target) {
     return createSocketAddr(target, null);

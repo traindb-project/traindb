@@ -24,7 +24,7 @@ import javax.jdo.annotations.PrimaryKey;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-@Index(name="TRAINING_STATUS_IDX", members={"model_name", "start_time"})
+@Index(name = "TRAINING_STATUS_IDX", members = {"model_name", "start_time"})
 public final class MTrainingStatus {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)

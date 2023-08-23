@@ -66,8 +66,8 @@ public final class ByteBuffers {
     int minCapacity = buf.position() + needed;
     if (minCapacity > BYTEBUFFER_CAPACITY_MAX) {
       throw new OutOfMemoryError(
-          "cannot enlarge ByteBuffer containing " + buf.position() + " bytes by " + needed +
-              " more bytes");
+          "cannot enlarge ByteBuffer containing " + buf.position() + " bytes by " + needed
+              + " more bytes");
     }
 
     int newCapacity = buf.capacity() * 2;

@@ -71,7 +71,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     String dataFilename = outputPath + "/data.csv";
     FileWriter datafileWriter = new FileWriter(dataFilename);
     CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
-    ResultSetHelperService resultSetHelperService= new ResultSetHelperService();
+    ResultSetHelperService resultSetHelperService = new ResultSetHelperService();
     resultSetHelperService.setDateFormat("yyyy-MM-dd");
     resultSetHelperService.setDateTimeFormat("yyyy-MM-dd HH:MI:SS");
     csvWriter.setResultService(resultSetHelperService);
