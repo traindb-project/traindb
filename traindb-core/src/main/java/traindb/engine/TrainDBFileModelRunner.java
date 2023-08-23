@@ -33,6 +33,7 @@ import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.TrainDBTable;
+import traindb.util.ZipUtils;
 
 public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
 
@@ -156,4 +157,15 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     return hyperparamsInfo;
   }
 
+  @Override
+  public void exportModel(String outputPath) throws Exception {
+    String modelPath = getModelPath().toString();
+    ZipUtils.pack(modelPath, outputPath);
+  }
+
+  @Override
+  public void importModel(byte[] zipModel, String uri) throws Exception {
+    String modelPath = getModelPath().toString();
+    ZipUtils.unpack(zipModel, modelPath);
+  }
 }

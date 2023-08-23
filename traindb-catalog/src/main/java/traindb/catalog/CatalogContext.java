@@ -19,6 +19,7 @@ import java.util.List;
 import java.util.Map;
 import org.apache.calcite.rel.type.RelDataType;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.json.simple.JSONObject;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
@@ -67,6 +68,9 @@ public interface CatalogContext {
       throws CatalogException;
 
   void updateTrainingStatus(String modelName, String status) throws CatalogException;
+
+  void importModel(String modeltypeName, String modelName, JSONObject exportMetadata)
+      throws CatalogException;
 
   /* Synopsis */
   MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)

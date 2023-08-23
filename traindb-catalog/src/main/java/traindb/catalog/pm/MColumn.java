@@ -14,6 +14,7 @@
 
 package traindb.catalog.pm;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -22,6 +23,7 @@ import javax.jdo.annotations.PrimaryKey;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
+@JsonIgnoreProperties({ "table" })
 public final class MColumn {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)

@@ -27,6 +27,8 @@ import javax.jdo.Transaction;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
 import traindb.catalog.pm.MColumn;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
@@ -117,6 +119,7 @@ public final class JDOCatalogContext implements CatalogContext {
       String modeltypeName, String modelName, String schemaName, String tableName,
       List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
       @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+    MTable mTable;
     try {
       MSchema mSchema = getSchema(schemaName);
       if (mSchema == null) {
@@ -124,7 +127,7 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.makePersistent(mSchema);
       }
 
-      MTable mTable = getTable(schemaName, tableName);
+      mTable = getTable(schemaName, tableName);
       if (mTable == null) {
         mTable = new MTable(tableName, "TABLE", mSchema);
         pm.makePersistent(mTable);
@@ -146,7 +149,7 @@ public final class JDOCatalogContext implements CatalogContext {
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
           mModeltype, modelName, schemaName, tableName, columnNames,
-          baseTableRows, trainedRows, options == null ? "" : options);
+          baseTableRows, trainedRows, options == null ? "" : options, mTable);
       pm.makePersistent(mModel);
 
       if (mModeltype.getLocation().equals("REMOTE")) {
@@ -271,6 +274,54 @@ public final class JDOCatalogContext implements CatalogContext {
       pm.makePersistent(latestStatus);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to get training status", e);
+    }
+  }
+
+  @Override
+  public void importModel(String modeltypeName, String modelName, JSONObject exportMetadata)
+      throws CatalogException {
+    try {
+      String schemaName = (String) exportMetadata.get("schemaName");
+      MSchema mSchema = getSchema(schemaName);
+      if (mSchema == null) {
+        mSchema = pm.makePersistent(new MSchema(schemaName));
+      }
+
+      String tableName = (String) exportMetadata.get("tableName");
+      MTable mTable = getTable(schemaName, tableName);
+      if (mTable == null) {
+        JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
+        mTable = pm.makePersistent(
+            new MTable(tableName, (String) jsonTable.get("tableType"), mSchema));
+
+        JSONArray jsonColumns = (JSONArray) jsonTable.get("columns");
+        for (int i = 0; i < jsonColumns.size(); i++) {
+          JSONObject jsonColumn = (JSONObject) jsonColumns.get(i);
+          String columnName = (String) jsonColumn.get("columnName");
+          int columnType = ((Long) jsonColumn.get("columnType")).intValue();
+          int precision = ((Long) jsonColumn.get("precision")).intValue();
+          int scale = ((Long) jsonColumn.get("scale")).intValue();
+          boolean nullable = (boolean) jsonColumn.get("nullable");
+          MColumn mColumn = new MColumn(columnName, columnType, precision, scale, nullable, mTable);
+          pm.makePersistent(mColumn);
+        }
+      }
+
+      MModeltype mModeltype = getModeltype(modeltypeName);
+      JSONArray jsonColumnNames = (JSONArray) exportMetadata.get("columnNames");
+      List<String> columnNames = new ArrayList<>();
+      for (int i = 0; i < jsonColumnNames.size(); i++) {
+        columnNames.add((String) jsonColumnNames.get(i));
+      }
+      String options = (String) exportMetadata.get("modelOptions");
+      Long baseTableRows = (Long) exportMetadata.get("tableRows");
+      Long trainedRows = (Long) exportMetadata.get("trainedRows");
+      MModel mModel = new MModel(
+          mModeltype, modelName, schemaName, tableName, columnNames,
+          baseTableRows, trainedRows, options == null ? "" : options, mTable);
+      pm.makePersistent(mModel);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to import model '" + modelName + "'", e);
     }
   }
 

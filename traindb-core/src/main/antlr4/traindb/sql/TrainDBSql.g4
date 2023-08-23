@@ -41,6 +41,8 @@ traindbStmts
     | bypassDdlStmt
     | deleteQueryLogs
     | deleteTasks
+    | exportModel
+    | importModel
     ;
 
 createModeltype
@@ -112,6 +114,18 @@ optionKey
 optionValue
     : STRING_LITERAL
     | NUMERIC_LITERAL
+    ;
+
+exportModel
+    : K_EXPORT K_MODEL modelName
+    ;
+
+importModel
+    : K_IMPORT K_MODEL modelName K_FROM modelBinaryString
+    ;
+
+modelBinaryString
+    : BINARY_STRING_LITERAL
     ;
 
 showStmt
@@ -219,9 +233,11 @@ K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
 K_DROP : D R O P ;
+K_EXPORT : E X P O R T ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
 K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;
+K_IMPORT : I M P O R T ;
 K_IN : I N ;
 K_INFERENCE : I N F E R E N C E ;
 K_LIKE : L I K E ;
@@ -275,6 +291,17 @@ STRING_LITERAL
         {
             setText(getText().substring(1, getText().length() - 1).replace("''", "'"));
         }
+    ;
+
+BINARY_STRING_LITERAL
+    : 'x' '\'' HEXDIGIT* '\''
+        {
+            setText(getText().substring(2, getText().length() - 1));
+        }
+    ;
+
+HEXDIGIT
+    : [a-fA-F0-9]
     ;
 
 WHITESPACES : [ \t\r\n]+ -> channel(HIDDEN) ;

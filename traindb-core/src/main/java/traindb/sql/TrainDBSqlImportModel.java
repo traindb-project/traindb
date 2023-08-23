@@ -14,32 +14,25 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlImportModel extends TrainDBSqlCommand {
+  private final String modelName;
+  private final String modelBinaryString;
 
-  public enum Type {
-    CREATE_MODELTYPE,
-    DROP_MODELTYPE,
-    SHOW_MODELTYPES,
-    SHOW_MODELS,
-    SHOW_TRAININGS,
-    TRAIN_MODEL,
-    DROP_MODEL,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    SHOW_TABLES,
-    SHOW_HYPERPARAMETERS,
-    USE_SCHEMA,
-    DESCRIBE_TABLE,
-    BYPASS_DDL_STMT,
-    SHOW_QUERY_LOGS,
-    SHOW_TASKS,
-    DELETE_QUERY_LOGS,
-    DELETE_TASKS,
-    EXPORT_MODEL,
-    IMPORT_MODEL,
-    OTHER
+  TrainDBSqlImportModel(String modelName, String modelBinaryString) {
+    this.modelName = modelName;
+    this.modelBinaryString = modelBinaryString;
+  }
+
+  String getModelName() {
+    return modelName;
+  }
+
+  String getModelBinaryString() {
+    return modelBinaryString;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.IMPORT_MODEL;
   }
 }

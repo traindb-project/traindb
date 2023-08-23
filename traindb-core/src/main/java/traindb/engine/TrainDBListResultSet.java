@@ -18,6 +18,7 @@ import com.google.common.base.Optional;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
+import traindb.engine.nio.ByteArray;
 
 public class TrainDBListResultSet {
 
@@ -79,6 +80,8 @@ public class TrainDBListResultSet {
         return Types.FLOAT;
       } else if (o instanceof Double) {
         return Types.DOUBLE;
+      } else if (o instanceof ByteArray) {
+        return Types.VARBINARY;
       } else {
         return Types.JAVA_OBJECT;
       }

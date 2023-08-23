@@ -28,6 +28,7 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBConfiguration;
+import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.TrainDBTable;
 
@@ -56,6 +57,10 @@ public abstract class AbstractTrainDBModelRunner {
                                String whereCondition) throws Exception;
 
   public abstract String listHyperparameters(String className, String uri) throws Exception;
+
+  public abstract void exportModel(String outputPath) throws Exception;
+
+  public abstract void importModel(byte[] zipModel, String uri) throws Exception;
 
   public boolean checkAvailable(String modelName) throws Exception {
     return true;
