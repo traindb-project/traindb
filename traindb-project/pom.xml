@@ -19,7 +19,7 @@ limitations under the License.
     <parent>
         <groupId>traindb</groupId>
         <artifactId>traindb-main</artifactId>
-        <version>1.5-SNAPSHOT</version>
+        <version>1.5</version>
     </parent>
 
     <artifactId>traindb-project</artifactId>
