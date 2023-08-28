@@ -11,7 +11,7 @@ Currently, we are implementing a prototype for proof of concept.
 
 * Java 11+
 * Maven 3.x
-* SQLite3
+* SQLite3 (or other DBMS for catalog store, supported by datanucleus)
 
 For python environment setup, see README in our [traindb-model](https://github.com/traindb-project/traindb-model) repository.
 
@@ -30,10 +30,10 @@ $ cd traindb
 $ mvn package
 ```
 
-Then, you can find traindb-x.y.z-SNAPSHOT.tar.gz in traindb-assembly/target directory.
+Then, you can find traindb-x.y-SNAPSHOT.tar.gz in traindb-assembly/target directory.
 
 ```console
-$ tar xvfz traindb-assembly/target/traindb-x.y.z-SNAPSHOT.tar.gz
+$ tar xvfz traindb-assembly/target/traindb-x.y-SNAPSHOT.tar.gz
 ```
 
 ## Run
