@@ -25,6 +25,7 @@ import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.DatabaseMetaData;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
@@ -34,12 +35,14 @@ import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
+import traindb.catalog.pm.MColumn;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
@@ -208,10 +211,59 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     SqlDialect dialect = schemaManager.getDialect();
     if (dialect instanceof TrainDBSqlDialect
         && !((TrainDBSqlDialect) dialect).supportCreateTableAsSelect()) {
-      // FIXME set column type as integer temporarily
       sb.append("(");
       for (String columnName : mModel.getColumnNames()) {
-        sb.append(columnName + " integer,");
+        MColumn mColumn = mModel.getTable().getColumn(columnName);
+        if (mColumn == null) {
+          throw new TrainDBException("cannot find base column information");
+        }
+        sb.append(columnName).append(" ");
+        SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(mColumn.getColumnType());
+        switch (sqlTypeName) {
+          case CHAR:
+          case VARCHAR:
+          case INTEGER:
+          case BIGINT:
+          case TINYINT:
+          case SMALLINT:
+          case FLOAT:
+          case DOUBLE:
+          case DECIMAL:
+          case BOOLEAN:
+          case DATE:
+          case TIME:
+          case TIMESTAMP:
+            sb.append(sqlTypeName.getName());
+            if (sqlTypeName.allowsPrec()) {
+              sb.append("(").append(mColumn.getPrecision());
+              if (sqlTypeName.allowsScale()) {
+                sb.append(",").append(mColumn.getScale());
+              }
+              sb.append(")");
+            }
+            break;
+          case GEOMETRY: {
+            String columnType = "geometry";
+            try {
+              DatabaseMetaData md = conn.getMetaData();
+              ResultSet rs = md.getColumns(
+                  "traindb", mModel.getSchemaName(), mModel.getTableName(), columnName);
+              while (rs.next()) {
+                columnType = rs.getString("TYPE_NAME");
+              }
+              sb.append(columnType);
+            } catch (SQLException e) {
+              // ignore
+            }
+            break;
+          }
+          default:
+            throw new TrainDBException("column type '" + sqlTypeName.getName() + "' not supported");
+        }
+        if (!mColumn.isNullable()) {
+          sb.append(" NOT NULL");
+        }
+        sb.append(",");
       }
       sb.deleteCharAt(sb.lastIndexOf(","));
       sb.append(")");

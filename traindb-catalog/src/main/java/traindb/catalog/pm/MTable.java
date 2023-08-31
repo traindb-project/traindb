@@ -64,4 +64,13 @@ public final class MTable {
   public Collection<MColumn> getColumns() {
     return new ArrayList<MColumn>(columns);
   }
+
+  public MColumn getColumn(String name) {
+    for (MColumn col : columns) {
+      if (col.getColumnName().equals(name)) {
+        return col;
+      }
+    }
+    return null;
+  }
 }
