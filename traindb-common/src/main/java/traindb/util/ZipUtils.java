@@ -91,7 +91,7 @@ public final class ZipUtils {
       ZipEntry zipEntry;
       while ((zipEntry = zis.getNextEntry()) != null) {
         if (zipEntry.getName().equals(filename)) {
-          bytes = IOUtils.readFully(zis, (int) zipEntry.getSize());
+          bytes = zis.readAllBytes();
           break;
         }
       }
