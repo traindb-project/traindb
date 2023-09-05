@@ -821,7 +821,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : modeltype");
     String modeltypeName = (String) ((JSONObject) json.get("modeltype")).get("modeltypeName");
     if (!catalogContext.modeltypeExists(modeltypeName)) {
-      String msg = "modeltype '" + modelName + "' does not exist";
+      String msg = "modeltype '" + modeltypeName + "' does not exist";
 
       T_tracer.closeTaskTime(msg);
       T_tracer.endTaskTracer();
