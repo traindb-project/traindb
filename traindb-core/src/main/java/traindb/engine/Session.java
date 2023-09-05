@@ -21,6 +21,7 @@ import java.nio.charset.StandardCharsets;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.util.ArrayList;
 import java.util.List;
@@ -318,6 +319,12 @@ public final class Session implements Runnable {
               msgBld.putInt(bytes.length).putBytes(bytes);
               break;
             }
+            case Types.TIMESTAMP: {
+              Timestamp ts = rs.getTimestamp(i);
+              byte[] bytes = ts.toString().getBytes(StandardCharsets.UTF_8);
+              msgBld.putInt(bytes.length).putBytes(bytes);
+              break;
+            }
             case Types.VARBINARY: {
               byte[] bytes = rs.getBytes(i);
               msgBld.putInt(bytes.length).putBytes(bytes);
@@ -355,6 +362,7 @@ public final class Session implements Runnable {
       case Types.INTEGER:
         return ByteBuffers.INTEGER_BYTES;
       case Types.BIGINT:
+      case Types.TIMESTAMP:
         return ByteBuffers.LONG_BYTES;
       case Types.FLOAT:
         return ByteBuffers.FLOAT_BYTES;
