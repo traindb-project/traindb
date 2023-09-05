@@ -49,8 +49,9 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       connection = dataSource.getDataSource().getConnection();
       DatabaseMetaData databaseMetaData = connection.getMetaData();
       SqlDialect dialect = ((TrainDBJdbcDataSource) getDataSource()).getDialect();
-      if (!(dialect instanceof TrainDBSqlDialect)
-          || ((TrainDBSqlDialect) dialect).supportCatalogs()) {
+      boolean supportCatalog = !(dialect instanceof TrainDBSqlDialect)
+          || ((TrainDBSqlDialect) dialect).supportCatalogs();
+      if (supportCatalog) {
         resultSet = databaseMetaData.getTables(getName(), null, null, null);
       } else {
         resultSet = databaseMetaData.getTables(null, getName(), null, null);
@@ -61,8 +62,14 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         final String tableName = resultSet.getString(3);
 
         // DB users can access the tables of implicit schemas - ISSUE #41
-        if (!schemaName.equals(getName())) {
-          continue;
+        if (supportCatalog) {
+          if (catalogName != null  && !catalogName.equals(getName())) {
+            continue;
+          }
+        } else {
+          if (schemaName != null && !schemaName.equals(getName())) {
+            continue;
+          }
         }
 
         // original code
