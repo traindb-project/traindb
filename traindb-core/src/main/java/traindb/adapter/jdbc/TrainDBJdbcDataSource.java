@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableMap;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.util.ArrayList;
+import java.util.Arrays;
+import java.util.List;
 import javax.sql.DataSource;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.schema.Schema;
@@ -53,6 +56,15 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
     ResultSet resultSet = null;
     try {
       connection = dataSource.getConnection();
+      // DB users can access the tables of implicit schemas - ISSUE #41
+      List<String> implicitSchemas = Arrays.asList("public");
+      for (String implicitSchema : implicitSchemas) {
+        TrainDBJdbcSchema jdbcSchema = new TrainDBJdbcSchema(implicitSchema, this);
+        if (!jdbcSchema.getTableMap().isEmpty()) {
+          builder.put(implicitSchema, jdbcSchema);
+        }
+      }
+
       if (dialect instanceof TrainDBSqlDialect &&
           !((TrainDBSqlDialect) dialect).supportCatalogs()) {
         String schemaName = connection.getMetaData().getUserName();

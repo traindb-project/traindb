@@ -60,6 +60,11 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         final String schemaName = resultSet.getString(2);
         final String tableName = resultSet.getString(3);
 
+        // DB users can access the tables of implicit schemas - ISSUE #41
+        if (!schemaName.equals(getName())) {
+          continue;
+        }
+
         // original code
         //final String tableTypeName = resultSet.getString(4).replace(" ", "_");
 
