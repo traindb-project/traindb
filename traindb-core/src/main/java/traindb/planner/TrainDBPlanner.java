@@ -81,9 +81,10 @@ public class TrainDBPlanner extends VolcanoPlanner {
     setNoneConventionHasInfiniteCost(false);
 
     // TrainDB rules
-    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN);
-    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_FILTER_SCAN);
-    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_AGGREGATE_SCAN);
+    //addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_PROJECT_SCAN);
+    //addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_FILTER_SCAN);
+    //addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS_AGGREGATE_SCAN);
+    addRule(TrainDBRules.APPROX_AGGREGATE_SYNOPSIS);
     addRule(TrainDBRules.APPROX_AGGREGATE_INFERENCE);
 
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
