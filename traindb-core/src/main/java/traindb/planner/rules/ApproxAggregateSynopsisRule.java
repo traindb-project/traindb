@@ -162,7 +162,7 @@ public class ApproxAggregateSynopsisRule
       Collection<MSynopsis> candidateSynopses =
           planner.getAvailableSynopses(qualifiedTableName, requiredColumnNames);
       if (candidateSynopses == null || candidateSynopses.isEmpty()) {
-        return;
+        continue;
       }
 
       MSynopsis bestSynopsis =
