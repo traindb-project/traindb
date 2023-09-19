@@ -22,11 +22,13 @@ import java.util.List;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
+import org.apache.calcite.plan.volcano.RelSubset;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.Aggregate;
 import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
+import org.apache.calcite.rel.core.Join;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.SubstitutionRule;
@@ -66,7 +68,8 @@ public class ApproxAggregateSynopsisRule
       return true;
     }
     if (parent instanceof Filter
-        || parent instanceof Project) {
+        || parent instanceof Project
+        || parent instanceof Join) {
       return isApplicable(aggregate, parent);
     }
     return false;
@@ -107,6 +110,10 @@ public class ApproxAggregateSynopsisRule
     } else if (node instanceof Filter) {
       Filter filter = (Filter) node;
       List<RexNode> operands = ((RexCall) filter.getCondition()).getOperands();
+      requiredColumnIndex.addAll(getRexInputRefIndex(operands));
+    } else if (node instanceof Join) {
+      Join join = (Join) node;
+      List<RexNode> operands = ((RexCall) join.getCondition()).getOperands();
       requiredColumnIndex.addAll(getRexInputRefIndex(operands));
     }
 
@@ -170,8 +177,9 @@ public class ApproxAggregateSynopsisRule
       final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
 
       boolean projected = false;
-      for (node = ApproxAggregateUtil.getParent(aggregate, scan);
-           node != aggregate; node = ApproxAggregateUtil.getParent(aggregate, node)) {
+      RelNode child;
+      for (child = scan, node = ApproxAggregateUtil.getParent(aggregate, scan);
+           node != aggregate; child = node, node = ApproxAggregateUtil.getParent(aggregate, node)) {
         if (node instanceof Filter) {
           Filter filter = (Filter) node;
           if (projected) {
@@ -179,6 +187,33 @@ public class ApproxAggregateSynopsisRule
           } else {
             final RexNode newCondition = RexUtil.apply(mapping, filter.getCondition());
             relBuilder.filter(newCondition);
+          }
+        } else if (node instanceof Join) {
+          Join join = (Join) node;
+          RexNode newCondition;
+          if (projected) {
+            newCondition = join.getCondition();
+          } else {
+            newCondition = RexUtil.apply(mapping, join.getCondition());
+          }
+          RelNode left = join.getLeft();
+          RelNode right = join.getRight();
+          if (left instanceof RelSubset
+              && ((RelSubset) left).getBestOrOriginal() == child) {
+            final Join newJoin =
+                join.copy(join.getTraitSet(), newCondition, relBuilder.peek(), join.getRight(),
+                    join.getJoinType(), join.isSemiJoinDone());
+            relBuilder.clear();
+            relBuilder.push(newJoin);
+          } else if (right instanceof RelSubset
+              && ((RelSubset) right).getBestOrOriginal() == child) {
+            final Join newJoin =
+                join.copy(join.getTraitSet(), newCondition, join.getLeft(), relBuilder.peek(),
+                    join.getJoinType(), join.isSemiJoinDone());
+            relBuilder.clear();
+            relBuilder.push(newJoin);
+          } else {
+            return;
           }
         } else if (node instanceof Project) {
           Project project = (Project) node;
