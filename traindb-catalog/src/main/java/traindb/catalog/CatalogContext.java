@@ -72,6 +72,8 @@ public interface CatalogContext {
   void importModel(String modeltypeName, String modelName, JSONObject exportMetadata)
       throws CatalogException;
 
+  void renameModel(String modelName, String newModelName) throws CatalogException;
+
   /* Synopsis */
   MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
       throws CatalogException;

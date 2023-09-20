@@ -16,6 +16,7 @@ package traindb.engine;
 
 import com.opencsv.CSVWriter;
 import com.opencsv.ResultSetHelperService;
+import java.io.File;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
@@ -167,5 +168,13 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   public void importModel(byte[] zipModel, String uri) throws Exception {
     String modelPath = getModelPath().toString();
     ZipUtils.unpack(zipModel, modelPath);
+  }
+
+  @Override
+  public void renameModel(String newModelName) throws Exception {
+    String modelPath = getModelPath().toString();
+    File oldDir = new File(modelPath);
+    File newDir = new File(oldDir.getParent() + File.separator + newModelName);
+    oldDir.renameTo(newDir);
   }
 }

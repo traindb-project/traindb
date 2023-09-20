@@ -121,6 +121,10 @@ public final class MModel {
     return table;
   }
 
+  public void setModelName(String modelName) {
+    this.model_name = modelName;
+  }
+
   public boolean isEnabled() {
     if (training_status.isEmpty() || training_status.size() == 0) {
       return true;

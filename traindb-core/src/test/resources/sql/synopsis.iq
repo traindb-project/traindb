@@ -42,15 +42,30 @@ TRAIN MODEL tgan MODELTYPE tablegan_error ON instacart_small.order_products(reor
 modeltype 'tablegan_error' does not exist
 !error
 
-TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order) OPTIONS ( 'epochs'=1 );
+TRAIN MODEL tgan_new MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order) OPTIONS ( 'epochs'=1 );
 (0 rows modified)
 
 !update
 
-TRAIN MODEL tgan MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
+TRAIN MODEL tgan_new MODELTYPE tablegan ON instacart_small.order_products(reordered, add_to_cart_order);
 
-model 'tgan' already exists
+model 'tgan_new' already exists
 !error
+
+SHOW MODELS;
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+---------------+
+| model_name | modeltype_name | schema_name     | table_name     | columns                        | table_rows | trained_rows | model_options |
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+---------------+
+| tgan_new   | tablegan       | instacart_small | order_products | [reordered, add_to_cart_order] |    1384617 |      1384617 | {"epochs":1}  |
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+---------------+
+(1 row)
+
+!ok
+
+ALTER MODEL tgan_new RENAME TO tgan;
+(0 rows modified)
+
+!update
 
 SHOW MODELS;
 +------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+---------------+

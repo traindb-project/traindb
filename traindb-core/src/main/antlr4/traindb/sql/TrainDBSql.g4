@@ -33,6 +33,7 @@ traindbStmts
     | dropModeltype
     | trainModel
     | dropModel
+    | alterModel
     | createSynopsis
     | dropSynopsis
     | showStmt
@@ -59,6 +60,14 @@ trainModel
 
 dropModel
     : K_DROP K_MODEL modelName
+    ;
+
+alterModel
+    : K_ALTER K_MODEL modelName alterModelClause
+    ;
+
+alterModelClause
+    : K_RENAME K_TO newModelName
     ;
 
 deleteQueryLogs
@@ -169,6 +178,10 @@ modelName
     : IDENTIFIER
     ;
 
+newModelName
+    : IDENTIFIER
+    ;
+
 createSynopsis
     : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitNumber
     ;
@@ -224,6 +237,7 @@ error
         }
     ;
 
+K_ALTER : A L T E R ;
 K_AND : A N D ;
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
@@ -251,12 +265,14 @@ K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
 K_QUERYLOGS : Q U E R Y L O G S ;
 K_REMOTE : R E M O T E ;
+K_RENAME : R E N A M E ;
 K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
 K_TABLES : T A B L E S ;
 K_TASKS : T A S K S ;
+K_TO : T O ;
 K_TRAIN : T R A I N ;
 K_TRAININGS : T R A I N I N G S;
 K_USE : U S E ;

@@ -17,6 +17,7 @@ package traindb.engine;
 import static java.lang.Thread.sleep;
 
 import java.io.ByteArrayOutputStream;
+import java.io.File;
 import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
@@ -165,6 +166,14 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
   public void importModel(byte[] zipModel, String uri) throws Exception {
     String modelPath = getModelPath().toString();
     ZipUtils.unpack(zipModel, modelPath);
+  }
+
+  @Override
+  public void renameModel(String newModelName) throws Exception {
+    String modelPath = getModelPath().toString();
+    File oldDir = new File(modelPath);
+    File newDir = new File(oldDir.getParent() + File.separator + newModelName);
+    oldDir.renameTo(newDir);
   }
 
   private int getAvailablePort() throws Exception {

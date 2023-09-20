@@ -854,6 +854,45 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     return TrainDBListResultSet.empty();
   }
 
+  @Override
+  public void alterModel(String modelName, String newModelName) throws Exception {
+    T_tracer.startTaskTracer("alter model " + modelName);
+
+    T_tracer.openTaskTime("find : model");
+    if (!catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    if (catalogContext.modelExists(newModelName)) {
+      String msg = "model '" + newModelName + "'  already exists";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("alter model");
+    if (newModelName != null) {
+      MModel mModel = catalogContext.getModel(modelName);
+      MModeltype mModeltype = mModel.getModeltype();
+
+      AbstractTrainDBModelRunner runner = createModelRunner(
+          mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
+      runner.renameModel(newModelName);
+      catalogContext.renameModel(modelName, newModelName);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
   private ByteArray convertFileToByteArray(File file) throws Exception {
     byte[] bytes;
     FileInputStream inputStream = null;

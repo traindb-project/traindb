@@ -14,33 +14,25 @@
 
 package traindb.sql;
 
-public abstract class TrainDBSqlCommand {
-  public abstract Type getType();
+class TrainDBSqlAlterModel extends TrainDBSqlCommand {
+  private final String modelName;
+  private final String newModelName;
 
-  public enum Type {
-    CREATE_MODELTYPE,
-    DROP_MODELTYPE,
-    SHOW_MODELTYPES,
-    SHOW_MODELS,
-    SHOW_TRAININGS,
-    TRAIN_MODEL,
-    DROP_MODEL,
-    CREATE_SYNOPSIS,
-    DROP_SYNOPSIS,
-    SHOW_SYNOPSES,
-    SHOW_SCHEMAS,
-    SHOW_TABLES,
-    SHOW_HYPERPARAMETERS,
-    USE_SCHEMA,
-    DESCRIBE_TABLE,
-    BYPASS_DDL_STMT,
-    SHOW_QUERY_LOGS,
-    SHOW_TASKS,
-    DELETE_QUERY_LOGS,
-    DELETE_TASKS,
-    EXPORT_MODEL,
-    IMPORT_MODEL,
-    ALTER_MODEL,
-    OTHER
+  TrainDBSqlAlterModel(String modelName, String newModelName) {
+    this.modelName = modelName;
+    this.newModelName = newModelName;
+  }
+
+  String getModelName() {
+    return modelName;
+  }
+
+  String getNewModelName() {
+    return newModelName;
+  }
+
+  @Override
+  public Type getType() {
+    return Type.ALTER_MODEL;
   }
 }

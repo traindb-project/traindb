@@ -62,6 +62,8 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void importModel(byte[] zipModel, String uri) throws Exception;
 
+  public abstract void renameModel(String newModelName) throws Exception;
+
   public boolean checkAvailable(String modelName) throws Exception {
     return true;
   }

@@ -286,6 +286,27 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
+  public void renameModel(String newModelName) throws Exception {
+    MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
+    URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/rename");
+
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("POST");
+    httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+    httpConn.setDoOutput(true);
+
+    OutputStream outputStream = httpConn.getOutputStream();
+    DataOutputStream request = new DataOutputStream(outputStream);
+
+    addString(request, "new_model_name", newModelName);
+    finishMultipartRequest(request);
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to rename model");
+    }
+  }
+
+  @Override
   public boolean checkAvailable(String modelName) throws Exception {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
     URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/status");

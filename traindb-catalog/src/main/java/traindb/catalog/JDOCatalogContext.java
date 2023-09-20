@@ -326,6 +326,17 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void renameModel(String modelName, String newModelName) throws CatalogException {
+    try {
+      MModel mModel = getModel(modelName);
+      mModel.setModelName(newModelName);
+      pm.makePersistent(mModel);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to rename model", e);
+    }
+  }
+
+  @Override
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
                                   @Nullable Double ratio) throws CatalogException {
     try {
