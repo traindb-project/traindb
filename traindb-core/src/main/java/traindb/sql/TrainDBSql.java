@@ -141,9 +141,9 @@ public final class TrainDBSql {
       case IMPORT_MODEL:
         TrainDBSqlImportModel importModel = (TrainDBSqlImportModel) command;
         return runner.importModel(importModel.getModelName(), importModel.getModelBinaryString());
-      case ALTER_MODEL:
+      case ALTER_MODEL_RENAME:
         TrainDBSqlAlterModel alterModel = (TrainDBSqlAlterModel) command;
-        runner.alterModel(alterModel.getModelName(), alterModel.getNewModelName());
+        runner.renameModel(alterModel.getModelName(), alterModel.getNewModelName());
         break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
@@ -320,12 +320,11 @@ public final class TrainDBSql {
     @Override
     public void exitAlterModel(TrainDBSqlParser.AlterModelContext ctx) {
       String modelName = ctx.modelName().getText();
-      String newModelName = null;
       if (ctx.alterModelClause().newModelName() != null) {
-        newModelName = ctx.alterModelClause().newModelName().getText();
+        String newModelName = ctx.alterModelClause().newModelName().getText();
+        commands.add(new TrainDBSqlAlterModel.Rename(modelName, newModelName));
       }
       LOG.debug("ALTER MODEL: name=" + modelName);
-      commands.add(new TrainDBSqlAlterModel(modelName, newModelName));
     }
 
     @Override

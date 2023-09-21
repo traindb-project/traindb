@@ -70,5 +70,5 @@ public interface TrainDBSqlRunner {
 
   TrainDBListResultSet importModel(String modelName, String modelBinaryString) throws Exception;
 
-  void alterModel(String modelName, String newModelName) throws Exception;
+  void renameModel(String modelName, String newModelName) throws Exception;
 }

@@ -855,7 +855,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void alterModel(String modelName, String newModelName) throws Exception {
+  public void renameModel(String modelName, String newModelName) throws Exception {
     T_tracer.startTaskTracer("alter model " + modelName);
 
     T_tracer.openTaskTime("find : model");

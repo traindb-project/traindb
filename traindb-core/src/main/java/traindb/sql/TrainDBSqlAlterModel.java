@@ -14,25 +14,32 @@
 
 package traindb.sql;
 
-class TrainDBSqlAlterModel extends TrainDBSqlCommand {
+abstract class TrainDBSqlAlterModel extends TrainDBSqlCommand {
+
   private final String modelName;
   private final String newModelName;
 
-  TrainDBSqlAlterModel(String modelName, String newModelName) {
+  protected TrainDBSqlAlterModel(String modelName, String newModelName) {
     this.modelName = modelName;
     this.newModelName = newModelName;
   }
 
-  String getModelName() {
+  public String getModelName() {
     return modelName;
   }
 
-  String getNewModelName() {
+  public String getNewModelName() {
     return newModelName;
   }
 
-  @Override
-  public Type getType() {
-    return Type.ALTER_MODEL;
+  static class Rename extends TrainDBSqlAlterModel {
+    Rename(String modelName, String newModelName) {
+      super(modelName, newModelName);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.ALTER_MODEL_RENAME;
+    }
   }
 }

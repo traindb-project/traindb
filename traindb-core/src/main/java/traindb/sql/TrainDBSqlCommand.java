@@ -40,7 +40,7 @@ public abstract class TrainDBSqlCommand {
     DELETE_TASKS,
     EXPORT_MODEL,
     IMPORT_MODEL,
-    ALTER_MODEL,
+    ALTER_MODEL_RENAME,
     OTHER
   }
 }
