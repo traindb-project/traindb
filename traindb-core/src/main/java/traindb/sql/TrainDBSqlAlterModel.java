@@ -42,4 +42,26 @@ abstract class TrainDBSqlAlterModel extends TrainDBSqlCommand {
       return Type.ALTER_MODEL_RENAME;
     }
   }
+
+  static class Enable extends TrainDBSqlAlterModel {
+    Enable(String modelName) {
+      super(modelName, null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.ALTER_MODEL_ENABLE;
+    }
+  }
+
+  static class Disable extends TrainDBSqlAlterModel {
+    Disable(String modelName) {
+      super(modelName, null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.ALTER_MODEL_DISABLE;
+    }
+  }
 }

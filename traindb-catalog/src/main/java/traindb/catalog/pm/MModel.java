@@ -58,6 +58,10 @@ public final class MModel {
   private List<String> columns;
 
   @Persistent
+  @Column(length = 8)  // 'ENABLED', 'DISABLED'
+  private String model_status;
+
+  @Persistent
   private byte[] model_options;
 
   @Persistent(mappedBy = "model", dependentElement = "true")
@@ -77,6 +81,7 @@ public final class MModel {
     this.columns = columns;
     this.table_rows = (baseTableRows == null) ? 0 : baseTableRows;
     this.trained_rows = (trainedRows == null) ? 0 : trainedRows;
+    this.model_status = "ENABLED";  // initial status
     this.model_options = options.getBytes();
     this.table = table;
   }
@@ -123,6 +128,18 @@ public final class MModel {
 
   public void setModelName(String modelName) {
     this.model_name = modelName;
+  }
+
+  public void enableModel() {
+    this.model_status = "ENABLED";
+  }
+
+  public void disableModel() {
+    this.model_status = "DISABLED";
+  }
+
+  public boolean isEnabled() {
+    return model_status.equals("ENABLED");
   }
 
   public boolean isTrainingFinished() {

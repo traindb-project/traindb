@@ -68,6 +68,12 @@ alterModel
 
 alterModelClause
     : K_RENAME K_TO newModelName
+    | enableDisableClause
+    ;
+
+enableDisableClause
+    : K_ENABLE
+    | K_DISABLE
     ;
 
 deleteQueryLogs
@@ -246,7 +252,9 @@ K_CREATE : C R E A T E ;
 K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
+K_DISABLE : D I S A B L E ;
 K_DROP : D R O P ;
+K_ENABLE : E N A B L E ;
 K_EXPORT : E X P O R T ;
 K_FOR : F O R ;
 K_FROM : F R O M ;

@@ -141,10 +141,21 @@ public final class TrainDBSql {
       case IMPORT_MODEL:
         TrainDBSqlImportModel importModel = (TrainDBSqlImportModel) command;
         return runner.importModel(importModel.getModelName(), importModel.getModelBinaryString());
-      case ALTER_MODEL_RENAME:
+      case ALTER_MODEL_RENAME: {
         TrainDBSqlAlterModel alterModel = (TrainDBSqlAlterModel) command;
         runner.renameModel(alterModel.getModelName(), alterModel.getNewModelName());
         break;
+      }
+      case ALTER_MODEL_ENABLE: {
+        TrainDBSqlAlterModel alterModel = (TrainDBSqlAlterModel) command;
+        runner.enableModel(alterModel.getModelName());
+        break;
+      }
+      case ALTER_MODEL_DISABLE: {
+        TrainDBSqlAlterModel alterModel = (TrainDBSqlAlterModel) command;
+        runner.disableModel(alterModel.getModelName());
+        break;
+      }
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -323,6 +334,14 @@ public final class TrainDBSql {
       if (ctx.alterModelClause().newModelName() != null) {
         String newModelName = ctx.alterModelClause().newModelName().getText();
         commands.add(new TrainDBSqlAlterModel.Rename(modelName, newModelName));
+      }
+      if (ctx.alterModelClause().enableDisableClause() != null) {
+        String enableOption = ctx.alterModelClause().enableDisableClause().getText();
+        if (enableOption.equalsIgnoreCase("ENABLE")) {
+          commands.add(new TrainDBSqlAlterModel.Enable(modelName));
+        } else if (enableOption.equalsIgnoreCase("DISABLE")){
+          commands.add(new TrainDBSqlAlterModel.Disable(modelName));
+        }
       }
       LOG.debug("ALTER MODEL: name=" + modelName);
     }

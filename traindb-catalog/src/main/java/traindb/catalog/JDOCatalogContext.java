@@ -337,6 +337,28 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void enableModel(String modelName) throws CatalogException {
+    try {
+      MModel mModel = getModel(modelName);
+      mModel.enableModel();
+      pm.makePersistent(mModel);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to enable model", e);
+    }
+  }
+
+  @Override
+  public void disableModel(String modelName) throws CatalogException {
+    try {
+      MModel mModel = getModel(modelName);
+      mModel.disableModel();
+      pm.makePersistent(mModel);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to disable model", e);
+    }
+  }
+
+  @Override
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
                                   @Nullable Double ratio) throws CatalogException {
     try {

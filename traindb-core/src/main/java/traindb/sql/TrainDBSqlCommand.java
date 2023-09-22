@@ -41,6 +41,8 @@ public abstract class TrainDBSqlCommand {
     EXPORT_MODEL,
     IMPORT_MODEL,
     ALTER_MODEL_RENAME,
+    ALTER_MODEL_ENABLE,
+    ALTER_MODEL_DISABLE,
     OTHER
   }
 }

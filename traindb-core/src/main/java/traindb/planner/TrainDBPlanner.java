@@ -236,6 +236,9 @@ public class TrainDBPlanner extends VolcanoPlanner {
       Collection<MModel> models = catalogContext.getInferenceModels(baseSchema, baseTable);
       List<MModel> availableModels = new ArrayList<>();
       for (MModel model : models) {
+        if (!model.isEnabled()) {
+          continue;
+        }
         List<String> columnNames = model.getColumnNames();
         if (columnNames.containsAll(requiredColumnNames)) {
           availableModels.add(model);

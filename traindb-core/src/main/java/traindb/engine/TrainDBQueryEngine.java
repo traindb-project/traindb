@@ -372,6 +372,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
 
+    if (!mModel.isEnabled()) {
+      throw new TrainDBException("model '" + modelName + "' is disabled");
+    }
+
     AbstractTrainDBModelRunner runner = createModelRunner(
         mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
 
@@ -856,7 +860,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public void renameModel(String modelName, String newModelName) throws Exception {
-    T_tracer.startTaskTracer("alter model " + modelName);
+    T_tracer.startTaskTracer("rename model " + modelName + " to " + newModelName);
 
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
@@ -878,16 +882,56 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
     T_tracer.closeTaskTime("SUCCESS");
 
-    T_tracer.openTaskTime("alter model");
-    if (newModelName != null) {
-      MModel mModel = catalogContext.getModel(modelName);
-      MModeltype mModeltype = mModel.getModeltype();
+    T_tracer.openTaskTime("rename model");
+    MModel mModel = catalogContext.getModel(modelName);
+    MModeltype mModeltype = mModel.getModeltype();
 
-      AbstractTrainDBModelRunner runner = createModelRunner(
-          mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
-      runner.renameModel(newModelName);
-      catalogContext.renameModel(modelName, newModelName);
+    AbstractTrainDBModelRunner runner = createModelRunner(
+        mModeltype.getModeltypeName(), modelName, mModeltype.getLocation());
+    runner.renameModel(newModelName);
+    catalogContext.renameModel(modelName, newModelName);
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
+  @Override
+  public void enableModel(String modelName) throws Exception {
+    T_tracer.startTaskTracer("enable model " + modelName);
+
+    T_tracer.openTaskTime("find : model");
+    if (!catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
     }
+
+    T_tracer.openTaskTime("enable model");
+    catalogContext.enableModel(modelName);
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
+  @Override
+  public void disableModel(String modelName) throws Exception {
+    T_tracer.startTaskTracer("disable model " + modelName);
+
+    T_tracer.openTaskTime("find : model");
+    if (!catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    T_tracer.openTaskTime("disable model");
+    catalogContext.disableModel(modelName);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();

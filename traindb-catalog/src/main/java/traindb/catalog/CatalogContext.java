@@ -74,6 +74,10 @@ public interface CatalogContext {
 
   void renameModel(String modelName, String newModelName) throws CatalogException;
 
+  void enableModel(String modelName) throws CatalogException;
+
+  void disableModel(String modelName) throws CatalogException;
+
   /* Synopsis */
   MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
       throws CatalogException;

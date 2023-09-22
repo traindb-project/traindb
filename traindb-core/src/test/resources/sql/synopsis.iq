@@ -82,6 +82,21 @@ CREATE SYNOPSIS order_products_syn FROM MODEL tgan_error LIMIT 1000;
 model 'tgan_error' does not exist
 !error
 
+ALTER MODEL tgan DISABLE;
+(0 rows modified)
+
+!update
+
+CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
+
+model 'tgan' is disabled
+!error
+
+ALTER MODEL tgan ENABLE;
+(0 rows modified)
+
+!update
+
 CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
 (0 rows modified)
 
