@@ -125,7 +125,7 @@ public final class MModel {
     this.model_name = modelName;
   }
 
-  public boolean isEnabled() {
+  public boolean isTrainingFinished() {
     if (training_status.isEmpty() || training_status.size() == 0) {
       return true;
     }

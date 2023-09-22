@@ -42,7 +42,6 @@ import traindb.adapter.python.PythonMLAggregateModel;
 import traindb.adapter.python.PythonMLAggregateModelScan;
 import traindb.adapter.python.PythonRel;
 import traindb.catalog.pm.MModel;
-import traindb.common.TrainDBException;
 import traindb.engine.AbstractTrainDBModelRunner;
 import traindb.planner.TrainDBPlanner;
 
@@ -121,7 +120,7 @@ public class ApproxAggregateInferenceRule
     MModel bestInferenceModel = null;
     for (Iterator<MModel> iter = candidateModels.iterator(); iter.hasNext(); ) {
       bestInferenceModel = iter.next();
-      if (bestInferenceModel.isEnabled()) {
+      if (bestInferenceModel.isTrainingFinished()) {
         break;
       }
       try {
@@ -138,7 +137,7 @@ public class ApproxAggregateInferenceRule
         // ignore
       }
     }
-    if (bestInferenceModel == null || !bestInferenceModel.isEnabled()) {
+    if (bestInferenceModel == null || !bestInferenceModel.isTrainingFinished()) {
       return;
     }
 
