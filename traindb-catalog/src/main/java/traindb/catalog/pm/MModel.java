@@ -126,6 +126,10 @@ public final class MModel {
     return table;
   }
 
+  public String getModelStatus() {
+    return model_status;
+  }
+
   public void setModelName(String modelName) {
     this.model_name = modelName;
   }

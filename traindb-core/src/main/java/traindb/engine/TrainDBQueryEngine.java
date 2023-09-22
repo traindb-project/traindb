@@ -479,7 +479,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showModels(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("model_name", "modeltype_name", "schema_name", "table_name",
-        "columns", "table_rows", "trained_rows", "model_options");
+        "columns", "table_rows", "trained_rows", "model_status", "model_options");
     checkShowWhereColumns(filterPatterns, header);
     addPrefixToPatternFilter(filterPatterns, ImmutableList.of("modeltype_name"), "modeltype");
 
@@ -490,8 +490,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     for (MModel mModel : catalogContext.getModels(filterPatterns)) {
       modelInfo.add(Arrays.asList(mModel.getModelName(), mModel.getModeltype().getModeltypeName(),
           mModel.getSchemaName(), mModel.getTableName(),
-          mModel.getColumnNames().toString(), mModel.getTableRows(),
-          mModel.getTrainedRows(), mModel.getModelOptions()));
+          mModel.getColumnNames().toString(), mModel.getTableRows(), mModel.getTrainedRows(),
+          mModel.getModelStatus(), mModel.getModelOptions()));
     }
 
     T_tracer.closeTaskTime("SUCCESS");
