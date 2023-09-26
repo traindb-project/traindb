@@ -190,7 +190,12 @@ newModelName
     ;
 
 createSynopsis
-    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitNumber
+    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitSizeClause
+    ;
+
+limitSizeClause
+    : limitRows ( K_ROWS )?
+    | limitPercent K_PERCENT
     ;
 
 dropSynopsis
@@ -241,6 +246,14 @@ newSynopsisName
     : IDENTIFIER
     ;
 
+limitRows
+    : NUMERIC_LITERAL
+    ;
+
+limitPercent
+    : NUMERIC_LITERAL
+    ;
+
 limitNumber
     : NUMERIC_LITERAL
     ;
@@ -284,9 +297,11 @@ K_MODELTYPE : M O D E L T Y P E ;
 K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
+K_PERCENT : P E R C E N T ;
 K_QUERYLOGS : Q U E R Y L O G S ;
 K_REMOTE : R E M O T E ;
 K_RENAME : R E N A M E ;
+K_ROWS : R O W S ;
 K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;

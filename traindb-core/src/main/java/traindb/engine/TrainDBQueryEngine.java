@@ -357,7 +357,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void createSynopsis(String synopsisName, String modelName, int limitNumber)
+  public void createSynopsis(String synopsisName, String modelName,
+                             int limitRows, float limitPercent)
       throws Exception {
 
     T_tracer.startTaskTracer("create synopsis " + synopsisName);
@@ -403,12 +404,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       catalogContext.updateTrainingStatus(modelName, "FINISHED");
     }
     String outputPath = runner.getModelPath().toString() + '/' + synopsisName + ".csv";
-    runner.generateSynopsis(outputPath, limitNumber);
+    if (limitRows == 0) {
+      limitRows =  (int) Math.floor((double) mModel.getTableRows() * limitPercent * 0.01);
+    }
+    runner.generateSynopsis(outputPath, limitRows);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create synopsis");
-    double ratio = (double) limitNumber / (double) mModel.getTableRows();
-    catalogContext.createSynopsis(synopsisName, modelName, limitNumber, ratio);
+    double ratio = (double) limitRows / (double) mModel.getTableRows();
+    catalogContext.createSynopsis(synopsisName, modelName, limitRows, ratio);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create synopsis table");

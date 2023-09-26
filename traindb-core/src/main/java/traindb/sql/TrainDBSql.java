@@ -88,8 +88,8 @@ public final class TrainDBSql {
         break;
       case CREATE_SYNOPSIS:
         TrainDBSqlCreateSynopsis createSynopsis = (TrainDBSqlCreateSynopsis) command;
-        runner.createSynopsis(createSynopsis.getSynopsisName(),
-            createSynopsis.getModelName(), createSynopsis.getLimitNumber());
+        runner.createSynopsis(createSynopsis.getSynopsisName(), createSynopsis.getModelName(),
+            createSynopsis.getLimitRows(), createSynopsis.getLimitPercent());
         break;
       case DROP_SYNOPSIS:
         TrainDBSqlDropSynopsis dropSynopsis = (TrainDBSqlDropSynopsis) command;
@@ -277,10 +277,17 @@ public final class TrainDBSql {
     public void exitCreateSynopsis(TrainDBSqlParser.CreateSynopsisContext ctx) {
       String synopsisName = ctx.synopsisName().getText();
       String modelName = ctx.modelName().getText();
-      int limitNumber = Integer.parseInt(ctx.limitNumber().getText());
-      LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
-          + " limit=" + limitNumber);
-      commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, limitNumber));
+      if (ctx.limitSizeClause().limitRows() != null) {
+        int limitRows = Integer.parseInt(ctx.limitSizeClause().limitRows().getText());
+        LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
+            + " limitRows=" + limitRows);
+        commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, limitRows, 0));
+      } else if (ctx.limitSizeClause().limitPercent() != null) {
+        float limitPercent = Float.parseFloat(ctx.limitSizeClause().limitPercent().getText());
+        LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
+            + " limitPercent=" + limitPercent);
+        commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, 0, limitPercent));
+      }
     }
 
     @Override

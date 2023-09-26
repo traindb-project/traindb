@@ -15,14 +15,18 @@
 package traindb.sql;
 
 class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
+
   private final String synopsisName;
   private final String modelName;
-  private final int limitNumber;
+  private final int limitRows;
+  private final float limitPercent;
 
-  TrainDBSqlCreateSynopsis(String synopsisName, String modelName, int limitNumber) {
+  TrainDBSqlCreateSynopsis(String synopsisName, String modelName, int limitRows,
+                           float limitPercent) {
     this.synopsisName = synopsisName;
     this.modelName = modelName;
-    this.limitNumber = limitNumber;
+    this.limitRows = limitRows;
+    this.limitPercent = limitPercent;
   }
 
   String getSynopsisName() {
@@ -33,8 +37,12 @@ class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
     return modelName;
   }
 
-  int getLimitNumber() {
-    return limitNumber;
+  int getLimitRows() {
+    return limitRows;
+  }
+
+  float getLimitPercent() {
+    return limitPercent;
   }
 
   @Override

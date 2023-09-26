@@ -30,7 +30,8 @@ public interface TrainDBSqlRunner {
 
   void dropModel(String modelName) throws Exception;
 
-  void createSynopsis(String synopsisName, String modelName, int limitNumber) throws Exception;
+  void createSynopsis(String synopsisName, String modelName, int limitRows, float limitPercent)
+      throws Exception;
 
   void dropSynopsis(String synopsisName) throws Exception;
 
