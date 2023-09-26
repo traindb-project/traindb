@@ -77,7 +77,7 @@ SHOW MODELS;
 
 !ok
 
-CREATE SYNOPSIS order_products_syn FROM MODEL tgan_error LIMIT 1000;
+CREATE SYNOPSIS tgan_syn FROM MODEL tgan_error LIMIT 1000;
 
 model 'tgan_error' does not exist
 !error
@@ -87,7 +87,7 @@ ALTER MODEL tgan DISABLE;
 
 !update
 
-CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
+CREATE SYNOPSIS tgan_syn FROM MODEL tgan LIMIT 1000;
 
 model 'tgan' is disabled
 !error
@@ -97,7 +97,22 @@ ALTER MODEL tgan ENABLE;
 
 !update
 
-CREATE SYNOPSIS order_products_syn FROM MODEL tgan LIMIT 1000;
+CREATE SYNOPSIS tgan_syn FROM MODEL tgan LIMIT 1000;
+(0 rows modified)
+
+!update
+
+SHOW SYNOPSES;
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+
+| synopsis_name | model_name | schema_name     | table_name     | columns                        | rows | ratio      |
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+
+| tgan_syn      | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+
+(1 row)
+
+!ok
+
+ALTER SYNOPSIS tgan_syn RENAME TO order_products_syn;
 (0 rows modified)
 
 !update

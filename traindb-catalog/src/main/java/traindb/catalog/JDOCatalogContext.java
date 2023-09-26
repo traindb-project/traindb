@@ -431,6 +431,17 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void renameSynopsis(String synopsisName, String newSynopsisName) throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(synopsisName);
+      mSynopsis.setSynopsisName(newSynopsisName);
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to rename synopsis", e);
+    }
+  }
+
+  @Override
   public @Nullable MSchema getSchema(String name) {
     try {
       Query query = pm.newQuery(MSchema.class);

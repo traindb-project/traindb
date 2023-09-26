@@ -334,6 +334,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
   }
 
+  private void renameSynopsisTable(String synopsisName, String newSynopsisName)
+      throws Exception {
+    MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
+    String schemaName = mSynopsis.getModel().getSchemaName();
+
+    StringBuilder sb = new StringBuilder();
+    sb.append("ALTER TABLE ")
+        .append(schemaName).append(".").append(synopsisName)
+        .append(" RENAME TO ")
+        .append(schemaName).append(".").append(newSynopsisName);
+
+    String sql = sb.toString();
+    conn.executeInternal(sql);
+    conn.refreshRootSchema();
+  }
+
   private AbstractTrainDBModelRunner createModelRunner(String modeltypeName, String modelName,
                                                        String location) {
     return AbstractTrainDBModelRunner.createModelRunner(
@@ -932,6 +948,38 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     T_tracer.openTaskTime("disable model");
     catalogContext.disableModel(modelName);
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
+  @Override
+  public void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception {
+    T_tracer.startTaskTracer("rename synopsis " + synopsisName + " to " + newSynopsisName);
+
+    T_tracer.openTaskTime("find : synopsis");
+    if (!catalogContext.synopsisExists(synopsisName)) {
+      String msg = "synopsis '" + synopsisName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    if (catalogContext.synopsisExists(newSynopsisName)) {
+      String msg = "synopsis '" + newSynopsisName + "'  already exists";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("rename synopsis");
+    renameSynopsisTable(synopsisName, newSynopsisName);
+    catalogContext.renameSynopsis(synopsisName, newSynopsisName);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();

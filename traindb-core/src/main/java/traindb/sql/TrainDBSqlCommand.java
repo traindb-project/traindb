@@ -43,6 +43,7 @@ public abstract class TrainDBSqlCommand {
     ALTER_MODEL_RENAME,
     ALTER_MODEL_ENABLE,
     ALTER_MODEL_DISABLE,
+    ALTER_SYNOPSIS_RENAME,
     OTHER
   }
 }

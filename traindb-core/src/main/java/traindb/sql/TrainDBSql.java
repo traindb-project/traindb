@@ -156,6 +156,11 @@ public final class TrainDBSql {
         runner.disableModel(alterModel.getModelName());
         break;
       }
+      case ALTER_SYNOPSIS_RENAME: {
+        TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
+        runner.renameSynopsis(alterSynopsis.getSynopsisName(), alterSynopsis.getNewSynopsisName());
+        break;
+      }
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -345,6 +350,17 @@ public final class TrainDBSql {
       }
       LOG.debug("ALTER MODEL: name=" + modelName);
     }
+
+    @Override
+    public void exitAlterSynopsis(TrainDBSqlParser.AlterSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      if (ctx.alterSynopsisClause().newSynopsisName() != null) {
+        String newSynopsisName = ctx.alterSynopsisClause().newSynopsisName().getText();
+        commands.add(new TrainDBSqlAlterSynopsis.Rename(synopsisName, newSynopsisName));
+      }
+      LOG.debug("ALTER SYNOPSIS: name=" + synopsisName);
+    }
+
 
     @Override
     public void exitBypassDdlStmt(TrainDBSqlParser.BypassDdlStmtContext ctx) {

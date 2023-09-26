@@ -64,4 +64,8 @@ public final class MSynopsis {
   public MModel getModel() {
     return model;
   }
+
+  public void setSynopsisName(String synopsisName) {
+    this.synopsis_name = synopsisName;
+  }
 }

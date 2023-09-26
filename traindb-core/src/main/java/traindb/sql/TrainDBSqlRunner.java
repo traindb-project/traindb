@@ -75,4 +75,6 @@ public interface TrainDBSqlRunner {
   void enableModel(String modelName) throws Exception;
 
   void disableModel(String modelName) throws Exception;
+
+  void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception;
 }

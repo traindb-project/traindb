@@ -36,6 +36,7 @@ traindbStmts
     | alterModel
     | createSynopsis
     | dropSynopsis
+    | alterSynopsis
     | showStmt
     | useSchema
     | describeTable
@@ -196,6 +197,14 @@ dropSynopsis
     : K_DROP K_SYNOPSIS synopsisName
     ;
 
+alterSynopsis
+    : K_ALTER K_SYNOPSIS synopsisName alterSynopsisClause
+    ;
+
+alterSynopsisClause
+    : K_RENAME K_TO newSynopsisName
+    ;
+
 useSchema
     : K_USE schemaName
     ;
@@ -225,6 +234,10 @@ columnName
     ;
 
 synopsisName
+    : IDENTIFIER
+    ;
+
+newSynopsisName
     : IDENTIFIER
     ;
 
