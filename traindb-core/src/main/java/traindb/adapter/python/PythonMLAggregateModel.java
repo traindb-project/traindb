@@ -90,10 +90,6 @@ public class PythonMLAggregateModel extends AbstractTable implements ScannableTa
       }
       aggregateExpressions.add(buildString(aggCallFieldNames, aggrFuncName + "(", ",", ")"));
     }
-    if (aggregateExpressions.size() > 1) {
-      throw new UnsupportedOperationException(
-          "Two or more aggregate expressions are not supported yet.");
-    }
 
     List<String> groupColumns = getGroupColumnNames(groupSet, inputRowType);
     if (groupColumns.size() > 1) {
@@ -112,7 +108,7 @@ public class PythonMLAggregateModel extends AbstractTable implements ScannableTa
           "Two or more filter conditions are not supported yet.");
     }
 
-    String aggregate = aggregateExpressions.get(0);
+    String aggregate = buildString(aggregateExpressions, "", ",", "");
     String groupBy = groupColumns.isEmpty() ? "" : groupColumns.get(0);
     String whereCondition = filterConditions.isEmpty() ? "" : filterConditions.get(0);
 
