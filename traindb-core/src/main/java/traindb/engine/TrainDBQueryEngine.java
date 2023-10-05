@@ -523,7 +523,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showSynopses(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("synopsis_name", "model_name", "schema_name", "table_name",
-        "columns", "rows", "ratio");
+        "columns", "rows", "ratio", "synopsis_status");
     checkShowWhereColumns(filterPatterns, header);
     addPrefixToPatternFilter(filterPatterns,
         ImmutableList.of("model_name", "schema_name", "table_name", "columns"), "model");
@@ -536,7 +536,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       MModel mModel = mSynopsis.getModel();
       synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mModel.getModelName(),
           mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames(),
-          mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio())));
+          mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio()),
+          mSynopsis.getSynopsisStatus()));
     }
 
     T_tracer.closeTaskTime("SUCCESS");

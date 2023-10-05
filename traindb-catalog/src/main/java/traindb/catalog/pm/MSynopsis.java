@@ -70,6 +70,10 @@ public final class MSynopsis {
     return model;
   }
 
+  public String getSynopsisStatus() {
+    return synopsis_status;
+  }
+
   public void setSynopsisName(String synopsisName) {
     this.synopsis_name = synopsisName;
   }

@@ -87,6 +87,16 @@ ALTER MODEL tgan DISABLE;
 
 !update
 
+SHOW MODELS;
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+--------------+---------------+
+| model_name | modeltype_name | schema_name     | table_name     | columns                        | table_rows | trained_rows | model_status | model_options |
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+--------------+---------------+
+| tgan       | tablegan       | instacart_small | order_products | [reordered, add_to_cart_order] |    1384617 |      1384617 | DISABLED     | {"epochs":1}  |
++------------+----------------+-----------------+----------------+--------------------------------+------------+--------------+--------------+---------------+
+(1 row)
+
+!ok
+
 CREATE SYNOPSIS tgan_syn FROM MODEL tgan LIMIT 1000;
 
 model 'tgan' is disabled
@@ -103,11 +113,11 @@ CREATE SYNOPSIS tgan_syn FROM MODEL tgan LIMIT 1000;
 !update
 
 SHOW SYNOPSES;
-+---------------+------------+-----------------+----------------+--------------------------------+------+------------+
-| synopsis_name | model_name | schema_name     | table_name     | columns                        | rows | ratio      |
-+---------------+------------+-----------------+----------------+--------------------------------+------+------------+
-| tgan_syn      | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
-+---------------+------------+-----------------+----------------+--------------------------------+------+------------+
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| synopsis_name | model_name | schema_name     | table_name     | columns                        | rows | ratio      | synopsis_status |
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| tgan_syn      | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 | ENABLED         |
++---------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
 (1 row)
 
 !ok
@@ -118,11 +128,11 @@ ALTER SYNOPSIS tgan_syn RENAME TO order_products_syn;
 !update
 
 SHOW SYNOPSES;
-+--------------------+------------+-----------------+----------------+--------------------------------+------+------------+
-| synopsis_name      | model_name | schema_name     | table_name     | columns                        | rows | ratio      |
-+--------------------+------------+-----------------+----------------+--------------------------------+------+------------+
-| order_products_syn | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 |
-+--------------------+------------+-----------------+----------------+--------------------------------+------+------------+
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| synopsis_name      | model_name | schema_name     | table_name     | columns                        | rows | ratio      | synopsis_status |
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| order_products_syn | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 | ENABLED         |
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
 (1 row)
 
 !ok
@@ -155,6 +165,16 @@ ALTER SYNOPSIS order_products_syn DISABLE;
 (0 rows modified)
 
 !update
+
+SHOW SYNOPSES;
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| synopsis_name      | model_name | schema_name     | table_name     | columns                        | rows | ratio      | synopsis_status |
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+| order_products_syn | tgan       | instacart_small | order_products | [reordered, add_to_cart_order] | 1000 | 0.00072222 | DISABLED        |
++--------------------+------------+-----------------+----------------+--------------------------------+------+------------+-----------------+
+(1 row)
+
+!ok
 
 # simple aggregation (synopsis disabled) -> exact query
 SELECT APPROXIMATE avg(add_to_cart_order) as average FROM instacart_small.order_products;
