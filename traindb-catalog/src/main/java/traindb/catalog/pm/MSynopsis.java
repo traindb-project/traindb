@@ -39,6 +39,10 @@ public final class MSynopsis {
   @Persistent
   private double ratio;
 
+  @Persistent
+  @Column(length = 8)  // 'ENABLED', 'DISABLED'
+  private String synopsis_status;
+
   @Persistent(dependent = "false")
   private MModel model;
 
@@ -46,6 +50,7 @@ public final class MSynopsis {
     this.synopsis_name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
+    this.synopsis_status = "ENABLED";  // initial status
     this.model = model;
   }
 
@@ -67,5 +72,17 @@ public final class MSynopsis {
 
   public void setSynopsisName(String synopsisName) {
     this.synopsis_name = synopsisName;
+  }
+
+  public void enableSynopsis() {
+    this.synopsis_status = "ENABLED";
+  }
+
+  public void disableSynopsis() {
+    this.synopsis_status = "DISABLED";
+  }
+
+  public boolean isEnabled() {
+    return synopsis_status.equals("ENABLED");
   }
 }

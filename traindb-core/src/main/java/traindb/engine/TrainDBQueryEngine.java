@@ -989,6 +989,48 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.endTaskTracer();
   }
 
+  @Override
+  public void enableSynopsis(String synopsisName) throws Exception {
+    T_tracer.startTaskTracer("enable synopsis " + synopsisName);
+
+    T_tracer.openTaskTime("find : synopsis");
+    if (!catalogContext.synopsisExists(synopsisName)) {
+      String msg = "synopsis '" + synopsisName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    T_tracer.openTaskTime("enable synopsis");
+    catalogContext.enableSynopsis(synopsisName);
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
+  @Override
+  public void disableSynopsis(String synopsisName) throws Exception {
+    T_tracer.startTaskTracer("disable synopsis " + synopsisName);
+
+    T_tracer.openTaskTime("find : synopsis");
+    if (!catalogContext.synopsisExists(synopsisName)) {
+      String msg = "synopsis '" + synopsisName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    T_tracer.openTaskTime("disable synopsis");
+    catalogContext.disableSynopsis(synopsisName);
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.endTaskTracer();
+  }
+
   private ByteArray convertFileToByteArray(File file) throws Exception {
     byte[] bytes;
     FileInputStream inputStream = null;

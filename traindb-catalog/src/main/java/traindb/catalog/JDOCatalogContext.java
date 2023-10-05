@@ -442,6 +442,28 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void enableSynopsis(String synopsisName) throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(synopsisName);
+      mSynopsis.enableSynopsis();
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to enable synopsis", e);
+    }
+  }
+
+  @Override
+  public void disableSynopsis(String synopsisName) throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(synopsisName);
+      mSynopsis.disableSynopsis();
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to disable synopsis", e);
+    }
+  }
+
+  @Override
   public @Nullable MSchema getSchema(String name) {
     try {
       Query query = pm.newQuery(MSchema.class);

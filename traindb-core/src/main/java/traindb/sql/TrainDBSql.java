@@ -161,6 +161,16 @@ public final class TrainDBSql {
         runner.renameSynopsis(alterSynopsis.getSynopsisName(), alterSynopsis.getNewSynopsisName());
         break;
       }
+      case ALTER_SYNOPSIS_ENABLE: {
+        TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
+        runner.enableSynopsis(alterSynopsis.getSynopsisName());
+        break;
+      }
+      case ALTER_SYNOPSIS_DISABLE: {
+        TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
+        runner.disableSynopsis(alterSynopsis.getSynopsisName());
+        break;
+      }
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -365,9 +375,16 @@ public final class TrainDBSql {
         String newSynopsisName = ctx.alterSynopsisClause().newSynopsisName().getText();
         commands.add(new TrainDBSqlAlterSynopsis.Rename(synopsisName, newSynopsisName));
       }
+      if (ctx.alterSynopsisClause().enableDisableClause() != null) {
+        String enableOption = ctx.alterSynopsisClause().enableDisableClause().getText();
+        if (enableOption.equalsIgnoreCase("ENABLE")) {
+          commands.add(new TrainDBSqlAlterSynopsis.Enable(synopsisName));
+        } else if (enableOption.equalsIgnoreCase("DISABLE")){
+          commands.add(new TrainDBSqlAlterSynopsis.Disable(synopsisName));
+        }
+      }
       LOG.debug("ALTER SYNOPSIS: name=" + synopsisName);
     }
-
 
     @Override
     public void exitBypassDdlStmt(TrainDBSqlParser.BypassDdlStmtContext ctx) {

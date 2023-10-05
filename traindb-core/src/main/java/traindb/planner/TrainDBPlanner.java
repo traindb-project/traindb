@@ -135,6 +135,9 @@ public class TrainDBPlanner extends VolcanoPlanner {
       Collection<MSynopsis> synopses = catalogContext.getAllSynopses(baseSchema, baseTable);
       List<MSynopsis> availableSynopses = new ArrayList<>();
       for (MSynopsis synopsis : synopses) {
+        if (!synopsis.isEnabled()) {
+          continue;
+        }
         List<String> synopsisColumnNames = synopsis.getModel().getColumnNames();
         if (synopsisColumnNames.containsAll(requiredColumnNames)) {
           availableSynopses.add(synopsis);

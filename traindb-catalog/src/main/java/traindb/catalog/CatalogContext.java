@@ -96,6 +96,10 @@ public interface CatalogContext {
 
   void renameSynopsis(String synopsisName, String newSynopsisName) throws CatalogException;
 
+  void enableSynopsis(String synopsisName) throws CatalogException;
+
+  void disableSynopsis(String synopsisName) throws CatalogException;
+
   /* Schema & Table */
   MSchema getSchema(String name);
 

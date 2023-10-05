@@ -42,4 +42,26 @@ abstract class TrainDBSqlAlterSynopsis extends TrainDBSqlCommand {
       return Type.ALTER_SYNOPSIS_RENAME;
     }
   }
+
+  static class Enable extends TrainDBSqlAlterSynopsis {
+    Enable(String synopsisName) {
+      super(synopsisName, null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.ALTER_SYNOPSIS_ENABLE;
+    }
+  }
+
+  static class Disable extends TrainDBSqlAlterSynopsis {
+    Disable(String synopsisName) {
+      super(synopsisName, null);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.ALTER_SYNOPSIS_DISABLE;
+    }
+  }
 }

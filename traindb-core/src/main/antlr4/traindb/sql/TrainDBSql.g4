@@ -208,6 +208,7 @@ alterSynopsis
 
 alterSynopsisClause
     : K_RENAME K_TO newSynopsisName
+    | enableDisableClause
     ;
 
 useSchema
