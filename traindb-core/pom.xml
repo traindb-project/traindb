@@ -149,10 +149,6 @@ limitations under the License.
             <groupId>net.sf.opencsv</groupId>
             <artifactId>opencsv</artifactId>
         </dependency>
-        <dependency>
-            <groupId>org.apache.drill.tools</groupId>
-            <artifactId>drill-fmpp-maven-plugin</artifactId>
-        </dependency>
 
         <!--  Test Support -->
         <dependency>
@@ -255,6 +251,7 @@ limitations under the License.
             <plugin>
                 <groupId>org.apache.drill.tools</groupId>
                 <artifactId>drill-fmpp-maven-plugin</artifactId>
+                <version>1.20.0</version>
                 <executions>
                     <execution>
                         <configuration>
