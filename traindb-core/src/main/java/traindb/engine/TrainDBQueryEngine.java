@@ -535,7 +535,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     for (MSynopsis mSynopsis : catalogContext.getAllSynopses(filterPatterns)) {
       MModel mModel = mSynopsis.getModel();
       synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mModel.getModelName(),
-          mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames(),
+          mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames().toString(),
           mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio()),
           mSynopsis.getSynopsisStatus()));
     }
