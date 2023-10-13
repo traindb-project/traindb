@@ -35,6 +35,8 @@ public final class MTable {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String table_name;
 
+  @Persistent
+  @Column(length = 18)
   private String table_type;
 
   @Persistent(dependent = "false")
