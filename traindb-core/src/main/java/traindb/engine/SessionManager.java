@@ -31,8 +31,8 @@ import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 import traindb.util.NetUtils;
 
-public final class SessionServer extends AbstractService {
-  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(SessionServer.class);
+public final class SessionManager extends AbstractService {
+  private static final TrainDBLogger LOG = TrainDBLogger.getLogger(SessionManager.class);
 
   private static final int SESSION_MAX_DEFAULT = 8;
   private static final long SESSION_KEEPALIVE_DEFAULT = 60;
@@ -45,8 +45,8 @@ public final class SessionServer extends AbstractService {
   private Listener listener;
   private volatile boolean running;
 
-  public SessionServer(SessionFactory sessionFactory) {
-    super(SessionServer.class.getSimpleName());
+  public SessionManager(SessionFactory sessionFactory) {
+    super(SessionManager.class.getSimpleName());
     this.sessionFactory = sessionFactory;
   }
 
@@ -124,7 +124,7 @@ public final class SessionServer extends AbstractService {
     private final ServerSocketChannel acceptChannel;
 
     Listener() throws IOException {
-      setName("SessionServer Listener");
+      setName("SessionManager Listener");
 
       String addr = getConfig().get(
           TrainDBConfiguration.SERVER_PROPERTY_PREFIX + "address", "localhost");

@@ -48,8 +48,8 @@ public class TrainDBServer extends CompositeService {
     addService(schemaManager);
 
     SessionFactory sessFactory = new SessionFactory(schemaManager);
-    SessionServer sessServer = new SessionServer(sessFactory);
-    addService(sessServer);
+    SessionManager sessManager = new SessionManager(sessFactory);
+    addService(sessManager);
 
     super.serviceInit(conf);
   }
