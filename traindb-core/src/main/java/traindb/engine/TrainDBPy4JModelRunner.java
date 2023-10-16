@@ -99,7 +99,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
           ds.getDriverClassName(), ds.getUrl(), ds.getUsername(), ds.getPassword(),
           jdbcClass.getProtectionDomain().getCodeSource().getLocation().getPath());
       modelRunner.trainModel(
-          buildSelectTrainingDataQuery(schemaName, tableName, columnNames,
+          buildExportTableQuery(schemaName, tableName, columnNames,
               table.getRowType(typeFactory)),
           mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
           tableMetadata.toJSONString(), modelPath.toString());

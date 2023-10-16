@@ -94,7 +94,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     BasicDataSource ds = conn.getDataSource();
     String schemaName = table.getSchema().getName();
     String tableName = table.getName();
-    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames,
+    String sql = buildExportTableQuery(schemaName, tableName, columnNames,
         table.getRowType(typeFactory));
 
     JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,

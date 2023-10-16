@@ -28,7 +28,6 @@ import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBConfiguration;
-import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.TrainDBTable;
 
@@ -88,8 +87,8 @@ public abstract class AbstractTrainDBModelRunner {
   }
 
 
-  protected String buildSelectTrainingDataQuery(String schemaName, String tableName,
-                                                List<String> columnNames, RelDataType relDataType) {
+  public static String buildExportTableQuery(String schemaName, String tableName,
+                                             List<String> columnNames, RelDataType relDataType) {
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
     for (int i = 0; i < columnNames.size(); i++) {
