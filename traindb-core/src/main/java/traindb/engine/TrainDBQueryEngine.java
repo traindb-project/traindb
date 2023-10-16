@@ -337,7 +337,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private void renameSynopsisTable(String synopsisName, String newSynopsisName)
       throws Exception {
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
-    String schemaName = mSynopsis.getModel().getSchemaName();
+    String schemaName = mSynopsis.getSchemaName();
 
     StringBuilder sb = new StringBuilder();
     sb.append("ALTER TABLE ")
@@ -440,7 +440,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
     StringBuilder sb = new StringBuilder();
     sb.append("DROP TABLE ");
-    sb.append(mSynopsis.getModel().getSchemaName());
+    sb.append(mSynopsis.getSchemaName());
     sb.append(".");
     sb.append(synopsisName);
 
@@ -525,17 +525,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<String> header = Arrays.asList("synopsis_name", "model_name", "schema_name", "table_name",
         "columns", "rows", "ratio", "synopsis_status");
     checkShowWhereColumns(filterPatterns, header);
-    addPrefixToPatternFilter(filterPatterns,
-        ImmutableList.of("model_name", "schema_name", "table_name", "columns"), "model");
+    //addPrefixToPatternFilter(filterPatterns, ImmutableList.of("model_name"), "model");
 
     T_tracer.startTaskTracer("show synopses");
     T_tracer.openTaskTime("scan : synopsis");
 
     List<List<Object>> synopsisInfo = new ArrayList<>();
     for (MSynopsis mSynopsis : catalogContext.getAllSynopses(filterPatterns)) {
-      MModel mModel = mSynopsis.getModel();
-      synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mModel.getModelName(),
-          mModel.getSchemaName(), mModel.getTableName(), mModel.getColumnNames().toString(),
+      synopsisInfo.add(Arrays.asList(mSynopsis.getSynopsisName(), mSynopsis.getModelName(),
+          mSynopsis.getSchemaName(), mSynopsis.getTableName(),
+          mSynopsis.getColumnNames().toString(),
           mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio()),
           mSynopsis.getSynopsisStatus()));
     }

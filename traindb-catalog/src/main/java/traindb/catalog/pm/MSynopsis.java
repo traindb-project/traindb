@@ -14,6 +14,8 @@
 
 package traindb.catalog.pm;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
+import java.util.List;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -23,6 +25,7 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
+@JsonIgnoreProperties({ "model" })
 public final class MSynopsis {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
@@ -32,6 +35,21 @@ public final class MSynopsis {
   @Unique(name = "SYNOPSIS_NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String synopsis_name;
+
+  @Persistent
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String model_name;
+
+  @Persistent
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String schema_name;
+
+  @Persistent
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String table_name;
+
+  @Persistent
+  private List<String> columns;
 
   @Persistent
   private int rows;
@@ -52,6 +70,17 @@ public final class MSynopsis {
     this.ratio = (ratio == null) ? 0 : ratio;
     this.synopsis_status = "ENABLED";  // initial status
     this.model = model;
+    if (model == null) {
+      this.model_name = "Unknown";
+      this.schema_name = null;
+      this.table_name = null;
+      this.columns = null;
+    } else {
+      this.model_name = model.getModelName();
+      this.schema_name = model.getSchemaName();
+      this.table_name = model.getTableName();
+      this.columns = model.getColumnNames();
+    }
   }
 
   public String getSynopsisName() {
@@ -68,6 +97,22 @@ public final class MSynopsis {
 
   public MModel getModel() {
     return model;
+  }
+
+  public String getModelName() {
+    return model_name;
+  }
+
+  public String getSchemaName() {
+    return schema_name;
+  }
+
+  public String getTableName() {
+    return table_name;
+  }
+
+  public List<String> getColumnNames() {
+    return columns;
   }
 
   public String getSynopsisStatus() {
@@ -88,5 +133,21 @@ public final class MSynopsis {
 
   public boolean isEnabled() {
     return synopsis_status.equals("ENABLED");
+  }
+
+  public void setModelName(String modelName) {
+    this.model_name = modelName;
+  }
+
+  public void setSchemaName(String schemaName) {
+    this.schema_name = schemaName;
+  }
+
+  public void setTableName(String tableName) {
+    this.table_name = tableName;
+  }
+
+  public void setColumnNames(List<String> columns) {
+    this.columns = columns;
   }
 }

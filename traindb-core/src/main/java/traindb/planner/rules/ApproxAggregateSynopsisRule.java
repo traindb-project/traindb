@@ -173,7 +173,7 @@ public class ApproxAggregateSynopsisRule
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
       relBuilder.push(newScan);
 
-      final List<String> synopsisColumns = bestSynopsis.getModel().getColumnNames();
+      final List<String> synopsisColumns = bestSynopsis.getColumnNames();
       final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
 
       boolean projected = false;
