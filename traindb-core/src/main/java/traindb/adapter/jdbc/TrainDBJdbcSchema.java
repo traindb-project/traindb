@@ -19,6 +19,9 @@ import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
+import java.util.ArrayList;
+import java.util.List;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -29,6 +32,7 @@ import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.common.TrainDBLogger;
+import traindb.schema.TrainDBPartition;
 import traindb.schema.TrainDBSchema;
 
 public class TrainDBJdbcSchema extends TrainDBSchema {
@@ -37,6 +41,8 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
   public TrainDBJdbcSchema(String name, TrainDBJdbcDataSource dataSource) {
     super(name, dataSource);
     computeTableMap();
+
+    computePartitionMap();
   }
 
   public void computeTableMap() {
@@ -63,7 +69,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
 
         // DB users can access the tables of implicit schemas - ISSUE #41
         if (supportCatalog) {
-          if (catalogName != null  && !catalogName.equals(getName())) {
+          if (catalogName != null && !catalogName.equals(getName())) {
             continue;
           }
         } else {
@@ -78,17 +84,18 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         // -----> for postgres code start
         String tableTypeName = resultSet.getString(4);
 
-        if ( tableTypeName == null || tableTypeName.length() == 0 )
+        if (tableTypeName == null || tableTypeName.length() == 0) {
           tableTypeName = "TABLE";
-        else
+        } else {
           tableTypeName = resultSet.getString(4).replace(" ", "_");
+        }
         // -----> for postgres code end
 
         MetaImpl.MetaTable tableDef =
             new MetaImpl.MetaTable(catalogName, schemaName, tableName, tableTypeName);
 
         builder.put(tableName, new TrainDBJdbcTable(tableName, this, tableDef,
-                                                    getProtoType(tableDef, databaseMetaData)));
+            getProtoType(tableDef, databaseMetaData)));
       }
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -136,4 +143,66 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
     return builder.build();
   }
 
+  public void computePartitionMap() {
+    final ImmutableMap.Builder<String, TrainDBPartition> builder = ImmutableMap.builder();
+    Connection connection = null;
+    ResultSet resultSet = null;
+    String oldTableName = null;
+
+    try {
+      TrainDBJdbcDataSource dataSource = (TrainDBJdbcDataSource) getDataSource();
+      connection = dataSource.getDataSource().getConnection();
+      DatabaseMetaData databaseMetaData = connection.getMetaData();
+      String url = databaseMetaData.getURL();
+      String db_query = url.split(":")[1];
+
+      String sql = null;
+      if (db_query.equals("kairos")) {
+        sql = "SELECT * FROM sys_table_partitions where owner_name like LOWER('"
+            + getName() + "')";
+      } else {
+        return;
+      }
+
+      List<String> partitionList = new ArrayList<>();
+      String schemaName = null;
+      String tableName = null;
+      String partitionName = null;
+
+      Statement vstmt = connection.createStatement();
+
+      resultSet = vstmt.executeQuery(sql);
+      while (resultSet.next()) {
+        schemaName = resultSet.getString(1);
+        tableName = resultSet.getString(2);
+        partitionName = resultSet.getString(3);
+
+        if (oldTableName == null) {
+          partitionList.add(partitionName);
+          oldTableName = tableName;
+        } else {
+          if (oldTableName.compareTo(tableName) == 0) {
+            partitionList.add(partitionName);
+          } else {
+            TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
+            builder.put(oldTableName, partitionDef);
+            partitionList = new ArrayList<>();
+
+            oldTableName = tableName;
+          }
+        }
+      }
+
+      if (oldTableName != null) {
+        //partitionList.add(partitionName);
+        TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
+        builder.put(tableName, partitionDef);
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } finally {
+      JdbcUtils.close(connection, null, resultSet);
+    }
+    setPartitionMap(builder.build());
+  }
 }
