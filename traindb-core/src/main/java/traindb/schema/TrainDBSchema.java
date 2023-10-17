@@ -31,6 +31,7 @@ public abstract class TrainDBSchema extends AbstractSchema {
   private final String name;
   private TrainDBDataSource dataSource;
   private ImmutableMap<String, Table> tableMap;
+  private ImmutableMap<String, TrainDBPartition> partitionMap;
 
   public TrainDBSchema(String name, TrainDBDataSource dataSource) {
     this.name = name;
@@ -53,6 +54,14 @@ public abstract class TrainDBSchema extends AbstractSchema {
 
   public final void setTableMap(ImmutableMap<String, Table> tableMap) {
     this.tableMap = tableMap;
+  }
+
+  public final Map<String, TrainDBPartition> getPartitionMap() {
+    return partitionMap;
+  }
+
+  public final void setPartitionMap(ImmutableMap<String, TrainDBPartition> partitionMap) {
+    this.partitionMap = partitionMap;
   }
 
   public final TrainDBDataSource getDataSource() {
