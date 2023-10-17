@@ -17,6 +17,7 @@ package traindb.engine;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.File;
@@ -34,6 +35,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
@@ -54,6 +58,8 @@ import traindb.common.TrainDBLogger;
 import traindb.engine.nio.ByteArray;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
+import traindb.schema.TrainDBPartition;
+import traindb.schema.TrainDBSchema;
 import traindb.schema.TrainDBTable;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
@@ -652,6 +658,34 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.endTaskTracer();
 
     return new TrainDBListResultSet(header, trainingInfo);
+  }
+
+  @Override
+  public TrainDBListResultSet showPartitions(Map<String, Object> filterPatterns) throws Exception {
+    List<String> header = Arrays.asList("schema_name", "table_name", "partition_name");
+    List<List<Object>> partitionsInfo = new ArrayList<>();
+
+    T_tracer.startTaskTracer("show partitions");
+    T_tracer.openTaskTime("scan : partitions");
+
+    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+      TrainDBSchema traindbSchema = (TrainDBSchema) schema;
+      Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
+      Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
+
+      for (Map.Entry<String, TrainDBPartition> tempEntry : entries) {
+        List<String> partitionList = tempEntry.getValue().getPartitionNameMap();
+        for (int k = 0; k < partitionList.size(); k++) {
+          partitionsInfo.add(Arrays.asList(traindbSchema.getName(), tempEntry.getKey(),
+              partitionList.get(k)));
+        }
+      }
+    }
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, partitionsInfo);
   }
 
   @Override
