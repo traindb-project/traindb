@@ -45,6 +45,7 @@ traindbStmts
     | deleteTasks
     | exportModel
     | importModel
+    | incrementalQuery
     ;
 
 createModeltype
@@ -158,6 +159,7 @@ showTargets
     | K_TRAININGS
     | K_QUERYLOGS
     | K_TASKS
+    | K_PARTITIONS
     ;
 
 showWhereClause
@@ -221,6 +223,10 @@ describeTable
 
 bypassDdlStmt
     : K_BYPASS ddlString
+    ;
+
+incrementalQuery
+    : K_INCREMENTAL ddlString
     ;
 
 schemaName
@@ -288,6 +294,7 @@ K_FROM : F R O M ;
 K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;
 K_IMPORT : I M P O R T ;
 K_IN : I N ;
+K_INCREMENTAL : I N C R E M E N T A L ;
 K_INFERENCE : I N F E R E N C E ;
 K_LIKE : L I K E ;
 K_LIMIT : L I M I T ;
@@ -299,6 +306,7 @@ K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
 K_PERCENT : P E R C E N T ;
+K_PARTITIONS : P A R T I T I O N S ;
 K_QUERYLOGS : Q U E R Y L O G S ;
 K_REMOTE : R E M O T E ;
 K_RENAME : R E N A M E ;
