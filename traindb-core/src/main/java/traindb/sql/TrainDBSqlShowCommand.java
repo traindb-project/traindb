@@ -105,6 +105,17 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
+  static class Partitions extends TrainDBSqlShowCommand {
+    Partitions(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_PARTITIONS;
+    }
+  }
+
   static class QueryLogs extends TrainDBSqlShowCommand {
     QueryLogs(Map<String, Object> whereExprMap) {
       super(whereExprMap);
