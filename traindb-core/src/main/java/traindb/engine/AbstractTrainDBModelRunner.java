@@ -14,6 +14,9 @@
 
 package traindb.engine;
 
+import com.opencsv.CSVWriter;
+import com.opencsv.ResultSetHelperService;
+import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.DatabaseMetaData;
@@ -108,6 +111,17 @@ public abstract class AbstractTrainDBModelRunner {
     sb.append(tableName);
 
     return sb.toString();
+  }
+
+  public static void writeResultSetToCsv(ResultSet rs, String filePath) throws Exception {
+    FileWriter datafileWriter = new FileWriter(filePath);
+    CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
+    ResultSetHelperService resultSetHelperService = new ResultSetHelperService();
+    resultSetHelperService.setDateFormat("yyyy-MM-dd");
+    resultSetHelperService.setDateTimeFormat("yyyy-MM-dd HH:MI:SS");
+    csvWriter.setResultService(resultSetHelperService);
+    csvWriter.writeAll(rs, true);
+    csvWriter.close();
   }
 
   protected JSONObject buildTableMetadata(
