@@ -362,7 +362,8 @@ public final class JDOCatalogContext implements CatalogContext {
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
                                   @Nullable Double ratio) throws CatalogException {
     try {
-      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, getModel(modelName));
+      MModel mModel = getModel(modelName);
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, mModel.getTable());
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {

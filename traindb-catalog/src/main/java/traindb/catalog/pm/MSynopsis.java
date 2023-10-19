@@ -64,7 +64,10 @@ public final class MSynopsis {
   @Persistent(dependent = "false")
   private MModel model;
 
-  public MSynopsis(String name, Integer rows, Double ratio, MModel model) {
+  @Persistent(dependent = "false")
+  private MTable table;
+
+  public MSynopsis(String name, Integer rows, Double ratio, MModel model, MTable table) {
     this.synopsis_name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
@@ -81,6 +84,7 @@ public final class MSynopsis {
       this.table_name = model.getTableName();
       this.columns = model.getColumnNames();
     }
+    this.table = table;
   }
 
   public String getSynopsisName() {
@@ -97,6 +101,10 @@ public final class MSynopsis {
 
   public MModel getModel() {
     return model;
+  }
+
+  public MTable getTable() {
+    return table;
   }
 
   public String getModelName() {
