@@ -132,7 +132,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, Map<String, Object> trainOptions) throws Exception {
+      List<String> columnNames, float samplePercent, Map<String, Object> trainOptions)
+      throws Exception {
     T_tracer.startTaskTracer("train model " + modelName);
 
     T_tracer.openTaskTime("find : modeltype");
@@ -166,12 +167,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new TrainDBException("cannot find the table '" + schemaName + "'.'" + tableName + "'");
     }
     Long baseTableRows = getTableRowCount(schemaName, tableName);
-    Long trainedRows = baseTableRows; // TODO
+    Long trainedRows = (long) (baseTableRows * (samplePercent / 100.0)); // FIXME: not exact
 
     T_tracer.openTaskTime("train model");
     AbstractTrainDBModelRunner runner = createModelRunner(
         modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
-    runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
+    runner.trainModel(table, columnNames, samplePercent, trainOptions, conn.getTypeFactory());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert model info");

@@ -80,7 +80,8 @@ public final class TrainDBSql {
         runner.trainModel(
             trainModel.getModeltypeName(), trainModel.getModelName(),
             trainModel.getSchemaName(), trainModel.getTableName(),
-            trainModel.getColumnNames(), trainModel.getTrainOptions());
+            trainModel.getColumnNames(), trainModel.getSamplePercent(),
+            trainModel.getTrainOptions());
         break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
@@ -267,6 +268,11 @@ public final class TrainDBSql {
         columnNames.add(columnName.getText());
       }
 
+      float samplePercent = 100;
+      if (ctx.trainSampleClause() != null) {
+        samplePercent = Float.parseFloat(ctx.trainSampleClause().samplePercent().getText());
+      }
+
       Map<String, Object> trainOptions = new HashMap<>();
       if (ctx.trainModelOptionsClause() != null) {
         for (TrainDBSqlParser.OptionKeyValueContext optionKeyValue
@@ -280,7 +286,8 @@ public final class TrainDBSql {
       String schemaName = ctx.tableName().schemaName().getText();
       String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlTrainModel(
-          modeltypeName, modelName, schemaName, tableName, columnNames, trainOptions));
+          modeltypeName, modelName, schemaName, tableName, columnNames, samplePercent,
+          trainOptions));
     }
 
     @Override

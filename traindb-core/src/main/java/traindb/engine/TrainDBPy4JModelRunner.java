@@ -77,8 +77,8 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
 
   @Override
   public void trainModel(
-      TrainDBTable table, List<String> columnNames, Map<String, Object> trainOptions,
-      JavaTypeFactory typeFactory) throws Exception {
+      TrainDBTable table, List<String> columnNames, float samplePercent,
+      Map<String, Object> trainOptions, JavaTypeFactory typeFactory) throws Exception {
     String schemaName = table.getSchema().getName();
     String tableName = table.getName();
     JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
@@ -99,7 +99,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
           ds.getDriverClassName(), ds.getUrl(), ds.getUsername(), ds.getPassword(),
           jdbcClass.getProtectionDomain().getCodeSource().getLocation().getPath());
       modelRunner.trainModel(
-          buildSelectTrainingDataQuery(schemaName, tableName, columnNames,
+          buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
               table.getRowType(typeFactory)),
           mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
           tableMetadata.toJSONString(), modelPath.toString());

@@ -57,7 +57,8 @@ dropModeltype
     ;
 
 trainModel
-    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')' trainModelOptionsClause?
+    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')'
+      trainSampleClause? trainModelOptionsClause?
     ;
 
 dropModel
@@ -110,6 +111,14 @@ modeltypeClassName
 
 modeltypeUri
     : STRING_LITERAL
+    ;
+
+trainSampleClause
+    : K_SAMPLE samplePercent K_PERCENT
+    ;
+
+samplePercent
+    : NUMERIC_LITERAL
     ;
 
 trainModelOptionsClause
@@ -305,6 +314,7 @@ K_MODELTYPE : M O D E L T Y P E ;
 K_MODELTYPES : M O D E L T Y P E S ;
 K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
+K_SAMPLE : S A M P L E ;
 K_PERCENT : P E R C E N T ;
 K_PARTITIONS : P A R T I T I O N S ;
 K_QUERYLOGS : Q U E R Y L O G S ;
