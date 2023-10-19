@@ -622,13 +622,19 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   private void setFilterPatterns(Query query, Map<String, Object> filterPatterns) {
+    StringBuilder sb = new StringBuilder();
     for (Map.Entry<String, Object> entry : filterPatterns.entrySet()) {
       Object v = entry.getValue();
       if (v instanceof String) {
-        query.setFilter(entry.getKey() + ".matches('" + v + "')");
+        sb.append(entry.getKey()).append(".matches('").append(v).append("')");
       } else {
-        query.setFilter(entry.getKey() + " == " + v + " ");
+        sb.append(entry.getKey()).append(" == ").append(v);
       }
+      sb.append(" && ");
+    }
+    String filterStr = sb.toString();
+    if (filterStr.length() > 0) {
+      query.setFilter(filterStr.substring(0, filterStr.length() - 4 /* " && " */));
     }
   }
 }
