@@ -277,36 +277,43 @@ public final class JDOCatalogContext implements CatalogContext {
     }
   }
 
+  private void importTable(String schemaName, JSONObject jsonTableMetadata) {
+    MSchema mSchema = getSchema(schemaName);
+    if (mSchema == null) {
+      mSchema = pm.makePersistent(new MSchema(schemaName));
+    }
+
+    String tableName = (String) jsonTableMetadata.get("tableName");
+    MTable mTable = getTable(schemaName, tableName);
+    if (mTable == null) {
+      JSONObject jsonTable = (JSONObject) jsonTableMetadata.get("table");
+      mTable = pm.makePersistent(
+          new MTable(tableName, (String) jsonTable.get("tableType"), mSchema));
+
+      JSONArray jsonColumns = (JSONArray) jsonTable.get("columns");
+      for (int i = 0; i < jsonColumns.size(); i++) {
+        JSONObject jsonColumn = (JSONObject) jsonColumns.get(i);
+        String columnName = (String) jsonColumn.get("columnName");
+        int columnType = ((Long) jsonColumn.get("columnType")).intValue();
+        int precision = ((Long) jsonColumn.get("precision")).intValue();
+        int scale = ((Long) jsonColumn.get("scale")).intValue();
+        boolean nullable = (boolean) jsonColumn.get("nullable");
+        MColumn mColumn = new MColumn(columnName, columnType, precision, scale, nullable, mTable);
+        pm.makePersistent(mColumn);
+      }
+    }
+  }
+
   @Override
   public void importModel(String modeltypeName, String modelName, JSONObject exportMetadata)
       throws CatalogException {
     try {
       String schemaName = (String) exportMetadata.get("schemaName");
-      MSchema mSchema = getSchema(schemaName);
-      if (mSchema == null) {
-        mSchema = pm.makePersistent(new MSchema(schemaName));
-      }
+      JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
+      importTable(schemaName, jsonTable);
 
       String tableName = (String) exportMetadata.get("tableName");
       MTable mTable = getTable(schemaName, tableName);
-      if (mTable == null) {
-        JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
-        mTable = pm.makePersistent(
-            new MTable(tableName, (String) jsonTable.get("tableType"), mSchema));
-
-        JSONArray jsonColumns = (JSONArray) jsonTable.get("columns");
-        for (int i = 0; i < jsonColumns.size(); i++) {
-          JSONObject jsonColumn = (JSONObject) jsonColumns.get(i);
-          String columnName = (String) jsonColumn.get("columnName");
-          int columnType = ((Long) jsonColumn.get("columnType")).intValue();
-          int precision = ((Long) jsonColumn.get("precision")).intValue();
-          int scale = ((Long) jsonColumn.get("scale")).intValue();
-          boolean nullable = (boolean) jsonColumn.get("nullable");
-          MColumn mColumn = new MColumn(columnName, columnType, precision, scale, nullable, mTable);
-          pm.makePersistent(mColumn);
-        }
-      }
-
       MModeltype mModeltype = getModeltype(modeltypeName);
       JSONArray jsonColumnNames = (JSONArray) exportMetadata.get("columnNames");
       List<String> columnNames = new ArrayList<>();
