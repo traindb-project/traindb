@@ -680,52 +680,52 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   <T> CalciteSignature<T> executeIncremental(
       Context context,
       TrainDBSqlCommand commands) {
-     final CalciteConnectionConfig config = context.config();
-      SqlParser.Config parserConfig = parserConfig()
-          .withQuotedCasing(config.quotedCasing())
-          .withUnquotedCasing(config.unquotedCasing())
-          .withQuoting(config.quoting())
-          .withConformance(config.conformance())
-          .withCaseSensitive(config.caseSensitive());
-      final SqlParserImplFactory parserFactory =
-          config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
-      if (parserFactory != null) {
-        parserConfig = parserConfig.withParserFactory(parserFactory);
-      }
+    final CalciteConnectionConfig config = context.config();
+    SqlParser.Config parserConfig = parserConfig()
+        .withQuotedCasing(config.quotedCasing())
+        .withUnquotedCasing(config.unquotedCasing())
+        .withQuoting(config.quoting())
+        .withConformance(config.conformance())
+        .withCaseSensitive(config.caseSensitive());
+    final SqlParserImplFactory parserFactory =
+        config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
+    if (parserFactory != null) {
+      parserConfig = parserConfig.withParserFactory(parserFactory);
+    }
 
-      TrainDBConnectionImpl conn =
-          (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+    TrainDBConnectionImpl conn =
+        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
-      TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
-      String sql = incrementalQuery.getStatement();
+    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalQuery.getStatement();
 
-      SqlParser parser = createParser(sql,  parserConfig);
-      SqlNode sqlNode;
-      try {
-        sqlNode = parser.parseStmt();
-      } catch (SqlParseException e) {
-        throw new RuntimeException(
-            "parse failed: " + e.getMessage(), e);
-      }
+    SqlParser parser = createParser(sql,  parserConfig);
+    SqlNode sqlNode;
+    try {
+      sqlNode = parser.parseStmt();
+    } catch (SqlParseException e) {
+      throw new RuntimeException(
+          "parse failed: " + e.getMessage(), e);
+    }
 
-      TrainDBSqlSelect ptree = (TrainDBSqlSelect)sqlNode;
+    TrainDBSqlSelect ptree = (TrainDBSqlSelect)sqlNode;
 
-      // select list
-      SqlNode selectNode = ptree.getSelectList();
-      String selectList = selectNode.toString();
+    // select list
+    SqlNode selectNode = ptree.getSelectList();
+    String selectList = selectNode.toString();
 
-      // from clause
-      SqlNode fromNode = ptree.getFrom();
-      SqlIdentifier fromIdnt = (SqlIdentifier)fromNode;
+    // from clause
+    SqlNode fromNode = ptree.getFrom();
+    SqlIdentifier fromIdnt = (SqlIdentifier)fromNode;
 
-      if ( fromIdnt.isSimple() ) {
-        String err = "ERROR";
-      }
+    if ( fromIdnt.isSimple() ) {
+      String err = "ERROR";
+    }
 
-      String tblname = fromNode.toString();
+    String tblname = fromNode.toString();
 
-      List <String> partitionList = null;
-      SchemaManager schemaManager = conn.getSchemaManager();
+    List <String> partitionList = null;
+    SchemaManager schemaManager = conn.getSchemaManager();
     for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
@@ -752,16 +752,16 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         ResultSetMetaData md = rs.getMetaData();
 
         while (rs.next()) {
-           List<Object> r = new ArrayList<>();
-           for (int j = 1; j <= columnCount; j++) {
+          List<Object> r = new ArrayList<>();
+          for (int j = 1; j <= columnCount; j++) {
 //              if (rs.getColumnType(j) == Types.VARBINARY) {
- //               ByteArray byteArray = (ByteArray) rs.getValue(j);
- //               r.add(byteArray.getArray());
- //             }
-             r.add(rs.getObject(j));
-           }
-           TotalRes.add(r);
-         }
+            //               ByteArray byteArray = (ByteArray) rs.getValue(j);
+            //               r.add(byteArray.getArray());
+            //             }
+            r.add(rs.getObject(j));
+          }
+          TotalRes.add(r);
+        }
 
         if ( TotalRes.size() > 0 && k < partitionList.size()-1 ) {
           List<Object> r = new ArrayList<>();
