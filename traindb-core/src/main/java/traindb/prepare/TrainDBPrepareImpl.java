@@ -739,6 +739,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       }
     }
 
+    if (partitionList == null) {
+      throw new RuntimeException(
+          "failed to run statement: " + sql
+          + "\nerror msg: incremental query can be executed on partitioned table only.");
+    }
+
     String changeQuery;
     List<List<Object>> TotalRes = new ArrayList<>();
     final List<ColumnMetaData> columns = new ArrayList<>();
