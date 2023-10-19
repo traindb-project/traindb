@@ -23,6 +23,7 @@ import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
 import java.nio.charset.StandardCharsets;
+import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.DatabaseMetaData;
@@ -955,6 +956,57 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();
+  }
+
+  @Override
+  public TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception {
+    T_tracer.startTaskTracer("export synopsis " + synopsisName);
+
+    T_tracer.openTaskTime("find : synopsis");
+    if (!catalogContext.synopsisExists(synopsisName)) {
+      String msg = "synopsis '" + synopsisName + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("export synopsis");
+    MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
+
+    TrainDBTable table = schemaManager.getTable(
+        mSynopsis.getSchemaName(), mSynopsis.getTableName());
+
+    String sql = AbstractTrainDBModelRunner.buildExportTableQuery(
+        mSynopsis.getSchemaName(), mSynopsis.getTableName(), mSynopsis.getColumnNames(),
+        table.getRowType(conn.getTypeFactory()));
+    ResultSet synopsisData = conn.executeQueryInternal(sql);
+
+    Path tempDir = Files.createTempDirectory("traindb-");
+    Path tempSynDir = Paths.get(tempDir.toString(), synopsisName);
+    new File(tempSynDir.toString()).mkdirs();
+
+    String synopsisFile = Paths.get(tempSynDir.toString(), synopsisName + ".csv").toString();
+    AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
+    synopsisData.close();
+
+    Path outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
+    ZipUtils.pack(tempSynDir.toString(), outputPath.toString());
+    ObjectMapper mapper = new ObjectMapper();
+    ZipUtils.addNewFileFromStringToZip("export_synopsis.json",
+        mapper.writeValueAsString(mSynopsis), outputPath);
+
+    List<String> header = Arrays.asList("export_synopsis");
+    List<List<Object>> exportSynopsisInfo = new ArrayList<>();
+    ByteArray byteArray = convertFileToByteArray(new File(outputPath.toString()));
+    exportSynopsisInfo.add(Arrays.asList(byteArray));
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, exportSynopsisInfo);
   }
 
   @Override

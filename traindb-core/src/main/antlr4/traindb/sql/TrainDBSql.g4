@@ -45,6 +45,7 @@ traindbStmts
     | deleteTasks
     | exportModel
     | importModel
+    | exportSynopsis
     ;
 
 createModeltype
@@ -142,6 +143,10 @@ importModel
 
 modelBinaryString
     : BINARY_STRING_LITERAL
+    ;
+
+exportSynopsis
+    : K_EXPORT K_SYNOPSIS synopsisName
     ;
 
 showStmt

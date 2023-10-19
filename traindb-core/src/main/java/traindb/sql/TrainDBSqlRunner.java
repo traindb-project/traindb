@@ -77,6 +77,8 @@ public interface TrainDBSqlRunner {
 
   void disableModel(String modelName) throws Exception;
 
+  TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception;
+
   void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception;
 
   void enableSynopsis(String synopsisName) throws Exception;
