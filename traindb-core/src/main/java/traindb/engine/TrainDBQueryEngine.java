@@ -980,7 +980,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         mSynopsis.getSchemaName(), mSynopsis.getTableName());
 
     String sql = AbstractTrainDBModelRunner.buildExportTableQuery(
-        mSynopsis.getSchemaName(), mSynopsis.getTableName(), mSynopsis.getColumnNames(),
+        mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
         table.getRowType(conn.getTypeFactory()));
     ResultSet synopsisData = conn.executeQueryInternal(sql);
 
