@@ -386,8 +386,7 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable)
       throws CatalogException {
-    return getAllSynopses(ImmutableMap.of(
-        "model.schema_name", baseSchema, "model.table_name", baseTable));
+    return getAllSynopses(ImmutableMap.of("schema_name", baseSchema, "table_name", baseTable));
   }
 
   @Override
