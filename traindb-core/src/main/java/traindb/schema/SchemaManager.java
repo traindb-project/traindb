@@ -41,7 +41,7 @@ public final class SchemaManager extends AbstractService {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(SchemaManager.class);
   private static SchemaManager singletonInstance;
   private final CatalogStore catalogStore;
-  private TrainDBDataSource traindbDataSource;
+  public TrainDBDataSource traindbDataSource;
 
   private final Map<String, List<TrainDBDataSource>> dataSourceMap;
   private final Map<String, List<TrainDBSchema>> schemaMap;

@@ -20,6 +20,9 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
 import java.sql.DatabaseMetaData;
+import java.sql.ResultSet;
+import java.sql.ResultSetMetaData;
+import java.sql.SQLException;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -27,6 +30,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -67,10 +71,12 @@ import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.Typed;
+import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlOperatorTable;
@@ -94,10 +100,15 @@ import traindb.engine.TrainDBQueryEngine;
 import traindb.engine.nio.ByteArray;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.planner.TrainDBPlanner;
+import traindb.schema.SchemaManager;
+import traindb.schema.TrainDBPartition;
+import traindb.schema.TrainDBSchema;
+import traindb.sql.TrainDBIncrementalQuery;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
+import traindb.sql.calcite.TrainDBSqlSelect;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
@@ -542,6 +553,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           // INSERT QUERY LOGS
           queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
 
+          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY) {
+            return executeIncremental(context, commands.get(0));
+          }
+
           return convertResultToSignature(context, query.sql,
               TrainDBSql.run(commands.get(0), queryEngine));
         } catch (Exception e) {
@@ -659,6 +674,125 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         maxRowCount,
         bindable,
         statementType);
+  }
+
+  @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
+  <T> CalciteSignature<T> executeIncremental(
+      Context context,
+      TrainDBSqlCommand commands) {
+    final CalciteConnectionConfig config = context.config();
+    SqlParser.Config parserConfig = parserConfig()
+        .withQuotedCasing(config.quotedCasing())
+        .withUnquotedCasing(config.unquotedCasing())
+        .withQuoting(config.quoting())
+        .withConformance(config.conformance())
+        .withCaseSensitive(config.caseSensitive());
+    final SqlParserImplFactory parserFactory =
+        config.parserFactory(SqlParserImplFactory.class, TrainDBSqlCalciteParserImpl.FACTORY);
+    if (parserFactory != null) {
+      parserConfig = parserConfig.withParserFactory(parserFactory);
+    }
+
+    TrainDBConnectionImpl conn =
+        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalQuery.getStatement();
+
+    SqlParser parser = createParser(sql,  parserConfig);
+    SqlNode sqlNode;
+    try {
+      sqlNode = parser.parseStmt();
+    } catch (SqlParseException e) {
+      throw new RuntimeException(
+          "parse failed: " + e.getMessage(), e);
+    }
+
+    TrainDBSqlSelect ptree = (TrainDBSqlSelect)sqlNode;
+
+    // select list
+    SqlNode selectNode = ptree.getSelectList();
+    String selectList = selectNode.toString();
+
+    // from clause
+    SqlNode fromNode = ptree.getFrom();
+    SqlIdentifier fromIdnt = (SqlIdentifier)fromNode;
+
+    if ( fromIdnt.isSimple() ) {
+      String err = "ERROR";
+    }
+
+    String tblname = fromNode.toString();
+
+    List <String> partitionList = null;
+    SchemaManager schemaManager = conn.getSchemaManager();
+    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+      TrainDBSchema traindbSchema = (TrainDBSchema) schema;
+      Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
+      Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
+
+      for(Map.Entry<String, TrainDBPartition> tempEntry: entries){
+        if ( tempEntry.getKey().equals(tblname) ) {
+          partitionList = tempEntry.getValue().getPartitionNameMap();
+          break;
+        }
+      }
+    }
+
+    if (partitionList == null) {
+      throw new RuntimeException(
+          "failed to run statement: " + sql
+          + "\nerror msg: incremental query can be executed on partitioned table only.");
+    }
+
+    String changeQuery;
+    List<List<Object>> TotalRes = new ArrayList<>();
+    final List<ColumnMetaData> columns = new ArrayList<>();
+    final List<AvaticaParameter> parameters = new ArrayList<>();
+    List<String> header = new ArrayList<>();
+    try {
+      for ( int k = 0; k < partitionList.size(); k++ ) {
+        changeQuery = "select " + selectList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+        ResultSet rs = conn.executeQueryInternal(changeQuery);
+        int columnCount = rs.getMetaData().getColumnCount();
+        ResultSetMetaData md = rs.getMetaData();
+
+        while (rs.next()) {
+          List<Object> r = new ArrayList<>();
+          for (int j = 1; j <= columnCount; j++) {
+//              if (rs.getColumnType(j) == Types.VARBINARY) {
+            //               ByteArray byteArray = (ByteArray) rs.getValue(j);
+            //               r.add(byteArray.getArray());
+            //             }
+            r.add(rs.getObject(j));
+          }
+          TotalRes.add(r);
+        }
+
+        if ( TotalRes.size() > 0 && k < partitionList.size()-1 ) {
+          List<Object> r = new ArrayList<>();
+          for (int j = 1; j <= columnCount; j++) {
+            int type = md.getColumnType(j);
+            if ( type == Types.INTEGER )
+              r.add(-1);
+            else
+              r.add("--> next step");
+          }
+          TotalRes.add(r);
+        }
+
+        if ( parameters.size() == 0 ) {
+          for (int j = 1; j <= columnCount; j++) {
+            header.add(md.getColumnName(j));
+          }
+        }
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+
+    return convertResultToSignature(context, sql,
+        new TrainDBListResultSet(header, TotalRes));
   }
 
   public static SqlValidator createSqlValidator(Context context,

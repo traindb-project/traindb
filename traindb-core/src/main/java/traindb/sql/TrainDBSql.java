@@ -80,7 +80,8 @@ public final class TrainDBSql {
         runner.trainModel(
             trainModel.getModeltypeName(), trainModel.getModelName(),
             trainModel.getSchemaName(), trainModel.getTableName(),
-            trainModel.getColumnNames(), trainModel.getTrainOptions());
+            trainModel.getColumnNames(), trainModel.getSamplePercent(),
+            trainModel.getTrainOptions());
         break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
@@ -110,6 +111,9 @@ public final class TrainDBSql {
       case SHOW_TRAININGS:
         TrainDBSqlShowCommand showTrainings = (TrainDBSqlShowCommand) command;
         return runner.showTrainings(showTrainings.getWhereExpressionMap());
+      case SHOW_PARTITIONS:
+        TrainDBSqlShowCommand showPartitions = (TrainDBSqlShowCommand) command;
+        return runner.showPartitions(showPartitions.getWhereExpressionMap());
       case USE_SCHEMA:
         TrainDBSqlUseSchema useSchema = (TrainDBSqlUseSchema) command;
         runner.useSchema(useSchema.getSchemaName());
@@ -120,6 +124,8 @@ public final class TrainDBSql {
       case BYPASS_DDL_STMT:
         TrainDBSqlBypassDdlStmt bypassDdlStmt = (TrainDBSqlBypassDdlStmt) command;
         runner.bypassDdlStmt(bypassDdlStmt.getStatement());
+        break;
+      case INCREMENTAL_QUERY:
         break;
       case SHOW_QUERY_LOGS:
         TrainDBSqlShowCommand showQueryLogs = (TrainDBSqlShowCommand) command;
@@ -250,6 +256,8 @@ public final class TrainDBSql {
         commands.add(new TrainDBSqlShowCommand.Hyperparameters(whereExprMap));
       } else if (showTarget.equals("TRAININGS")) {
         commands.add(new TrainDBSqlShowCommand.Trainings(whereExprMap));
+      } else if (showTarget.equals("PARTITIONS")) {
+        commands.add(new TrainDBSqlShowCommand.Partitions(whereExprMap));
       } else if (showTarget.equals("QUERYLOGS")) {
         commands.add(new TrainDBSqlShowCommand.QueryLogs(whereExprMap));
       } else if (showTarget.equals("TASKS")) {
@@ -267,6 +275,11 @@ public final class TrainDBSql {
         columnNames.add(columnName.getText());
       }
 
+      float samplePercent = 100;
+      if (ctx.trainSampleClause() != null) {
+        samplePercent = Float.parseFloat(ctx.trainSampleClause().samplePercent().getText());
+      }
+
       Map<String, Object> trainOptions = new HashMap<>();
       if (ctx.trainModelOptionsClause() != null) {
         for (TrainDBSqlParser.OptionKeyValueContext optionKeyValue
@@ -280,7 +293,8 @@ public final class TrainDBSql {
       String schemaName = ctx.tableName().schemaName().getText();
       String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlTrainModel(
-          modeltypeName, modelName, schemaName, tableName, columnNames, trainOptions));
+          modeltypeName, modelName, schemaName, tableName, columnNames, samplePercent,
+          trainOptions));
     }
 
     @Override
@@ -368,7 +382,7 @@ public final class TrainDBSql {
         String enableOption = ctx.alterModelClause().enableDisableClause().getText();
         if (enableOption.equalsIgnoreCase("ENABLE")) {
           commands.add(new TrainDBSqlAlterModel.Enable(modelName));
-        } else if (enableOption.equalsIgnoreCase("DISABLE")){
+        } else if (enableOption.equalsIgnoreCase("DISABLE")) {
           commands.add(new TrainDBSqlAlterModel.Disable(modelName));
         }
       }
@@ -401,7 +415,7 @@ public final class TrainDBSql {
         String enableOption = ctx.alterSynopsisClause().enableDisableClause().getText();
         if (enableOption.equalsIgnoreCase("ENABLE")) {
           commands.add(new TrainDBSqlAlterSynopsis.Enable(synopsisName));
-        } else if (enableOption.equalsIgnoreCase("DISABLE")){
+        } else if (enableOption.equalsIgnoreCase("DISABLE")) {
           commands.add(new TrainDBSqlAlterSynopsis.Disable(synopsisName));
         }
       }
@@ -415,6 +429,15 @@ public final class TrainDBSql {
       String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
       LOG.debug("BYPASS DDL: stmt=" + stmt);
       commands.add(new TrainDBSqlBypassDdlStmt(stmt));
+    }
+
+    @Override
+    public void exitIncrementalQuery(TrainDBSqlParser.IncrementalQueryContext ctx) {
+      int start = ctx.ddlString().getStart().getStartIndex();
+      int stop = ctx.getStop().getStopIndex();
+      String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
+      LOG.debug("INCREMENTAL : stmt=" + stmt);
+      commands.add(new TrainDBIncrementalQuery(stmt));
     }
 
     private Object getOptionValueObject(TrainDBSqlParser.OptionValueContext ctx,

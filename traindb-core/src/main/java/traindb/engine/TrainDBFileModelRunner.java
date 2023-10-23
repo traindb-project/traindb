@@ -47,7 +47,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public void trainModel(TrainDBTable table, List<String> columnNames,
+  public void trainModel(TrainDBTable table, List<String> columnNames, float samplePercent,
                          Map<String, Object> trainOptions, JavaTypeFactory typeFactory)
       throws Exception {
     String schemaName = table.getSchema().getName();
@@ -64,7 +64,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     fileWriter.flush();
     fileWriter.close();
 
-    String sql = buildExportTableQuery(schemaName, tableName, columnNames,
+    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
         table.getRowType(typeFactory));
     ResultSet trainingData = conn.executeQueryInternal(sql);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();

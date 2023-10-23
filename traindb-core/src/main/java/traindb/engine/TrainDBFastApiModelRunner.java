@@ -80,7 +80,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public void trainModel(TrainDBTable table, List<String> columnNames,
+  public void trainModel(TrainDBTable table, List<String> columnNames, float samplePercent,
                          Map<String, Object> trainOptions, JavaTypeFactory typeFactory)
       throws Exception {
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
@@ -94,7 +94,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     BasicDataSource ds = conn.getDataSource();
     String schemaName = table.getSchema().getName();
     String tableName = table.getName();
-    String sql = buildExportTableQuery(schemaName, tableName, columnNames,
+    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
         table.getRowType(typeFactory));
 
     JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,

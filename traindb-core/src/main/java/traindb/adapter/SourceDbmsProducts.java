@@ -35,6 +35,8 @@ public class SourceDbmsProducts {
 
     nameToDriverClass.put("mysql", "com.mysql.cj.jdbc.Driver");
     nameToDriverClass.put("postgresql", "org.postgresql.Driver");
+    nameToDriverClass.put("redshift", "com.amazon.redshift.jdbc.Driver");
+    nameToDriverClass.put("bigquery", "com.simba.googlebigquery.jdbc.Driver");
 
     JSONParser parser = new JSONParser();
     JSONArray adapterExtInfo = null;

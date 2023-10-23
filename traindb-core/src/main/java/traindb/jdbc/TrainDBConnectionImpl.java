@@ -122,11 +122,11 @@ public abstract class TrainDBConnectionImpl
    *
    * <p>Not public; method is called only from the driver.
    *
-   * @param driver Driver
-   * @param factory Factory for JDBC objects
-   * @param url Server URL
-   * @param info Other connection properties
-   * @param rootSchema Root schema, or null
+   * @param driver      Driver
+   * @param factory     Factory for JDBC objects
+   * @param url         Server URL
+   * @param info        Other connection properties
+   * @param rootSchema  Root schema, or null
    * @param typeFactory Type factory, or null
    */
   protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,
@@ -184,14 +184,18 @@ public abstract class TrainDBConnectionImpl
     dataSource.setDriverClassName(getJdbcDriverClassName(url));
 
     // postgres --> select 1
+    // redshift --> select 1
+    // bigquery --> select 1
     // mysql    --> select 1 or select 1 from dual
     // kairos   --> select 1 from dual
     // tibero   --> select 1 from dual
     String db_query = url.split(":")[1];
-    if ( db_query.equals("postgresql") )
-        dataSource.setValidationQuery("SELECT 1");
-    else
-        dataSource.setValidationQuery("SELECT 1 FROM DUAL");
+    if (db_query.equals("postgresql") || db_query.equals("redshift") ||
+        db_query.equals("bigquery")) {
+      dataSource.setValidationQuery("SELECT 1");
+    } else {
+      dataSource.setValidationQuery("SELECT 1 FROM DUAL");
+    }
 
     dataSource.setUsername(info.getProperty("user"));
     dataSource.setPassword(info.getProperty("password"));
@@ -207,7 +211,8 @@ public abstract class TrainDBConnectionImpl
     if (cfg.conformance().shouldConvertRaggedUnionTypesToVarying()) {
       typeSystem =
           new DelegatingTypeSystem(typeSystem) {
-            @Override public boolean
+            @Override
+            public boolean
             shouldConvertRaggedUnionTypesToVarying() {
               return true;
             }
@@ -316,16 +321,20 @@ public abstract class TrainDBConnectionImpl
     return (TrainDBMetaImpl) meta;
   }
 
-  @Override public CalciteConnectionConfig config() {
+  @Override
+  public CalciteConnectionConfig config() {
     return cfg;
   }
 
-  @Override public Context createPrepareContext() {
+  @Override
+  public Context createPrepareContext() {
     return new TrainDBContextImpl(this);
   }
 
-  /** Called after the constructor has completed and the model has been
-   * loaded. */
+  /**
+   * Called after the constructor has completed and the model has been
+   * loaded.
+   */
   void init() {
     final MaterializationService service = MaterializationService.instance();
     for (CalciteSchema.LatticeEntry e : Schemas.getLatticeEntries(rootSchema)) {
@@ -337,7 +346,8 @@ public abstract class TrainDBConnectionImpl
     }
   }
 
-  @Override public <T> T unwrap(Class<T> iface) throws SQLException {
+  @Override
+  public <T> T unwrap(Class<T> iface) throws SQLException {
     if (iface == RelRunner.class) {
       return iface.cast((RelRunner) rel ->
           prepareStatement_(CalcitePrepare.Query.of(rel),
@@ -347,13 +357,16 @@ public abstract class TrainDBConnectionImpl
     return super.unwrap(iface);
   }
 
-  @Override public TrainDBStatement createStatement(int resultSetType,
-                                                    int resultSetConcurrency, int resultSetHoldability) throws SQLException {
+  @Override
+  public TrainDBStatement createStatement(int resultSetType,
+                                          int resultSetConcurrency, int resultSetHoldability)
+      throws SQLException {
     return (TrainDBStatement) super.createStatement(resultSetType,
         resultSetConcurrency, resultSetHoldability);
   }
 
-  @Override public TrainDBPreparedStatement prepareStatement(
+  @Override
+  public TrainDBPreparedStatement prepareStatement(
       String sql,
       int resultSetType,
       int resultSetConcurrency,
@@ -397,7 +410,8 @@ public abstract class TrainDBConnectionImpl
     }
   }
 
-  @Override public AtomicBoolean getCancelFlag(Meta.StatementHandle handle)
+  @Override
+  public AtomicBoolean getCancelFlag(Meta.StatementHandle handle)
       throws NoSuchStatementException {
     final CalciteServerStatement serverStatement = server.getStatement(handle);
     return ((CalciteServerStatementImpl) serverStatement).cancelFlag;
@@ -405,7 +419,8 @@ public abstract class TrainDBConnectionImpl
 
   // CalciteConnection methods
 
-  @Override public SchemaPlus getRootSchema() {
+  @Override
+  public SchemaPlus getRootSchema() {
     return rootSchema.plus();
   }
 
@@ -413,34 +428,41 @@ public abstract class TrainDBConnectionImpl
     this.rootSchema = rootSchema;
   }
 
-  @Override public JavaTypeFactory getTypeFactory() {
+  @Override
+  public JavaTypeFactory getTypeFactory() {
     return typeFactory;
   }
 
-  @Override public Properties getProperties() {
+  @Override
+  public Properties getProperties() {
     return info;
   }
 
   // QueryProvider methods
 
-  @Override public <T> Queryable<T> createQuery(
+  @Override
+  public <T> Queryable<T> createQuery(
       Expression expression, Class<T> rowType) {
     return new CalciteQueryable<>(this, rowType, expression);
   }
 
-  @Override public <T> Queryable<T> createQuery(Expression expression, Type rowType) {
+  @Override
+  public <T> Queryable<T> createQuery(Expression expression, Type rowType) {
     return new CalciteQueryable<>(this, rowType, expression);
   }
 
-  @Override public <T> T execute(Expression expression, Type type) {
+  @Override
+  public <T> T execute(Expression expression, Type type) {
     return castNonNull(null); // TODO:
   }
 
-  @Override public <T> T execute(Expression expression, Class<T> type) {
+  @Override
+  public <T> T execute(Expression expression, Class<T> type) {
     return castNonNull(null); // TODO:
   }
 
-  @Override public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
+  @Override
+  public <T> Enumerator<T> executeQuery(Queryable<T> queryable) {
     try {
       TrainDBStatement statement = (TrainDBStatement) createStatement();
       CalcitePrepare.CalciteSignature<T> signature =
@@ -452,8 +474,9 @@ public abstract class TrainDBConnectionImpl
   }
 
   public <T> Enumerable<T> enumerable(Meta.StatementHandle handle,
-      CalcitePrepare.CalciteSignature<T> signature,
-      @Nullable List<TypedValue> parameterValues0) throws SQLException {
+                                      CalcitePrepare.CalciteSignature<T> signature,
+                                      @Nullable List<TypedValue> parameterValues0)
+      throws SQLException {
     Map<String, Object> map = new LinkedHashMap<>();
     AvaticaStatement statement = lookupStatement(handle);
     final List<TypedValue> parameterValues;
@@ -487,7 +510,7 @@ public abstract class TrainDBConnectionImpl
   }
 
   public DataContext createDataContext(Map<String, Object> parameterValues,
-      @Nullable CalciteSchema rootSchema) {
+                                       @Nullable CalciteSchema rootSchema) {
     if (config().spark()) {
       return DataContexts.EMPTY;
     }
@@ -504,12 +527,14 @@ public abstract class TrainDBConnectionImpl
     return factory;
   }
 
-  /** Implementation of Queryable.
+  /**
+   * Implementation of Queryable.
    *
-   * @param <T> element type */
+   * @param <T> element type
+   */
   static class CalciteQueryable<T> extends BaseQueryable<T> {
     CalciteQueryable(CalciteConnection connection, Type elementType,
-        Expression expression) {
+                     Expression expression) {
       super(connection, elementType, expression);
     }
 
@@ -518,16 +543,20 @@ public abstract class TrainDBConnectionImpl
     }
   }
 
-  /** Implementation of Server. */
+  /**
+   * Implementation of Server.
+   */
   private static class CalciteServerImpl implements CalciteServer {
     final Map<Integer, CalciteServerStatement> statementMap = new HashMap<>();
 
-    @Override public void removeStatement(Meta.StatementHandle h) {
+    @Override
+    public void removeStatement(Meta.StatementHandle h) {
       statementMap.remove(h.id);
     }
 
-    @Override public void addStatement(CalciteConnection connection,
-        Meta.StatementHandle h) {
+    @Override
+    public void addStatement(CalciteConnection connection,
+                             Meta.StatementHandle h) {
       final TrainDBConnectionImpl c = (TrainDBConnectionImpl) connection;
       final CalciteServerStatement previous =
           statementMap.put(h.id, new CalciteServerStatementImpl(c));
@@ -536,7 +565,8 @@ public abstract class TrainDBConnectionImpl
       }
     }
 
-    @Override public CalciteServerStatement getStatement(Meta.StatementHandle h)
+    @Override
+    public CalciteServerStatement getStatement(Meta.StatementHandle h)
         throws NoSuchStatementException {
       CalciteServerStatement statement = statementMap.get(h.id);
       if (statement == null) {
@@ -546,7 +576,9 @@ public abstract class TrainDBConnectionImpl
     }
   }
 
-  /** Implementation of DataContext. */
+  /**
+   * Implementation of DataContext.
+   */
   static class DataContextImpl implements DataContext {
     private final ImmutableMap<Object, Object> map;
     private final @Nullable CalciteSchema rootSchema;
@@ -602,7 +634,8 @@ public abstract class TrainDBConnectionImpl
       map = builder.build();
     }
 
-    @Override public synchronized @Nullable Object get(String name) {
+    @Override
+    public synchronized @Nullable Object get(String name) {
       Object o = map.get(name);
       if (o == AvaticaSite.DUMMY_VALUE) {
         return null;
@@ -643,20 +676,25 @@ public abstract class TrainDBConnectionImpl
       return new SqlAdvisor(validator, parserConfig);
     }
 
-    @Override public @Nullable SchemaPlus getRootSchema() {
+    @Override
+    public @Nullable SchemaPlus getRootSchema() {
       return rootSchema == null ? null : rootSchema.plus();
     }
 
-    @Override public JavaTypeFactory getTypeFactory() {
+    @Override
+    public JavaTypeFactory getTypeFactory() {
       return typeFactory;
     }
 
-    @Override public QueryProvider getQueryProvider() {
+    @Override
+    public QueryProvider getQueryProvider() {
       return queryProvider;
     }
   }
 
-  /** Implementation of Context. */
+  /**
+   * Implementation of Context.
+   */
   public static class TrainDBContextImpl implements Context {
     private final TrainDBConnectionImpl connection;
     private final CalciteSchema mutableRootSchema;
@@ -670,19 +708,23 @@ public abstract class TrainDBConnectionImpl
       this.rootSchema = mutableRootSchema.createSnapshot(schemaVersion);
     }
 
-    @Override public JavaTypeFactory getTypeFactory() {
+    @Override
+    public JavaTypeFactory getTypeFactory() {
       return connection.typeFactory;
     }
 
-    @Override public CalciteSchema getRootSchema() {
+    @Override
+    public CalciteSchema getRootSchema() {
       return rootSchema;
     }
 
-    @Override public CalciteSchema getMutableRootSchema() {
+    @Override
+    public CalciteSchema getMutableRootSchema() {
       return mutableRootSchema;
     }
 
-    @Override public List<String> getDefaultSchemaPath() {
+    @Override
+    public List<String> getDefaultSchemaPath() {
       final String dataSourceName;
       final String schemaName;
       try {
@@ -696,20 +738,24 @@ public abstract class TrainDBConnectionImpl
           : ImmutableList.of(dataSourceName, schemaName);
     }
 
-    @Override public @Nullable List<String> getObjectPath() {
+    @Override
+    public @Nullable List<String> getObjectPath() {
       return null;
     }
 
-    @Override public CalciteConnectionConfig config() {
+    @Override
+    public CalciteConnectionConfig config() {
       return connection.config();
     }
 
-    @Override public DataContext getDataContext() {
+    @Override
+    public DataContext getDataContext() {
       return connection.createDataContext(ImmutableMap.of(),
           rootSchema);
     }
 
-    @Override public RelRunner getRelRunner() {
+    @Override
+    public RelRunner getRelRunner() {
       final RelRunner runner;
       try {
         runner = connection.unwrap(RelRunner.class);
@@ -722,7 +768,8 @@ public abstract class TrainDBConnectionImpl
       return runner;
     }
 
-    @Override public CalcitePrepare.SparkHandler spark() {
+    @Override
+    public CalcitePrepare.SparkHandler spark() {
       final boolean enable = config().spark();
       return CalcitePrepare.Dummy.getSparkHandler(enable);
     }
@@ -732,7 +779,9 @@ public abstract class TrainDBConnectionImpl
     }
   }
 
-  /** Implementation of {@link CalciteServerStatement}. */
+  /**
+   * Implementation of {@link CalciteServerStatement}.
+   */
   public static class CalciteServerStatementImpl
       implements CalciteServerStatement {
     private final TrainDBConnectionImpl connection;
@@ -744,27 +793,33 @@ public abstract class TrainDBConnectionImpl
       this.connection = requireNonNull(connection, "connection");
     }
 
-    @Override public Context createPrepareContext() {
+    @Override
+    public Context createPrepareContext() {
       return connection.createPrepareContext();
     }
 
-    @Override public CalciteConnection getConnection() {
+    @Override
+    public CalciteConnection getConnection() {
       return connection;
     }
 
-    @Override public void setSignature(Meta.Signature signature) {
+    @Override
+    public void setSignature(Meta.Signature signature) {
       this.signature = signature;
     }
 
-    @Override public Meta.@Nullable Signature getSignature() {
+    @Override
+    public Meta.@Nullable Signature getSignature() {
       return signature;
     }
 
-    @Override public @Nullable Iterator<Object> getResultSet() {
+    @Override
+    public @Nullable Iterator<Object> getResultSet() {
       return iterator;
     }
 
-    @Override public void setResultSet(Iterator<Object> iterator) {
+    @Override
+    public void setResultSet(Iterator<Object> iterator) {
       this.iterator = iterator;
     }
   }

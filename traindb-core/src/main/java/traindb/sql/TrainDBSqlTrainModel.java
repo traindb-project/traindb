@@ -23,15 +23,18 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
   private final String schemaName;
   private final String tableName;
   private final List<String> columnNames;
+  private final float samplePercent;
   private final Map<String, Object> trainOptions;
 
   TrainDBSqlTrainModel(String modeltypeName, String modelName, String schemaName, String tableName,
-                       List<String> columnNames, Map<String, Object> trainOptions) {
+                       List<String> columnNames, float samplePercent,
+                       Map<String, Object> trainOptions) {
     this.modeltypeName = modeltypeName;
     this.modelName = modelName;
     this.schemaName = schemaName;
     this.tableName = tableName;
     this.columnNames = columnNames;
+    this.samplePercent = samplePercent;
     this.trainOptions = trainOptions;
   }
 
@@ -53,6 +56,10 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
 
   List<String> getColumnNames() {
     return columnNames;
+  }
+
+  float getSamplePercent() {
+    return samplePercent;
   }
 
   Map<String, Object> getTrainOptions() {

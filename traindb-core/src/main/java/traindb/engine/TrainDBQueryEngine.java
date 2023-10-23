@@ -17,6 +17,7 @@ package traindb.engine;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.google.common.collect.ImmutableList;
+import com.google.common.collect.ImmutableMap;
 import com.opencsv.CSVReader;
 import com.opencsv.CSVReaderBuilder;
 import java.io.File;
@@ -35,6 +36,9 @@ import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import org.apache.calcite.schema.Schema;
+import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
@@ -57,6 +61,8 @@ import traindb.common.TrainDBLogger;
 import traindb.engine.nio.ByteArray;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
+import traindb.schema.TrainDBPartition;
+import traindb.schema.TrainDBSchema;
 import traindb.schema.TrainDBTable;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
@@ -129,7 +135,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, Map<String, Object> trainOptions) throws Exception {
+      List<String> columnNames, float samplePercent, Map<String, Object> trainOptions)
+      throws Exception {
     T_tracer.startTaskTracer("train model " + modelName);
 
     T_tracer.openTaskTime("find : modeltype");
@@ -163,12 +170,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new TrainDBException("cannot find the table '" + schemaName + "'.'" + tableName + "'");
     }
     Long baseTableRows = getTableRowCount(schemaName, tableName);
-    Long trainedRows = baseTableRows; // TODO
+    Long trainedRows = (long) (baseTableRows * (samplePercent / 100.0)); // FIXME: not exact
 
     T_tracer.openTaskTime("train model");
     AbstractTrainDBModelRunner runner = createModelRunner(
         modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
-    runner.trainModel(table, columnNames, trainOptions, conn.getTypeFactory());
+    runner.trainModel(table, columnNames, samplePercent, trainOptions, conn.getTypeFactory());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert model info");
@@ -658,6 +665,34 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.endTaskTracer();
 
     return new TrainDBListResultSet(header, trainingInfo);
+  }
+
+  @Override
+  public TrainDBListResultSet showPartitions(Map<String, Object> filterPatterns) throws Exception {
+    List<String> header = Arrays.asList("schema_name", "table_name", "partition_name");
+    List<List<Object>> partitionsInfo = new ArrayList<>();
+
+    T_tracer.startTaskTracer("show partitions");
+    T_tracer.openTaskTime("scan : partitions");
+
+    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+      TrainDBSchema traindbSchema = (TrainDBSchema) schema;
+      Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
+      Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
+
+      for (Map.Entry<String, TrainDBPartition> tempEntry : entries) {
+        List<String> partitionList = tempEntry.getValue().getPartitionNameMap();
+        for (int k = 0; k < partitionList.size(); k++) {
+          partitionsInfo.add(Arrays.asList(traindbSchema.getName(), tempEntry.getKey(),
+              partitionList.get(k)));
+        }
+      }
+    }
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, partitionsInfo);
   }
 
   @Override
