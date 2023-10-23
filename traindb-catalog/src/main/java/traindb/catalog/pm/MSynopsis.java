@@ -68,23 +68,24 @@ public final class MSynopsis {
   private MTable table;
 
   public MSynopsis(String name, Integer rows, Double ratio, MModel model, MTable table) {
+    this(name, rows, ratio, model.getModelName(), model.getSchemaName(), model.getTableName(),
+        model.getColumnNames(), table);
+    this.model = model;
+  }
+
+  public MSynopsis(String name, Integer rows, Double ratio, String modelName, String schemaName,
+                   String tableName, List<String> columns, MTable table) {
     this.synopsis_name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
     this.synopsis_status = "ENABLED";  // initial status
-    this.model = model;
-    if (model == null) {
-      this.model_name = "Unknown";
-      this.schema_name = null;
-      this.table_name = null;
-      this.columns = null;
-    } else {
-      this.model_name = model.getModelName();
-      this.schema_name = model.getSchemaName();
-      this.table_name = model.getTableName();
-      this.columns = model.getColumnNames();
-    }
+    this.model_name = modelName;
+    this.schema_name = schemaName;
+    this.table_name = tableName;
+    this.columns = columns;
     this.table = table;
+
+    this.model = null;
   }
 
   public String getSynopsisName() {

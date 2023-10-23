@@ -439,6 +439,34 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void importSynopsis(String synopsisName, JSONObject exportMetadata)
+      throws CatalogException {
+    try {
+      String schemaName = (String) exportMetadata.get("schemaName");
+      JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
+      importTable(schemaName, jsonTable);
+
+      String tableName = (String) exportMetadata.get("tableName");
+      MTable mTable = getTable(schemaName, tableName);
+      JSONArray jsonColumnNames = (JSONArray) exportMetadata.get("columnNames");
+      List<String> columnNames = new ArrayList<>();
+      for (int i = 0; i < jsonColumnNames.size(); i++) {
+        columnNames.add((String) jsonColumnNames.get(i));
+      }
+
+      Integer rows = ((Long) exportMetadata.get("rows")).intValue();
+      Double ratio = (Double) exportMetadata.get("ratio");
+
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
+          columnNames,mTable);
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to import synopsis '" + synopsisName + "'", e);
+    }
+
+  }
+
+  @Override
   public void renameSynopsis(String synopsisName, String newSynopsisName) throws CatalogException {
     try {
       MSynopsis mSynopsis = getSynopsis(synopsisName);

@@ -159,6 +159,10 @@ public final class TrainDBSql {
       case EXPORT_SYNOPSIS:
         TrainDBSqlExportSynopsis exportSynopsis = (TrainDBSqlExportSynopsis) command;
         return runner.exportSynopsis(exportSynopsis.getSynopsisName());
+      case IMPORT_SYNOPSIS:
+        TrainDBSqlImportSynopsis importSynopsis = (TrainDBSqlImportSynopsis) command;
+        return runner.importSynopsis(importSynopsis.getSynopsisName(),
+            importSynopsis.getSynopsisBinaryString());
       case ALTER_SYNOPSIS_RENAME: {
         TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
         runner.renameSynopsis(alterSynopsis.getSynopsisName(), alterSynopsis.getNewSynopsisName());
@@ -378,6 +382,13 @@ public final class TrainDBSql {
       commands.add(new TrainDBSqlExportSynopsis(synopsisName));
     }
 
+    @Override
+    public void exitImportSynopsis(TrainDBSqlParser.ImportSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      String synopsisBinaryString = ctx.synopsisBinaryString().getText();
+      LOG.debug("IMPORT SYNOPSIS: name=" + synopsisName);
+      commands.add(new TrainDBSqlImportSynopsis(synopsisName, synopsisBinaryString));
+    }
 
     @Override
     public void exitAlterSynopsis(TrainDBSqlParser.AlterSynopsisContext ctx) {
