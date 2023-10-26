@@ -14,8 +14,6 @@
 
 package traindb.engine;
 
-import com.opencsv.CSVWriter;
-import com.opencsv.ResultSetHelperService;
 import java.io.File;
 import java.io.FileWriter;
 import java.nio.charset.StandardCharsets;
@@ -60,7 +58,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);
     String outputPath = modelPath.toString();
-    String metadataFilename = outputPath + "/metadata.json";
+    String metadataFilename = Paths.get(outputPath, "metadata.json").toString();
     FileWriter fileWriter = new FileWriter(metadataFilename);
     fileWriter.write(tableMetadata.toJSONString());
     fileWriter.flush();
@@ -69,15 +67,8 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
         table.getRowType(typeFactory));
     ResultSet trainingData = conn.executeQueryInternal(sql);
-    String dataFilename = outputPath + "/data.csv";
-    FileWriter datafileWriter = new FileWriter(dataFilename);
-    CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
-    ResultSetHelperService resultSetHelperService = new ResultSetHelperService();
-    resultSetHelperService.setDateFormat("yyyy-MM-dd");
-    resultSetHelperService.setDateTimeFormat("yyyy-MM-dd HH:MI:SS");
-    csvWriter.setResultService(resultSetHelperService);
-    csvWriter.writeAll(trainingData, true);
-    csvWriter.close();
+    String dataFilename = Paths.get(outputPath, "data.csv").toString();
+    writeResultSetToCsv(trainingData, dataFilename);
     trainingData.close();
 
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);

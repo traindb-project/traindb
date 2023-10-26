@@ -106,7 +106,7 @@ public class ApproxAggregateSynopsisFilterScanRule
 
       List<Integer> targets = new ArrayList<>();
       for (int i = 0; i < inputColumns.size(); i++) {
-        targets.add(bestSynopsis.getModel().getColumnNames().indexOf(inputColumns.get(i)));
+        targets.add(bestSynopsis.getColumnNames().indexOf(inputColumns.get(i)));
       }
       final Mappings.TargetMapping mapping = Mappings.source(targets, targets.size());
 

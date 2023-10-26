@@ -138,7 +138,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
         if (!synopsis.isEnabled()) {
           continue;
         }
-        List<String> synopsisColumnNames = synopsis.getModel().getColumnNames();
+        List<String> synopsisColumnNames = synopsis.getColumnNames();
         if (synopsisColumnNames.containsAll(requiredColumnNames)) {
           availableSynopses.add(synopsis);
         }

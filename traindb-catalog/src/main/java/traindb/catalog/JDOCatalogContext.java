@@ -277,36 +277,43 @@ public final class JDOCatalogContext implements CatalogContext {
     }
   }
 
+  private void importTable(String schemaName, JSONObject jsonTableMetadata) {
+    MSchema mSchema = getSchema(schemaName);
+    if (mSchema == null) {
+      mSchema = pm.makePersistent(new MSchema(schemaName));
+    }
+
+    String tableName = (String) jsonTableMetadata.get("tableName");
+    MTable mTable = getTable(schemaName, tableName);
+    if (mTable == null) {
+      JSONObject jsonTable = (JSONObject) jsonTableMetadata.get("table");
+      mTable = pm.makePersistent(
+          new MTable(tableName, (String) jsonTable.get("tableType"), mSchema));
+
+      JSONArray jsonColumns = (JSONArray) jsonTable.get("columns");
+      for (int i = 0; i < jsonColumns.size(); i++) {
+        JSONObject jsonColumn = (JSONObject) jsonColumns.get(i);
+        String columnName = (String) jsonColumn.get("columnName");
+        int columnType = ((Long) jsonColumn.get("columnType")).intValue();
+        int precision = ((Long) jsonColumn.get("precision")).intValue();
+        int scale = ((Long) jsonColumn.get("scale")).intValue();
+        boolean nullable = (boolean) jsonColumn.get("nullable");
+        MColumn mColumn = new MColumn(columnName, columnType, precision, scale, nullable, mTable);
+        pm.makePersistent(mColumn);
+      }
+    }
+  }
+
   @Override
   public void importModel(String modeltypeName, String modelName, JSONObject exportMetadata)
       throws CatalogException {
     try {
       String schemaName = (String) exportMetadata.get("schemaName");
-      MSchema mSchema = getSchema(schemaName);
-      if (mSchema == null) {
-        mSchema = pm.makePersistent(new MSchema(schemaName));
-      }
+      JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
+      importTable(schemaName, jsonTable);
 
       String tableName = (String) exportMetadata.get("tableName");
       MTable mTable = getTable(schemaName, tableName);
-      if (mTable == null) {
-        JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
-        mTable = pm.makePersistent(
-            new MTable(tableName, (String) jsonTable.get("tableType"), mSchema));
-
-        JSONArray jsonColumns = (JSONArray) jsonTable.get("columns");
-        for (int i = 0; i < jsonColumns.size(); i++) {
-          JSONObject jsonColumn = (JSONObject) jsonColumns.get(i);
-          String columnName = (String) jsonColumn.get("columnName");
-          int columnType = ((Long) jsonColumn.get("columnType")).intValue();
-          int precision = ((Long) jsonColumn.get("precision")).intValue();
-          int scale = ((Long) jsonColumn.get("scale")).intValue();
-          boolean nullable = (boolean) jsonColumn.get("nullable");
-          MColumn mColumn = new MColumn(columnName, columnType, precision, scale, nullable, mTable);
-          pm.makePersistent(mColumn);
-        }
-      }
-
       MModeltype mModeltype = getModeltype(modeltypeName);
       JSONArray jsonColumnNames = (JSONArray) exportMetadata.get("columnNames");
       List<String> columnNames = new ArrayList<>();
@@ -362,7 +369,8 @@ public final class JDOCatalogContext implements CatalogContext {
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
                                   @Nullable Double ratio) throws CatalogException {
     try {
-      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, getModel(modelName));
+      MModel mModel = getModel(modelName);
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, mModel.getTable());
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
@@ -378,8 +386,7 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public Collection<MSynopsis> getAllSynopses(String baseSchema, String baseTable)
       throws CatalogException {
-    return getAllSynopses(ImmutableMap.of(
-        "model.schema_name", baseSchema, "model.table_name", baseTable));
+    return getAllSynopses(ImmutableMap.of("schema_name", baseSchema, "table_name", baseTable));
   }
 
   @Override
@@ -428,6 +435,34 @@ public final class JDOCatalogContext implements CatalogContext {
         tx.rollback();
       }
     }
+  }
+
+  @Override
+  public void importSynopsis(String synopsisName, JSONObject exportMetadata)
+      throws CatalogException {
+    try {
+      String schemaName = (String) exportMetadata.get("schemaName");
+      JSONObject jsonTable = (JSONObject) exportMetadata.get("table");
+      importTable(schemaName, jsonTable);
+
+      String tableName = (String) exportMetadata.get("tableName");
+      MTable mTable = getTable(schemaName, tableName);
+      JSONArray jsonColumnNames = (JSONArray) exportMetadata.get("columnNames");
+      List<String> columnNames = new ArrayList<>();
+      for (int i = 0; i < jsonColumnNames.size(); i++) {
+        columnNames.add((String) jsonColumnNames.get(i));
+      }
+
+      Integer rows = ((Long) exportMetadata.get("rows")).intValue();
+      Double ratio = (Double) exportMetadata.get("ratio");
+
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
+          columnNames,mTable);
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to import synopsis '" + synopsisName + "'", e);
+    }
+
   }
 
   @Override
