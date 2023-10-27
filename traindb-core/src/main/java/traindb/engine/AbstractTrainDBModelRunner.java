@@ -14,6 +14,9 @@
 
 package traindb.engine;
 
+import com.opencsv.CSVWriter;
+import com.opencsv.ResultSetHelperService;
+import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.DatabaseMetaData;
@@ -91,9 +94,9 @@ public abstract class AbstractTrainDBModelRunner {
     try {
       String connDbms = conn.getMetaData().getURL().split(":")[1];
       if (connDbms.equals("mysql")) {
-        return "WHERE rand() < " + (samplePercent / 100.0);
+        return " WHERE rand() < " + (samplePercent / 100.0);
       } else if (connDbms.equals("postgresql")) {
-        return "TABLESAMPLE BERNOULLI(" + samplePercent + ")";
+        return " TABLESAMPLE BERNOULLI(" + samplePercent + ")";
       }
     } catch (SQLException e) {
       // ignore
@@ -104,6 +107,15 @@ public abstract class AbstractTrainDBModelRunner {
   protected String buildSelectTrainingDataQuery(
       String schemaName, String tableName, List<String> columnNames, float samplePercent,
       RelDataType relDataType) throws TrainDBException {
+    String query = buildExportTableQuery(schemaName, tableName, columnNames, relDataType);
+    if (samplePercent > 0 && samplePercent < 100) {
+      query = query + getTableSampleClause(samplePercent);
+    }
+    return query;
+  }
+
+  public static String buildExportTableQuery(String schemaName, String tableName,
+                                             List<String> columnNames, RelDataType relDataType) {
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
     for (int i = 0; i < columnNames.size(); i++) {
@@ -121,11 +133,19 @@ public abstract class AbstractTrainDBModelRunner {
     sb.append(schemaName);
     sb.append(".");
     sb.append(tableName);
-    if (samplePercent > 0 && samplePercent < 100) {
-      sb.append(" ").append(getTableSampleClause(samplePercent));
-    }
 
     return sb.toString();
+  }
+
+  public static void writeResultSetToCsv(ResultSet rs, String filePath) throws Exception {
+    FileWriter datafileWriter = new FileWriter(filePath);
+    CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
+    ResultSetHelperService resultSetHelperService = new ResultSetHelperService();
+    resultSetHelperService.setDateFormat("yyyy-MM-dd");
+    resultSetHelperService.setDateTimeFormat("yyyy-MM-dd HH:MI:SS");
+    csvWriter.setResultService(resultSetHelperService);
+    csvWriter.writeAll(rs, true);
+    csvWriter.close();
   }
 
   protected JSONObject buildTableMetadata(

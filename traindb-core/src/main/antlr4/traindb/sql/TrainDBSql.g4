@@ -45,6 +45,8 @@ traindbStmts
     | deleteTasks
     | exportModel
     | importModel
+    | exportSynopsis
+    | importSynopsis
     | incrementalQuery
     ;
 
@@ -151,6 +153,18 @@ importModel
     ;
 
 modelBinaryString
+    : BINARY_STRING_LITERAL
+    ;
+
+exportSynopsis
+    : K_EXPORT K_SYNOPSIS synopsisName
+    ;
+
+importSynopsis
+    : K_IMPORT K_SYNOPSIS synopsisName K_FROM synopsisBinaryString
+    ;
+
+synopsisBinaryString
     : BINARY_STRING_LITERAL
     ;
 

@@ -90,7 +90,7 @@ public class ApproxAggregateSynopsisProjectScanRule
       MSynopsis bestSynopsis =
           planner.getBestSynopsis(candidateSynopses, scan, aggregate.getHints());
 
-      final List<String> synopsisColumns = bestSynopsis.getModel().getColumnNames();
+      final List<String> synopsisColumns = bestSynopsis.getColumnNames();
 
       List<RexNode> oldProjects = project.getProjects();
       List<RexNode> newProjects = new ArrayList<>();

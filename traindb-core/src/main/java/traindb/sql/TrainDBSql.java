@@ -162,6 +162,13 @@ public final class TrainDBSql {
         runner.disableModel(alterModel.getModelName());
         break;
       }
+      case EXPORT_SYNOPSIS:
+        TrainDBSqlExportSynopsis exportSynopsis = (TrainDBSqlExportSynopsis) command;
+        return runner.exportSynopsis(exportSynopsis.getSynopsisName());
+      case IMPORT_SYNOPSIS:
+        TrainDBSqlImportSynopsis importSynopsis = (TrainDBSqlImportSynopsis) command;
+        return runner.importSynopsis(importSynopsis.getSynopsisName(),
+            importSynopsis.getSynopsisBinaryString());
       case ALTER_SYNOPSIS_RENAME: {
         TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
         runner.renameSynopsis(alterSynopsis.getSynopsisName(), alterSynopsis.getNewSynopsisName());
@@ -380,6 +387,21 @@ public final class TrainDBSql {
         }
       }
       LOG.debug("ALTER MODEL: name=" + modelName);
+    }
+
+    @Override
+    public void exitExportSynopsis(TrainDBSqlParser.ExportSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      LOG.debug("EXPORT SYNOPSIS: name=" + synopsisName);
+      commands.add(new TrainDBSqlExportSynopsis(synopsisName));
+    }
+
+    @Override
+    public void exitImportSynopsis(TrainDBSqlParser.ImportSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      String synopsisBinaryString = ctx.synopsisBinaryString().getText();
+      LOG.debug("IMPORT SYNOPSIS: name=" + synopsisName);
+      commands.add(new TrainDBSqlImportSynopsis(synopsisName, synopsisBinaryString));
     }
 
     @Override

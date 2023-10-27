@@ -211,6 +211,7 @@ public class TrainDBPreparingStmt extends Prepare
 
     // Display logical plans before view expansion, plugging in physical
     // storage and decorrelation
+    Hook.REL_BUILDER_SIMPLIFY.addThread(Hook.propertyJ(false));
     if (sqlExplain != null) {
       SqlExplain.Depth explainDepth = sqlExplain.getDepth();
       SqlExplainFormat format = sqlExplain.getFormat();
