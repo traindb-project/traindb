@@ -370,6 +370,7 @@ data: {
       "UTF16"
       "UTF32"
       "UTF8"
+      "VALUE"
       "VERSION"
       "VIEW"
       "WEEK"
