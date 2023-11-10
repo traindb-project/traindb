@@ -24,16 +24,30 @@ import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
 import org.apache.calcite.plan.RelOptCost;
 import org.apache.calcite.plan.RelOptCostFactory;
+import org.apache.calcite.plan.RelOptLattice;
+import org.apache.calcite.plan.RelOptMaterialization;
+import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
+import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.RelFactories;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
+import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.runtime.Hook;
+import org.apache.calcite.sql2rel.RelDecorrelator;
+import org.apache.calcite.sql2rel.RelFieldTrimmer;
+import org.apache.calcite.tools.Program;
+import org.apache.calcite.tools.Programs;
+import org.apache.calcite.tools.RelBuilder;
+import org.apache.calcite.util.Holder;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
@@ -252,5 +266,79 @@ public class TrainDBPlanner extends VolcanoPlanner {
     } catch (CatalogException e) {
     }
     return null;
+  }
+
+  public Program getProgram() {
+    Hook.REL_BUILDER_SIMPLIFY.addThread(Hook.propertyJ(false));
+    // Allow a test to override the default program.
+    final Holder<@Nullable Program> holder = Holder.empty();
+    Hook.PROGRAM.run(holder);
+    @Nullable Program holderValue = holder.get();
+    if (holderValue != null) {
+      return holderValue;
+    }
+    Program p = Programs.standard();
+
+    final Program program1 =
+        (planner, rel, requiredOutputTraits, materializations, lattices) -> {
+          for (RelOptMaterialization materialization : materializations) {
+            planner.addMaterialization(materialization);
+          }
+          for (RelOptLattice lattice : lattices) {
+            planner.addLattice(lattice);
+          }
+
+          planner.setRoot(rel);
+          final RelNode rootRel2 =
+              rel.getTraitSet().equals(requiredOutputTraits)
+                  ? rel
+                  : planner.changeTraits(rel, requiredOutputTraits);
+          assert rootRel2 != null;
+
+          planner.setRoot(rootRel2);
+          final RelOptPlanner planner2 = planner.chooseDelegate();
+          final RelNode rootRel3 = planner2.findBestExp();
+          assert rootRel3 != null : "could not implement exp";
+          return rootRel3;
+        };
+
+    RelMetadataProvider metadataProvider = DefaultRelMetadataProvider.INSTANCE;
+    return Programs.sequence(// subQuery(metadataProvider),
+        new DecorrelateProgram(),
+        new TrimFieldsProgram(),
+        program1,
+        // Second planner pass to do physical "tweaks". This the first time
+        // that EnumerableCalcRel is introduced.
+        Programs.calc(metadataProvider));
+  }
+
+  /** Program that de-correlates a query. */
+  private static class DecorrelateProgram implements Program {
+    @Override public RelNode run(RelOptPlanner planner, RelNode rel,
+                                 RelTraitSet requiredOutputTraits,
+                                 List<RelOptMaterialization> materializations,
+                                 List<RelOptLattice> lattices) {
+      final CalciteConnectionConfig config =
+          planner.getContext().maybeUnwrap(CalciteConnectionConfig.class)
+              .orElse(CalciteConnectionConfig.DEFAULT);
+      if (config.forceDecorrelate()) {
+        final RelBuilder relBuilder =
+            RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+        return RelDecorrelator.decorrelateQuery(rel, relBuilder);
+      }
+      return rel;
+    }
+  }
+
+  /** Program that trims fields. */
+  private static class TrimFieldsProgram implements Program {
+    @Override public RelNode run(RelOptPlanner planner, RelNode rel,
+                                 RelTraitSet requiredOutputTraits,
+                                 List<RelOptMaterialization> materializations,
+                                 List<RelOptLattice> lattices) {
+      final RelBuilder relBuilder =
+          RelFactories.LOGICAL_BUILDER.create(rel.getCluster(), null);
+      return new RelFieldTrimmer(null, relBuilder).trim(rel);
+    }
   }
 }

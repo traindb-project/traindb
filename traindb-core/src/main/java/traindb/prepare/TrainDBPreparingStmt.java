@@ -68,11 +68,13 @@ import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlRexConvertletTable;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
+import org.apache.calcite.tools.Program;
 import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.common.TrainDBLogger;
+import traindb.planner.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
 
 /** Holds state for the process of preparing a SQL statement. */
@@ -172,6 +174,11 @@ public class TrainDBPreparingStmt extends Prepare
     }
 
     return implement(root);
+  }
+
+  @Override
+  protected Program getProgram() {
+    return ((TrainDBPlanner) planner).getProgram();
   }
 
   @Override
