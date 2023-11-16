@@ -14,12 +14,13 @@
 
 import logging
 import rdt
-from sdgym.synthesizers import TableGAN as SDGymTableGAN
-from sdgym.errors import UnsupportedDataset
-from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
+from rdt.transformers import *
+from tablegan.tablegan import TableGAN as SDGymTableGAN
+from tablegan.errors import UnsupportedDataset
+import os
 import pandas as pd
-
 import torch
+from TrainDBBaseModel import TrainDBModel, TrainDBSynopsisModel
 
 LOGGER = logging.getLogger(__name__)
 
@@ -32,20 +33,46 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
                  batch_size=500,
                  epochs=300):
  
-        self.ht = rdt.HyperTransformer(default_data_type_transformers={
-            'categorical': 'LabelEncodingTransformer',
-        })
+        self.ht = rdt.HyperTransformer()
         self.columns = []
 
         super().__init__(random_dim, num_channels, l2scale, batch_size, epochs)
+
+    def _get_hyper_transformer_config(self, real_data, table_metadata):
+        sdtypes = {}
+        transformers = {}
+
+        fields_meta = table_metadata['fields']
+
+        for column in real_data.columns:
+            field_meta = fields_meta[column]
+            field_type = field_meta['type']
+            if field_type == 'id':
+                continue
+
+            if field_type == 'categorical':
+                sdtypes[column] = 'categorical'
+                transformers[column] = LabelEncoder()
+            elif field_type == 'numerical':
+                sdtypes[column] = 'numerical'
+                transformers[column] = FloatFormatter()
+            elif field_type == 'datetime':
+                sdtypes[column] = 'datetime'
+                transformers[column] = UnixTimestampEncoder()
+            elif field_type == 'boolean':
+                sdtypes[column] = 'boolean'
+                transformers[column] = BinaryEncoder()
+
+        return {'sdtypes': sdtypes, 'transformers': transformers}
 
     def train(self, real_data, table_metadata):
         columns, categoricals = self.get_columns(real_data, table_metadata)
         real_data = real_data[columns]
         self.columns = columns
 
-        self.ht.fit(real_data.iloc[:, categoricals])
-        model_data = self.ht.transform(real_data)
+        ht_config = self._get_hyper_transformer_config(real_data, table_metadata)
+        self.ht.set_config(ht_config)
+        model_data = self.ht.fit_transform(real_data)
 
         supported = set(model_data.select_dtypes(('number', 'bool')).columns)
         unsupported = set(model_data.columns) - supported
@@ -67,10 +94,10 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
             'transformer': self.transformer,
             'generator': self.generator,
             'columns': self.columns
-        }, output_path + '/model.pth')
+        }, os.path.join(output_path, 'model.pth'))
 
     def load(self, input_path):
-        saved_model = torch.load(input_path + '/model.pth')
+        saved_model = torch.load(os.path.join(input_path, 'model.pth'))
         self.ht = saved_model['ht']
         self.transformer = saved_model['transformer']
         self.generator = saved_model['generator']
@@ -88,7 +115,9 @@ class TableGAN(TrainDBSynopsisModel, SDGymTableGAN):
     def synopsis(self, row_count):
         LOGGER.info("Synopsis Generating %s", self.__class__.__name__)
         sampled_data = self.sample(row_count)
-        sampled_data = pd.DataFrame(sampled_data, columns=self.columns)
+        # hack: concat '.value' suffix to avoid the bug in RDT 1.2.1
+        ht_columns = ['{}{}'.format(col, '.value') for col in self.columns]
+        sampled_data = pd.DataFrame(sampled_data, columns=ht_columns)
 
         synthetic_data = self.ht.reverse_transform(sampled_data)
         return synthetic_data
