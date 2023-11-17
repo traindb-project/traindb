@@ -34,6 +34,7 @@ import java.sql.SQLException;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -117,6 +118,17 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : modeltype");
     if (!catalogContext.modeltypeExists(name)) {
       String msg = "modeltype '" + name + "' does not exist";
+
+      T_tracer.closeTaskTime(msg);
+      T_tracer.endTaskTracer();
+
+      throw new CatalogException(msg);
+    }
+
+    Collection<MModel> mModels =
+        catalogContext.getModels(ImmutableMap.of("modeltype.modeltype_name", name));
+    if (mModels != null && mModels.size() > 0) {
+      String msg = "modeltype '" + name + "' is being used for trained models";
 
       T_tracer.closeTaskTime(msg);
       T_tracer.endTaskTracer();
