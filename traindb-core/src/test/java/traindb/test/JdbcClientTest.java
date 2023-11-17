@@ -113,12 +113,15 @@ public class JdbcClientTest {
   @Test
   public void testJdbcClientExecuteQuery() throws SQLException {
     Connection conn = getConnection(TEST_DBNAME);
-    Statement vstmt = conn.createStatement();
+    Statement stmt = conn.createStatement();
 
     String sumQuery = "SELECT SUM(price), AVG(price) FROM myschema.sales WHERE product='egg'";
 
-    ResultSet rs = vstmt.executeQuery(sumQuery);
+    ResultSet rs = stmt.executeQuery(sumQuery);
     TestUtil.printResultSet(rs);
+
+    stmt.close();
+    conn.close();
   }
 
   @Test
@@ -134,6 +137,9 @@ public class JdbcClientTest {
     PreparedStatement pstmt = conn.prepareStatement(sql);
     ResultSet rs = pstmt.executeQuery();
     TestUtil.printResultSet(rs);
+
+    pstmt.close();
+    conn.close();
   }
 
   @Test
@@ -166,6 +172,9 @@ public class JdbcClientTest {
     PreparedStatement pstmt = conn.prepareStatement(sql);
     ResultSet rs = pstmt.executeQuery();
     TestUtil.printResultSet(rs);
+
+    pstmt.close();
+    conn.close();
   }
 
   @Test
@@ -173,21 +182,21 @@ public class JdbcClientTest {
     Connection conn = getConnection(TEST_DBNAME);
     Statement stmt = conn.createStatement();
     TestUtil.executeIgnore(stmt, "DROP SYNOPSIS sales_syn");
-    TestUtil.executeIgnore(stmt, "DROP MODEL INSTANCE tgan");
+    TestUtil.executeIgnore(stmt, "DROP MODEL sales_tgan");
     TestUtil.executeIgnore(stmt, "DROP MODELTYPE tablegan");
 
     stmt.execute("CREATE MODELTYPE tablegan FOR SYNOPSIS AS LOCAL CLASS 'TableGAN' in 'models/TableGAN.py'");
-    stmt.execute("TRAIN MODEL tgan MODELTYPE tablegan ON myschema.sales(product, price, productid)");
-    stmt.execute("CREATE SYNOPSIS sales_syn FROM MODEL tgan LIMIT 1000");
+    stmt.execute("TRAIN MODEL sales_tgan MODELTYPE tablegan ON myschema.sales(product, price, productid)");
+    stmt.execute("CREATE SYNOPSIS sales_syn FROM MODEL sales_tgan LIMIT 1000");
 
     ResultSet rs = stmt.executeQuery("SELECT count(*) FROM myschema.sales_syn");
     TestUtil.printResultSet(rs);
+    rs.close();
 
     stmt.execute("DROP SYNOPSIS sales_syn");
-    stmt.execute("DROP MODEL tgan");
+    stmt.execute("DROP MODEL sales_tgan");
     stmt.execute("DROP MODELTYPE tablegan");
 
-    rs.close();
     stmt.close();
     conn.close();
   }
