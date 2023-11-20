@@ -61,6 +61,9 @@ public final class MSynopsis {
   @Column(length = 8)  // 'ENABLED', 'DISABLED'
   private String synopsis_status;
 
+  @Persistent
+  private byte[] synopsis_statistics;
+
   @Persistent(dependent = "false")
   private MModel model;
 
@@ -86,6 +89,7 @@ public final class MSynopsis {
     this.table = table;
 
     this.model = null;
+    setSynopsisStatistics("");
   }
 
   public String getSynopsisName() {
@@ -128,6 +132,10 @@ public final class MSynopsis {
     return synopsis_status;
   }
 
+  public String getSynopsisStatistics() {
+    return new String(synopsis_statistics);
+  }
+
   public void setSynopsisName(String synopsisName) {
     this.synopsis_name = synopsisName;
   }
@@ -158,5 +166,9 @@ public final class MSynopsis {
 
   public void setColumnNames(List<String> columns) {
     this.columns = columns;
+  }
+
+  public void setSynopsisStatistics(String statistics) {
+    this.synopsis_statistics = statistics.getBytes();
   }
 }

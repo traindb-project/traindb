@@ -168,4 +168,55 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     File newDir = new File(oldDir.getParent() + File.separator + newModelName);
     oldDir.renameTo(newDir);
   }
+
+  @Override
+  public String analyzeSynopsis(
+      TrainDBTable table, String synopsisName, List<String> columnNames,
+      JavaTypeFactory typeFactory) throws Exception {
+    String schemaName = table.getSchema().getName();
+    String tableName = table.getName();
+    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, null,
+        table.getRowType(typeFactory));
+    // write metadata for model training scripts in python
+    Path modelPath = getModelPath();
+    Files.createDirectories(modelPath);
+    String outputPath = modelPath.toString();
+    String metadataFilename = Paths.get(outputPath, "metadata.json").toString();
+    FileWriter fileWriter = new FileWriter(metadataFilename);
+    fileWriter.write(tableMetadata.toJSONString());
+    fileWriter.flush();
+    fileWriter.close();
+
+    String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
+        table.getRowType(typeFactory));
+    ResultSet origData = conn.executeQueryInternal(origSql);
+    String dataFilename = Paths.get(outputPath, "data.csv").toString();
+    writeResultSetToCsv(origData, dataFilename);
+    origData.close();
+
+    String synSql = buildSelectTrainingDataQuery(schemaName, synopsisName, columnNames, 100,
+        table.getRowType(typeFactory));
+    ResultSet synData = conn.executeQueryInternal(synSql);
+    String synFilename = Paths.get(outputPath, "syn.csv").toString();
+    writeResultSetToCsv(synData, synFilename);
+    synData.close();
+
+    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
+    String analyzeReportPath = modelPath + "/analyze_" + synopsisName + ".json";
+
+    // train ML model
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "evaluate",
+        dataFilename, synFilename, metadataFilename, analyzeReportPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
+
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to analyze synopsis");
+    }
+
+    String analyzeReport =
+        new String(Files.readAllBytes(Paths.get(analyzeReportPath)), StandardCharsets.UTF_8);
+    return analyzeReport;
+  }
 }

@@ -90,4 +90,6 @@ public interface TrainDBSqlRunner {
   void enableSynopsis(String synopsisName) throws Exception;
 
   void disableSynopsis(String synopsisName) throws Exception;
+
+  void analyzeSynopsis(String synopsisName) throws Exception;
 }

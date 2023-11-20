@@ -499,6 +499,18 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public void updateSynopsisStatistics(String synopsisName, String statistics)
+      throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(synopsisName);
+      mSynopsis.setSynopsisStatistics(statistics);
+      pm.makePersistent(mSynopsis);
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to update synopsis statistics '" + synopsisName + "'", e);
+    }
+  }
+
+  @Override
   public @Nullable MSchema getSchema(String name) {
     try {
       Query query = pm.newQuery(MSchema.class);

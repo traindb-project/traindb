@@ -184,6 +184,10 @@ public final class TrainDBSql {
         runner.disableSynopsis(alterSynopsis.getSynopsisName());
         break;
       }
+      case ANALYZE_SYNOPSIS:
+        TrainDBSqlAnalyzeSynopsis analyzeSynopsis = (TrainDBSqlAnalyzeSynopsis) command;
+        runner.analyzeSynopsis(analyzeSynopsis.getSynopsisName());
+        break;
       default:
         throw new RuntimeException("invalid TrainDB SQL command");
     }
@@ -429,6 +433,13 @@ public final class TrainDBSql {
       String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
       LOG.debug("BYPASS DDL: stmt=" + stmt);
       commands.add(new TrainDBSqlBypassDdlStmt(stmt));
+    }
+
+    @Override
+    public void exitAnalyzeSynopsis(TrainDBSqlParser.AnalyzeSynopsisContext ctx) {
+      String synopsisName = ctx.synopsisName().getText();
+      LOG.debug("ANALYZE SYNOPSIS: name=" + synopsisName);
+      commands.add(new TrainDBSqlAnalyzeSynopsis(synopsisName));
     }
 
     @Override

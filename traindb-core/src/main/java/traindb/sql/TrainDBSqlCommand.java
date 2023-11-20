@@ -50,6 +50,7 @@ public abstract class TrainDBSqlCommand {
     ALTER_SYNOPSIS_RENAME,
     ALTER_SYNOPSIS_ENABLE,
     ALTER_SYNOPSIS_DISABLE,
+    ANALYZE_SYNOPSIS,
     OTHER
   }
 }

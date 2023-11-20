@@ -17,6 +17,7 @@ package traindb.engine;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
+import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -24,7 +25,9 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
+import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.ResultSet;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
@@ -331,4 +334,51 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     return false;
   }
 
+  @Override
+  public String analyzeSynopsis(
+      TrainDBTable table, String synopsisName, List<String> columnNames,
+      JavaTypeFactory typeFactory) throws Exception {
+    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
+    URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "synopsis/analyze");
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("POST");
+    httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+    httpConn.setDoOutput(true);
+
+    BasicDataSource ds = conn.getDataSource();
+    String schemaName = table.getSchema().getName();
+    String tableName = table.getName();
+    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, null,
+        table.getRowType(typeFactory));
+    String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
+        table.getRowType(typeFactory));
+    String synSql = buildSelectTrainingDataQuery(schemaName, synopsisName, columnNames, 100,
+        table.getRowType(typeFactory));
+
+    OutputStream outputStream = httpConn.getOutputStream();
+    DataOutputStream request = new DataOutputStream(outputStream);
+
+    addString(request, "jdbc_driver_class", ds.getDriverClassName());
+    addString(request, "db_url", ds.getUrl());
+    addString(request, "db_user", ds.getUsername());
+    addString(request, "db_pwd", ds.getPassword());
+    addString(request, "select_original_data_sql", origSql);
+    addString(request, "select_synopsis_data_sql", synSql);
+    addMetadataFile(request, tableMetadata);
+    finishMultipartRequest(request);
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to analyze synopsis" + synopsisName);
+    }
+
+    StringBuilder response = new StringBuilder();
+    BufferedReader reader = new BufferedReader(
+        new InputStreamReader(httpConn.getInputStream(), StandardCharsets.UTF_8));
+    String line;
+    while ((line = reader.readLine()) != null) {
+      response.append(line);
+    }
+
+    return unescapeString(response.toString());
+  }
 }

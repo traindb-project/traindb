@@ -47,6 +47,7 @@ traindbStmts
     | importModel
     | exportSynopsis
     | importSynopsis
+    | analyzeSynopsis
     | incrementalQuery
     ;
 
@@ -162,6 +163,10 @@ exportSynopsis
 
 importSynopsis
     : K_IMPORT K_SYNOPSIS synopsisName K_FROM synopsisBinaryString
+    ;
+
+analyzeSynopsis
+    : K_ANALYZE K_SYNOPSIS synopsisName
     ;
 
 synopsisBinaryString
@@ -300,6 +305,7 @@ error
     ;
 
 K_ALTER : A L T E R ;
+K_ANALYZE : A N A L Y Z E ;
 K_AND : A N D ;
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;

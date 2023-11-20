@@ -67,6 +67,12 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void renameModel(String newModelName) throws Exception;
 
+  public String analyzeSynopsis(
+      TrainDBTable table, String synopsisName, List<String> columnNames,
+      JavaTypeFactory typeFactory) throws Exception {
+    throw new TrainDBException("analyzeSynopsis does not supported yet in this model runner");
+  }
+
   public boolean checkAvailable(String modelName) throws Exception {
     return true;
   }
@@ -227,9 +233,11 @@ public abstract class AbstractTrainDBModelRunner {
     root.put("schema", schemaName);
     root.put("table", tableName);
 
-    JSONObject options = new JSONObject();
-    options.putAll(trainOptions);
-    root.put("options", options);
+    if (trainOptions != null) {
+      JSONObject options = new JSONObject();
+      options.putAll(trainOptions);
+      root.put("options", options);
+    }
 
     return root;
   }
