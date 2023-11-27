@@ -29,6 +29,7 @@ public class TrainDBHintStrategyTable {
         .hintStrategy("approximate", HintPredicates.AGGREGATE)
         .hintStrategy("synopsis", HintPredicates.AGGREGATE)
         .hintStrategy("approx_time", HintPredicates.AGGREGATE)
+        .hintStrategy("approx_error", HintPredicates.AGGREGATE)
         .build();
   }
 }

@@ -76,7 +76,8 @@ public class ApproxAggregateSynopsisAggregateScanRule
       return;
     }
 
-    MSynopsis bestSynopsis = planner.getBestSynopsis(candidateSynopses, scan, aggregate.getHints());
+    MSynopsis bestSynopsis = planner.getBestSynopsis(
+        candidateSynopses, scan, aggregate.getHints(), requiredColumnNames);
 
     List<Integer> targets = new ArrayList<>();
     for (int i = 0; i < inputColumns.size(); i++) {

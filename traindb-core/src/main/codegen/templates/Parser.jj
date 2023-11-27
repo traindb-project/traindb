@@ -2768,18 +2768,31 @@ SqlNode WindowRange() :
  */
 void ApproxConstraintOpt(List<SqlNode> hints) :
 {
-    SqlNumericLiteral timeConstraint;
+    SqlNumericLiteral approxConstraint;
     List<SqlNode> list = new ArrayList<SqlNode>();
     SqlParserPos pos;
 }
 {
-    [ <WITHIN> ] timeConstraint = UnsignedNumericLiteral() [ <SECONDS> ] {
-        list.add(timeConstraint);
-        pos = getPos();
-        hints.add(new SqlHint(pos, new SqlIdentifier("approx_time", pos),
-            SqlNodeList.of(pos, list), SqlHint.HintOptionFormat.LITERAL_LIST));
-        return;
-    }
+    [ <WITHIN> ] approxConstraint = UnsignedNumericLiteral()
+    [
+        (
+            <SECONDS> {
+                list.add(approxConstraint);
+                pos = getPos();
+                hints.add(new SqlHint(pos, new SqlIdentifier("approx_time", pos),
+                    SqlNodeList.of(pos, list), SqlHint.HintOptionFormat.LITERAL_LIST));
+                return;
+            }
+        |
+            <PERCENT> <ERROR> {
+                list.add(approxConstraint);
+                pos = getPos();
+                hints.add(new SqlHint(pos, new SqlIdentifier("approx_error", pos),
+                    SqlNodeList.of(pos, list), SqlHint.HintOptionFormat.LITERAL_LIST));
+                return;
+            }
+        )
+    ]
 |
     {
         return;

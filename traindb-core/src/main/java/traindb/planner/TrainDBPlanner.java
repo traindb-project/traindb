@@ -49,6 +49,9 @@ import org.apache.calcite.tools.Programs;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.Holder;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import org.json.simple.JSONArray;
+import org.json.simple.JSONObject;
+import org.json.simple.parser.JSONParser;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
@@ -177,7 +180,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
   }
 
   public MSynopsis getBestSynopsis(Collection<MSynopsis> synopses, TableScan scan,
-                                   List<RelHint> hints) {
+                                   List<RelHint> hints, List<String> requiredColumnNames) {
     Collection<MSynopsis> hintSynopses = new ArrayList<>();
     for (RelHint hint : hints) {
       if (hint.hintName.equals("synopsis")) {
@@ -196,21 +199,45 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
     Collection<MSynopsis> filteredSynopses = new HashSet<>();
     for (RelHint hint : hints) {
-      if (!hint.hintName.equals("approx_time")) {
-        continue;
-      }
-      List<String> hintExecTime = hint.listOptions;
-      for (String str : hintExecTime) {
-        try {
-          double hintTime = Double.valueOf(str);
-          for (MSynopsis syn : synopses) {
-            if (caqpExecutionTimePolicy.check(syn, hintTime)) {
-              filteredSynopses.add(syn);
+      try {
+        if (hint.hintName.equals("approx_time")) {
+          List<String> hintExecTime = hint.listOptions;
+          for (String str : hintExecTime) {
+            double hintTime = Double.valueOf(str);
+            for (MSynopsis syn : synopses) {
+              if (caqpExecutionTimePolicy.check(syn, hintTime)) {
+                filteredSynopses.add(syn);
+              }
             }
           }
-        } catch (Exception e) {
-          // ignore
+        } else if (hint.hintName.equals("approx_error")) {
+          List<String> hintErrors = hint.listOptions;
+          for (String s : hintErrors) {
+            double hintError = Double.valueOf(s) /* percent */ * 0.01;
+            for (MSynopsis syn : synopses) {
+              String synopsisStatistics = syn.getSynopsisStatistics();
+              if (synopsisStatistics == null || synopsisStatistics.isEmpty()) {
+                continue;
+              }
+              JSONParser parser = new JSONParser();
+              JSONArray jsonColumnStats = (JSONArray) parser.parse(synopsisStatistics);
+              double score = 0;
+              for (int i = 0; i < jsonColumnStats.size(); i++) {
+                JSONObject colstat = (JSONObject) jsonColumnStats.get(i);
+                String columnName = (String) colstat.get("Column");
+                if (requiredColumnNames.contains(columnName)) {
+                  score += (Double) colstat.get("Quality Score");
+                }
+              }
+              double errorEstimate = 1.0 - (score / requiredColumnNames.size());
+              if (errorEstimate > hintError) {
+                filteredSynopses.add(syn);
+              }
+            }
+          }
         }
+      } catch (Exception e) {
+        // ignore
       }
     }
     if (filteredSynopses.size() < synopses.size()) {
