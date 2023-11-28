@@ -44,8 +44,12 @@ public class ApproxAggregateUtil {
   private static final List<String> approxAggregateFuncList = Arrays.asList(
       "AVG",
       "COUNT",
+      "STDDEV_POP",
+      "STDDEV_SAMP",
       "STDDEV",
       "SUM",
+      "VAR_POP",
+      "VAR_SAMP",
       "VARIANCE"
   );
 
