@@ -7027,6 +7027,7 @@ SqlIdentifier ReservedFunctionName() :
     |   <CHARACTER_LENGTH>
     |   <COALESCE>
     |   <COLLECT>
+    |   <CORR>
     |   <COVAR_POP>
     |   <COVAR_SAMP>
     |   <CUME_DIST>

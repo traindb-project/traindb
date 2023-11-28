@@ -81,6 +81,7 @@ import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
 import java.util.regex.Pattern;
+import traindb.sql.fun.TrainDBAggregateOperatorTable;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
 
 import static java.util.Objects.requireNonNull;
@@ -531,6 +532,7 @@ public class TrainDBMetaImpl extends MetaImpl {
       SqlOperatorTable opTable = getConnection().config()
           .fun(SqlOperatorTable.class,
               SqlOperatorTables.chain(SqlStdOperatorTable.instance(),
+                  TrainDBAggregateOperatorTable.instance(),
                   TrainDBSpatialOperatorTable.instance()));
       List<SqlOperator> q = opTable.getOperatorList();
       opTableFunctions = Linq4j.asEnumerable(q)

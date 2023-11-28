@@ -107,6 +107,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
     RelOptUtil.registerDefaultRules(this, true, Hook.ENABLE_BINDABLE.get(false));
     removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
     removeRule(CoreRules.AGGREGATE_CASE_TO_FILTER);
+    removeRule(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
+    addRule(TrainDBRules.AGGREGATE_REDUCE_FUNCTIONS);
     addRelTraitDef(ConventionTraitDef.INSTANCE);
     addRelTraitDef(RelCollationTraitDef.INSTANCE);
     setTopDownOpt(false);

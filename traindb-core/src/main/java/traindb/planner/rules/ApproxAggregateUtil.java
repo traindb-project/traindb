@@ -50,7 +50,10 @@ public class ApproxAggregateUtil {
       "SUM",
       "VAR_POP",
       "VAR_SAMP",
-      "VARIANCE"
+      "VARIANCE",
+      "COVAR_POP",
+      "COVAR_SAMP",
+      "CORR"
   );
 
   private static final List<String> scalingAggregateFuncList = Arrays.asList(

@@ -40,4 +40,8 @@ public class TrainDBRules {
   public static final ApproxAggregateInferenceRule
       APPROX_AGGREGATE_INFERENCE =
       ApproxAggregateInferenceRule.Config.DEFAULT.toRule();
+
+  public static final AggregateReduceFunctionsRule
+      AGGREGATE_REDUCE_FUNCTIONS =
+      AggregateReduceFunctionsRule.Config.DEFAULT.toRule();
 }

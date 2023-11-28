@@ -109,6 +109,7 @@ import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
 import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 import traindb.sql.calcite.TrainDBSqlSelect;
+import traindb.sql.fun.TrainDBAggregateOperatorTable;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
@@ -800,6 +801,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     final SqlOperatorTable opTab0 =
         context.config().fun(SqlOperatorTable.class,
             SqlOperatorTables.chain(SqlStdOperatorTable.instance(),
+                TrainDBAggregateOperatorTable.instance(),
                 TrainDBSpatialOperatorTable.instance()));
     final List<SqlOperatorTable> list = new ArrayList<>();
     list.add(opTab0);
