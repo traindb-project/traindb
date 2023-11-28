@@ -228,10 +228,15 @@ public class TrainDBPlanner extends VolcanoPlanner {
                 JSONObject colstat = (JSONObject) jsonColumnStats.get(i);
                 String columnName = (String) colstat.get("Column");
                 if (requiredColumnNames.contains(columnName)) {
-                  score += (Double) colstat.get("Quality Score");
+                  double qs = (Double) colstat.get("Quality Score");
+                  if (score > 0) {
+                    score = Double.min(score, qs);
+                  } else {
+                    score = qs;
+                  }
                 }
               }
-              double errorEstimate = 1.0 - (score / requiredColumnNames.size());
+              double errorEstimate = 1.0 - score;
               if (errorEstimate > hintError) {
                 filteredSynopses.add(syn);
               }
