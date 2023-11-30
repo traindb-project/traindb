@@ -29,6 +29,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.sql.SqlDialect;
+import traindb.adapter.SourceDbmsProducts;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.common.TrainDBLogger;
 import traindb.schema.TrainDBDataSource;
@@ -70,7 +71,11 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
         String schemaName = connection.getMetaData().getUserName();
         builder.put(schemaName, new TrainDBJdbcSchema(schemaName, this));
       } else {
-        resultSet = connection.getMetaData().getCatalogs();
+        if (SourceDbmsProducts.useGetCatalogForSchema(connection)) {
+          resultSet = connection.getMetaData().getCatalogs();
+        } else {
+          resultSet = connection.getMetaData().getSchemas();
+        }
         while (resultSet.next()) {
           final String schemaName = requireNonNull(
               resultSet.getString(1),

@@ -30,6 +30,7 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
+import traindb.adapter.SourceDbmsProducts;
 import traindb.adapter.TrainDBSqlDialect;
 import traindb.common.TrainDBLogger;
 import traindb.schema.TrainDBPartition;
@@ -55,8 +56,11 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       connection = dataSource.getDataSource().getConnection();
       DatabaseMetaData databaseMetaData = connection.getMetaData();
       SqlDialect dialect = ((TrainDBJdbcDataSource) getDataSource()).getDialect();
-      boolean supportCatalog = !(dialect instanceof TrainDBSqlDialect)
-          || ((TrainDBSqlDialect) dialect).supportCatalogs();
+      boolean supportCatalog = SourceDbmsProducts.useGetCatalogForSchema(connection);
+      if ((dialect instanceof TrainDBSqlDialect)
+          && ((TrainDBSqlDialect) dialect).supportCatalogs()) {
+        supportCatalog = true;
+      }
       if (supportCatalog) {
         resultSet = databaseMetaData.getTables(getName(), null, null, null);
       } else {

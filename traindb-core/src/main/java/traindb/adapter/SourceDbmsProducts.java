@@ -16,6 +16,8 @@ package traindb.adapter;
 
 import java.io.FileReader;
 import java.net.URL;
+import java.sql.Connection;
+import java.sql.SQLException;
 import java.util.Map;
 import java.util.TreeMap;
 import org.apache.calcite.util.Sources;
@@ -73,5 +75,13 @@ public class SourceDbmsProducts {
       loadDbmsAdapterConfiguration();
     }
     return nameToSqlDialectClass.get(protocol);
+  }
+
+  public static boolean useGetCatalogForSchema(Connection conn) throws SQLException {
+    String connDbms = conn.getMetaData().getURL().split(":")[1];
+    if (connDbms.equals("mysql") || connDbms.equals("postgresql")) {
+      return true;
+    }
+    return false;
   }
 }
