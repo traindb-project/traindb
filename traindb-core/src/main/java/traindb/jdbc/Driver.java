@@ -107,14 +107,18 @@ public class Driver extends UnregisteredDriver {
       String newUrl = url;
       int urlPrefixLength = 0;
       String[] tokens = url.split(":");
-      if (tokens.length >= 2 && (tokens[1].equalsIgnoreCase("traindb"))) {
-        List<String> newTokens = new ArrayList<>();
-        for (int i = 0; i < tokens.length; ++i) {
-          if (i != 1) {
-            newTokens.add(tokens[i]);
+      if (tokens.length > 2 && (tokens[1].equalsIgnoreCase("traindb"))) {
+        if (tokens[2].startsWith("//")) {
+          newUrl = null;
+        } else {
+          List<String> newTokens = new ArrayList<>();
+          for (int i = 0; i < tokens.length; ++i) {
+            if (i != 1) {
+              newTokens.add(tokens[i]);
+            }
           }
+          newUrl = Joiner.on(":").join(newTokens);
         }
-        newUrl = Joiner.on(":").join(newTokens);
         String[] suffixTokens = url.split("\\?");
         urlPrefixLength = suffixTokens[0].length();
       }

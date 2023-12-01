@@ -260,6 +260,9 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
       RelOptTableImpl synopsisTable =
           (RelOptTableImpl) getSynopsisTable(synopsis, scan.getTable());
+      if (synopsisTable == null) {
+        continue;
+      }
       TableScan synopsisScan =
           new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
               (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());

@@ -139,8 +139,13 @@ public abstract class TrainDBConnectionImpl
     CatalogStore catalogStore = new JDOCatalogStore();
     catalogStore.start(cfg.getProps());
     this.schemaManager = SchemaManager.getInstance(catalogStore);
-    this.dataSource = dataSource(url, info);
-    schemaManager.loadDataSource(dataSource);
+    if (url == null) {  // traindb-only mode (no datasource)
+      schemaManager.loadCatalogDataSource();
+    } else {
+      this.dataSource = dataSource(url, info);
+      schemaManager.loadDataSource(dataSource);
+      addSqlDialectProperties(schemaManager.getDialect(), cfg);
+    }
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
@@ -149,7 +154,6 @@ public abstract class TrainDBConnectionImpl
 
     this.prepareFactory = driver.prepareFactory;
     this.typeFactory = getTypeFactory(typeFactory, cfg);
-    addSqlDialectProperties(schemaManager.getDialect(), cfg);
   }
 
   protected TrainDBConnectionImpl(Driver driver, AvaticaFactory factory,

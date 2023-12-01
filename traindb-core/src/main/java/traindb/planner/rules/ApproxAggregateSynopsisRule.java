@@ -167,6 +167,9 @@ public class ApproxAggregateSynopsisRule
 
       MSynopsis bestSynopsis = planner.getBestSynopsis(
           candidateSynopses, scan, aggregate.getHints(), requiredColumnNames);
+      if (bestSynopsis == null) {
+        continue;
+      }
       RelOptTableImpl synopsisTable =
           (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, scan.getTable());
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
