@@ -23,6 +23,7 @@ import com.opencsv.CSVReaderBuilder;
 import java.io.File;
 import java.io.FileInputStream;
 import java.io.FileReader;
+import java.math.BigDecimal;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -321,7 +322,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   private void loadSynopsisIntoTable(String synopsisName, String schemaName, List<String> columns,
-                                     String synopsisFile) throws Exception {
+                                     MTable mTable, String synopsisFile) throws Exception {
     StringBuilder sb = new StringBuilder();
     sb.append("INSERT INTO ");
     sb.append(schemaName);
@@ -344,7 +345,34 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     try {
       while ((row = csvReader.readNext()) != null) {
         for (int i = 1; i <= collen; i++) {
-          pstmt.setObject(i, row[i - 1]);
+          MColumn mColumn = mTable.getColumn(columns.get(i - 1));
+          if (mColumn == null) {
+            throw new TrainDBException("cannot find base column information");
+          }
+          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(mColumn.getColumnType());
+          switch (sqlTypeName) {
+            case INTEGER:
+            case TINYINT:
+            case SMALLINT:
+              pstmt.setInt(i, Integer.parseInt(row[i - 1]));
+              break;
+            case BIGINT:
+            case DECIMAL:
+              pstmt.setBigDecimal(i, new BigDecimal(row[i - 1]));
+              break;
+            case FLOAT:
+              pstmt.setFloat(i, Float.parseFloat(row[i - 1]));
+              break;
+            case DOUBLE:
+              pstmt.setDouble(i, Double.parseDouble(row[i - 1]));
+              break;
+            case BOOLEAN:
+              pstmt.setBoolean(i, Boolean.parseBoolean(row[i - 1]));
+              break;
+            default:
+              pstmt.setObject(i, row[i - 1]);
+              break;
+          }
         }
         pstmt.addBatch();
       }
@@ -447,9 +475,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
       T_tracer.openTaskTime("load synopsis into table");
       loadSynopsisIntoTable(synopsisName, mModel.getSchemaName(), mModel.getColumnNames(),
-          outputPath);
+          mModel.getTable(), outputPath);
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
+      catalogContext.dropSynopsis(synopsisName);
       dropSynopsisTable(synopsisName);
 
       String msg = "failed to create synopsis " + synopsisName;
@@ -1112,7 +1141,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       ZipUtils.unpack(zipBytes, tempDir.toString());
       String oldSynopsisName = (String) json.get("synopsisName");
       String synopsisFile = Paths.get(tempDir.toString(), oldSynopsisName + ".csv").toString();
-      loadSynopsisIntoTable(synopsisName, schemaName, columnNames, synopsisFile);
+      loadSynopsisIntoTable(synopsisName, schemaName, columnNames, mTable, synopsisFile);
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
       try {
