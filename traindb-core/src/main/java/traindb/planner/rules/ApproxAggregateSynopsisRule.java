@@ -34,6 +34,7 @@ import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.rules.SubstitutionRule;
 import org.apache.calcite.rex.RexCall;
 import org.apache.calcite.rex.RexInputRef;
+import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
@@ -93,28 +94,43 @@ public class ApproxAggregateSynopsisRule
     return rexInputRefIndex;
   }
 
-  private List<Integer> getRequiredColumnIndex(RelNode node) {
+  private void addRequiredColumnIndex(List<Integer> requiredColumnIndex,
+                                      List<Integer> inputRefIndex,
+                                      int start, int end) {
+    for (int i = 0; i < inputRefIndex.size(); i++) {
+      int idx = inputRefIndex.get(i);
+      if (idx >= start && idx < end) {
+        requiredColumnIndex.add(idx - start);
+      }
+    }
+  }
+
+  private List<Integer> getRequiredColumnIndex(RelNode node, int start, int end) {
     List<Integer> requiredColumnIndex = new ArrayList<>();
 
     if (node instanceof Aggregate) {
       Aggregate aggregate = (Aggregate) node;
       for (AggregateCall aggCall : aggregate.getAggCallList()) {
-        requiredColumnIndex.addAll(aggCall.getArgList());
+        addRequiredColumnIndex(requiredColumnIndex, aggCall.getArgList(), start, end);
       }
       for (int i = 0; i < aggregate.getGroupCount(); i++) {
-        requiredColumnIndex.addAll(aggregate.getGroupSets().get(i).asList());
+        addRequiredColumnIndex(
+            requiredColumnIndex, aggregate.getGroupSets().get(i).asList(), start, end);
       }
     } else if (node instanceof Project) {
       Project project = (Project) node;
-      requiredColumnIndex.addAll(getRexInputRefIndex(project.getProjects()));
+      addRequiredColumnIndex(
+          requiredColumnIndex, getRexInputRefIndex(project.getProjects()), start, end);
     } else if (node instanceof Filter) {
       Filter filter = (Filter) node;
       List<RexNode> operands = ((RexCall) filter.getCondition()).getOperands();
-      requiredColumnIndex.addAll(getRexInputRefIndex(operands));
+      addRequiredColumnIndex(requiredColumnIndex, getRexInputRefIndex(operands), start, end);
     } else if (node instanceof Join) {
       Join join = (Join) node;
-      List<RexNode> operands = ((RexCall) join.getCondition()).getOperands();
-      requiredColumnIndex.addAll(getRexInputRefIndex(operands));
+      if (join.getCondition() != null && !(join.getCondition() instanceof RexLiteral)) {
+        List<RexNode> operands = ((RexCall) join.getCondition()).getOperands();
+        addRequiredColumnIndex(requiredColumnIndex, getRexInputRefIndex(operands), start, end);
+      }
     }
 
     return requiredColumnIndex;
@@ -145,11 +161,27 @@ public class ApproxAggregateSynopsisRule
       }
 
       Set<Integer> requiredColumnIndex = new HashSet<>();
+      int start = 0;
+      int end = scan.getRowType().getFieldCount();
       RelNode node, parent;
       for (node = scan, parent = ApproxAggregateUtil.getParent(aggregate, scan);
            node != aggregate;
            node = parent, parent = ApproxAggregateUtil.getParent(aggregate, node)) {
-        requiredColumnIndex.addAll(getRequiredColumnIndex(parent));
+        if (parent instanceof Join) {
+          RelNode left = ((Join) parent).getLeft();
+          if (left instanceof RelSubset) {
+            left = ((RelSubset) left).getBestOrOriginal();
+          }
+          RelNode right = ((Join) parent).getRight();
+          if (right instanceof RelSubset) {
+            right = ((RelSubset) right).getBestOrOriginal();
+          }
+          if (node == right) {
+            start = left.getRowType().getFieldCount();
+            end = left.getRowType().getFieldCount() + right.getRowType().getFieldCount();
+          }
+        }
+        requiredColumnIndex.addAll(getRequiredColumnIndex(parent, start, end));
         if (parent instanceof Project) {
           break;
         }
