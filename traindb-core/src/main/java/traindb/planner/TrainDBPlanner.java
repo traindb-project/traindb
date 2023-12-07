@@ -14,6 +14,7 @@
 
 package traindb.planner;
 
+import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
@@ -30,6 +31,8 @@ import org.apache.calcite.plan.RelOptPlanner;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.plan.hep.HepProgram;
+import org.apache.calcite.plan.hep.HepProgramBuilder;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.RelOptTableImpl;
 import org.apache.calcite.rel.RelCollationTraitDef;
@@ -340,13 +343,22 @@ public class TrainDBPlanner extends VolcanoPlanner {
         };
 
     RelMetadataProvider metadataProvider = DefaultRelMetadataProvider.INSTANCE;
-    return Programs.sequence(// subQuery(metadataProvider),
+    return Programs.sequence(subQuery(metadataProvider),
         new DecorrelateProgram(),
         new TrimFieldsProgram(),
         program1,
         // Second planner pass to do physical "tweaks". This the first time
         // that EnumerableCalcRel is introduced.
         Programs.calc(metadataProvider));
+  }
+
+  public static Program subQuery(RelMetadataProvider metadataProvider) {
+    final HepProgramBuilder builder = HepProgram.builder();
+    builder.addRuleCollection(
+        ImmutableList.of(CoreRules.FILTER_SUB_QUERY_TO_CORRELATE,
+            CoreRules.PROJECT_SUB_QUERY_TO_CORRELATE));
+            //CoreRules.JOIN_SUB_QUERY_TO_CORRELATE));
+    return Programs.of(builder.build(), true, metadataProvider);
   }
 
   /** Program that de-correlates a query. */
