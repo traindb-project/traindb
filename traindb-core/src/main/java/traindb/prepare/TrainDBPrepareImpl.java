@@ -14,15 +14,18 @@
 
 package traindb.prepare;
 
+import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.util.Static.RESOURCE;
 
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
+import java.nio.charset.StandardCharsets;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -31,6 +34,7 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.StringTokenizer;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -58,6 +62,8 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
+import org.apache.calcite.rel.core.Aggregate;
+import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
@@ -76,9 +82,13 @@ import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
+import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlNodeList;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.sql.SqlOperatorTable;
 import org.apache.calcite.sql.fun.SqlStdOperatorTable;
 import org.apache.calcite.sql.parser.SqlParseException;
@@ -95,6 +105,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.catalog.CatalogContext;
+import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
 import traindb.engine.TrainDBQueryEngine;
 import traindb.engine.nio.ByteArray;
@@ -566,7 +577,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         } finally {
           try {
             queryEngine.insertTask();
-          } catch ( Exception e) {
+          } catch (Exception e) {
             throw new RuntimeException(
                     "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
           }
@@ -697,8 +708,14 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     TrainDBConnectionImpl conn =
         (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
+    SchemaManager schemaManager = conn.getSchemaManager();
+
     TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
     String sql = incrementalQuery.getStatement();
+
+    if (sql.equals("rows")) {
+      return executeIncrementalNext(context,commands);
+    }
 
     SqlParser parser = createParser(sql,  parserConfig);
     SqlNode sqlNode;
@@ -709,31 +726,105 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           "parse failed: " + e.getMessage(), e);
     }
 
+    schemaManager.saveQueryIdx = 0;
+    if (schemaManager.saveQuery == null) {
+      schemaManager.saveQuery = new ArrayList<>();
+    } else {
+      schemaManager.saveQuery.clear();
+    }
+
+    if (schemaManager.totalRes == null) {
+      schemaManager.totalRes = new ArrayList<>();
+    } else {
+      schemaManager.totalRes.clear();
+    }
+
+    if (schemaManager.header == null) {
+      schemaManager.header = new ArrayList<>();
+    } else {
+      schemaManager.header.clear();
+    }
+
+    if (schemaManager.aggCalls == null) {
+      schemaManager.aggCalls = new ArrayList<>();
+    } else {
+      schemaManager.aggCalls.clear();
+    }
+
     TrainDBSqlSelect ptree = (TrainDBSqlSelect)sqlNode;
 
     // select list
     SqlNode selectNode = ptree.getSelectList();
-    String selectList = selectNode.toString();
+    //String selectList = selectNode.toString();
+
+    String columnList = "";
+    SqlNodeList snodeList = (SqlNodeList) selectNode;
+    for (int i = 0; i < snodeList.size(); i++) {
+      SqlNode n = snodeList.get(i);
+
+      if (i > 0) {
+        columnList = columnList + " ,";
+      }
+
+      if (n instanceof SqlBasicCall) {
+        SqlBasicCall call = (SqlBasicCall) n;
+        SqlOperator callOp = call.getOperator();
+
+        SqlIdentifier inNode = (SqlIdentifier) call.getOperandList().get(0);
+        String inName = inNode.toString();
+
+        if (callOp.getName().equals("count")) {
+          schemaManager.aggCalls.add(SqlStdOperatorTable.COUNT);
+          columnList = columnList + "count(" + inName + ")";
+        } else if (callOp.getName().equals("sum")) {
+          schemaManager.aggCalls.add(SqlStdOperatorTable.SUM);
+          columnList = columnList + "sum(" + inName + ")";
+        } else if (callOp.getName().equals("min")) {
+          schemaManager.aggCalls.add(SqlStdOperatorTable.MIN);
+          columnList = columnList + "min(" + inName + ")";
+        } else if (callOp.getName().equals("max")) {
+          schemaManager.aggCalls.add(SqlStdOperatorTable.MAX);
+          columnList = columnList + "max(" + inName + ")";
+        } else if (callOp.getName().equals("avg")) {
+          schemaManager.aggCalls.add(SqlStdOperatorTable.AVG);
+          columnList = columnList + "sum(" + inName + "), count(" + inName + ")";
+        } else {
+          throw new RuntimeException(
+              "failed to run statement: " + sql
+                  + "\nerror msg: incremental query can be executed on aggregate function");
+        }
+      }
+    }
 
     // from clause
     SqlNode fromNode = ptree.getFrom();
     SqlIdentifier fromIdnt = (SqlIdentifier)fromNode;
 
-    if ( fromIdnt.isSimple() ) {
-      String err = "ERROR";
+    String tableName = fromNode.toString();
+    String schemaName = null;
+    String tblname = null;
+
+    StringTokenizer st = new StringTokenizer(tableName, "[.]");
+    if (st.countTokens() == 1) {
+      tblname = st.nextToken();
+    } else if (st.countTokens() == 2) {
+      schemaName = st.nextToken();
+      tblname = st.nextToken();
     }
 
-    String tblname = fromNode.toString();
-
-    List <String> partitionList = null;
-    SchemaManager schemaManager = conn.getSchemaManager();
+    List<String> partitionList = null;
     for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
+
+      if (!traindbSchema.getName().equals(schemaName)) {
+        continue;
+      }
+
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
       Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
 
-      for(Map.Entry<String, TrainDBPartition> tempEntry: entries){
-        if ( tempEntry.getKey().equals(tblname) ) {
+      for (Map.Entry<String,TrainDBPartition> tempEntry : entries) {
+        if (tempEntry.getKey().equals(tblname)) {
           partitionList = tempEntry.getValue().getPartitionNameMap();
           break;
         }
@@ -747,53 +838,424 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
 
     String changeQuery;
-    List<List<Object>> TotalRes = new ArrayList<>();
-    final List<ColumnMetaData> columns = new ArrayList<>();
-    final List<AvaticaParameter> parameters = new ArrayList<>();
+    for (int k = 0; k < partitionList.size(); k++) {
+      changeQuery =
+          "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+
+      schemaManager.saveQuery.add(changeQuery);
+    }
+    List<List<Object>> totalRes = new ArrayList<>();
     List<String> header = new ArrayList<>();
     try {
-      for ( int k = 0; k < partitionList.size(); k++ ) {
-        changeQuery = "select " + selectList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+        changeQuery = schemaManager.saveQuery.get(0);
         ResultSet rs = conn.executeQueryInternal(changeQuery);
+
         int columnCount = rs.getMetaData().getColumnCount();
         ResultSetMetaData md = rs.getMetaData();
 
         while (rs.next()) {
           List<Object> r = new ArrayList<>();
           for (int j = 1; j <= columnCount; j++) {
-//              if (rs.getColumnType(j) == Types.VARBINARY) {
-            //               ByteArray byteArray = (ByteArray) rs.getValue(j);
-            //               r.add(byteArray.getArray());
-            //             }
-            r.add(rs.getObject(j));
-          }
-          TotalRes.add(r);
-        }
-
-        if ( TotalRes.size() > 0 && k < partitionList.size()-1 ) {
-          List<Object> r = new ArrayList<>();
-          for (int j = 1; j <= columnCount; j++) {
             int type = md.getColumnType(j);
-            if ( type == Types.INTEGER )
-              r.add(-1);
-            else
-              r.add("--> next step");
+            SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
+            if (sqlTypeName == DECIMAL) {
+              r.add(rs.getInt(j));
+            } else {
+              r.add(rs.getObject(j));
+            }
           }
-          TotalRes.add(r);
+          schemaManager.totalRes.add(r);
         }
 
-        if ( parameters.size() == 0 ) {
-          for (int j = 1; j <= columnCount; j++) {
-            header.add(md.getColumnName(j));
-          }
+        for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
+          SqlAggFunction agg = schemaManager.aggCalls.get(j);
+          header.add(agg.getName());
         }
-      }
+
+        TrainDBListResultSet res
+            = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+        if (res.getRowCount() > 0) {
+          List<Object> r = new ArrayList<>();
+          int aggIdx = 0;
+          for (int j = 0; j < res.getColumnCount(); j++, aggIdx++) {
+            SqlAggFunction agg = schemaManager.aggCalls.get(aggIdx);
+            switch (agg.getKind()) {
+              case COUNT:
+                executeIncrementalCount(res, j, r);
+                break;
+              case SUM:
+                executeIncrementalSum(res, j, r);
+                break;
+              case AVG:
+                executeIncrementalAvg(res, j, r);
+                j++;
+                break;
+              case MIN:
+                executeIncrementalMin(res, j, r);
+                break;
+              case MAX:
+                executeIncrementalMax(res, j, r);
+                break;
+              default:
+                break;
+            }
+          }
+          totalRes.add(r);
+        }
+
+        rs.close();
+        schemaManager.saveQueryIdx++;
     } catch (SQLException e) {
       throw new RuntimeException(e);
+    } catch (TrainDBException e) {
+      e.printStackTrace();
     }
 
     return convertResultToSignature(context, sql,
-        new TrainDBListResultSet(header, TotalRes));
+        new TrainDBListResultSet(header, totalRes));
+  }
+
+  <T> CalciteSignature<T> executeIncrementalNext(
+      Context context,
+      TrainDBSqlCommand commands) {
+
+    TrainDBConnectionImpl conn =
+        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+    SchemaManager schemaManager = conn.getSchemaManager();
+
+    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalQuery.getStatement();
+
+    List<List<Object>> totalRes = new ArrayList<>();
+    List<String> header = new ArrayList<>();
+
+    int currentIdx = schemaManager.saveQueryIdx;
+    if (currentIdx <= 0) {
+      throw new RuntimeException(
+          "failed to run statement: " + sql
+              + "\nerror msg: incremental query can be executed on partitioned table only.");
+    }
+
+    if (schemaManager.saveQuery.size() <= currentIdx) {
+      return convertResultToSignature(context, sql,
+          new TrainDBListResultSet(schemaManager.header, totalRes));
+    }
+
+    try {
+      String currentIncrementalQuery = schemaManager.saveQuery.get(currentIdx);
+      ResultSet rs = conn.executeQueryInternal(currentIncrementalQuery);
+
+      int columnCount = rs.getMetaData().getColumnCount();
+      ResultSetMetaData md = rs.getMetaData();
+
+      while (rs.next()) {
+        List<Object> r = new ArrayList<>();
+        for (int j = 1; j <= columnCount; j++) {
+          int type = md.getColumnType(j);
+          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
+          if (sqlTypeName == DECIMAL) {
+            r.add(rs.getInt(j));
+          } else {
+            r.add(rs.getObject(j));
+          }
+        }
+        schemaManager.totalRes.add(r);
+      }
+
+      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
+        SqlAggFunction agg = schemaManager.aggCalls.get(j);
+        header.add(agg.getName());
+      }
+
+      TrainDBListResultSet res
+          = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+      if (res.getRowCount() > 0) {
+        List<Object> r = new ArrayList<>();
+        int aggIdx = 0;
+        for (int j = 0; j < res.getColumnCount(); j++, aggIdx++) {
+          SqlAggFunction agg = schemaManager.aggCalls.get(aggIdx);
+          switch (agg.getKind()) {
+            case COUNT:
+              executeIncrementalCount(res, j, r);
+              break;
+            case SUM:
+              executeIncrementalSum(res, j, r);
+              break;
+            case AVG:
+              executeIncrementalAvg(res, j, r);
+              j++;
+              break;
+            case MIN:
+              executeIncrementalMin(res, j, r);
+              break;
+            case MAX:
+              executeIncrementalMax(res, j, r);
+              break;
+            default:
+              break;
+          }
+        }
+        totalRes.add(r);
+      }
+
+      rs.close();
+      schemaManager.saveQueryIdx++;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } catch (TrainDBException e) {
+      e.printStackTrace();
+    }
+
+    return convertResultToSignature(context, sql,
+        new TrainDBListResultSet(header, totalRes));
+  }
+
+  public static void executeIncrementalCount(TrainDBListResultSet res, int columnIdx, List<Object> r)
+      throws TrainDBException {
+    int totalCnt = 0;
+    int cnt = 0;
+    int type = res.getColumnType(columnIdx);
+
+    res.rewind();
+    while (res.next()) {
+      switch (type) {
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          cnt = (int) res.getValue(columnIdx);
+          totalCnt = totalCnt + cnt;
+          break;
+        default:
+          throw new TrainDBException("Not supported data type: " + type);
+      }
+    }
+    r.add(totalCnt);
+  }
+
+  public static void executeIncrementalSum(TrainDBListResultSet res, int columnIdx, List<Object> r)
+      throws TrainDBException {
+    int totalSum = 0;
+    int sum = 0;
+    int type = res.getColumnType(columnIdx);
+
+    res.rewind();
+    while (res.next()) {
+      switch (type) {
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          sum = (int) res.getValue(columnIdx);
+          totalSum = totalSum + sum;
+          break;
+        default:
+          throw new TrainDBException("Not supported data type: " + type);
+      }
+    }
+    r.add(totalSum);
+  }
+
+  public static void executeIncrementalAvg(TrainDBListResultSet res, int columnIdx, List<Object> r)
+      throws TrainDBException {
+    int totalIntSum = 0;
+    int totalIntCnt = 0;
+    int intCnt = 0;
+    int intSum = 0;
+
+    double totalDoubleSum = 0;
+    double totalDoubleCnt = 0;
+    double doubleCnt = 0;
+    double doubleSum = 0;
+
+    int type = res.getColumnType(columnIdx);
+
+    res.rewind();
+    while (res.next()) {
+      switch (type) {
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+          intSum = (int) res.getValue(columnIdx);
+          totalIntSum = totalIntSum + intSum;
+
+          intCnt = (int) res.getValue(columnIdx + 1);
+          totalIntCnt = totalIntCnt + intCnt;
+          break;
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          doubleSum = (double) res.getValue(columnIdx);
+          totalDoubleSum = totalDoubleSum + doubleSum;
+
+          doubleCnt = (double) res.getValue(columnIdx + 1);
+          totalDoubleCnt = totalDoubleCnt + doubleCnt;
+          break;
+        default:
+          throw new TrainDBException("Not supported data type: " + type);
+      }
+    }
+    switch (type) {
+      case Types.TINYINT:
+      case Types.SMALLINT:
+      case Types.INTEGER:
+      case Types.BIGINT:
+        double test = (double) totalIntSum / (double) totalIntCnt;
+        double davg = Math.round(test);
+        int intAvg = (int) davg;
+        r.add(intAvg);
+        break;
+      case Types.FLOAT:
+      case Types.DOUBLE:
+        double avg =  (double) totalDoubleSum / (double) totalDoubleCnt;
+        r.add(avg);
+        break;
+      default:
+        break;
+    }
+  }
+
+  public static void executeIncrementalMin(TrainDBListResultSet res, int columnIdx, List<Object> r)
+      throws TrainDBException {
+    int intMin = 0;
+    int currentMin = 0;
+
+    String stringMin = null;
+    String currentStr = null;
+
+    int type = res.getColumnType(columnIdx);
+
+    res.rewind();
+    while (res.next()) {
+      switch (type) {
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          currentMin = (int) res.getValue(columnIdx);
+          if (intMin == 0) {
+            intMin = currentMin;
+          } else if (intMin > currentMin) {
+            intMin = currentMin;
+          }
+          break;
+        case Types.CHAR:
+        case Types.VARCHAR: {
+          currentStr = (String) res.getValue(columnIdx);
+          if (stringMin == null) {
+            stringMin = currentStr;
+          } else if (compareStrings(stringMin, currentStr) > 0) {
+            stringMin = currentStr;
+          }
+          break;
+        }
+        default:
+          throw new TrainDBException("Not supported data type: " + type);
+      }
+    }
+
+    switch (type) {
+      case Types.TINYINT:
+      case Types.SMALLINT:
+      case Types.INTEGER:
+      case Types.BIGINT:
+      case Types.FLOAT:
+      case Types.DOUBLE:
+        r.add(intMin);
+        break;
+      case Types.CHAR:
+      case Types.VARCHAR:
+        r.add(stringMin);
+        break;
+      default:
+        throw new TrainDBException("Not supported data type: " + type);
+    }
+  }
+
+  public static void executeIncrementalMax(TrainDBListResultSet res, int columnIdx, List<Object> r)
+      throws TrainDBException {
+    int intMax = 0;
+    int currentMax = 0;
+
+    String stringMax = null;
+    String currentStr = null;
+
+    int type = res.getColumnType(columnIdx);
+
+    res.rewind();
+    while (res.next()) {
+      switch (type) {
+        case Types.TINYINT:
+        case Types.SMALLINT:
+        case Types.INTEGER:
+        case Types.BIGINT:
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          currentMax = (int) res.getValue(columnIdx);
+          if (intMax == 0) {
+            intMax = currentMax;
+          } else if (intMax < currentMax) {
+            intMax = currentMax;
+          }
+          break;
+        case Types.CHAR:
+        case Types.VARCHAR: {
+          currentStr = (String) res.getValue(columnIdx);
+          if (stringMax == null) {
+            stringMax = currentStr;
+          } else if (compareStrings(stringMax, currentStr) < 0) {
+            stringMax = currentStr;
+          }
+          break;
+        }
+        default:
+          throw new TrainDBException("Not supported data type: " + type);
+      }
+    }
+
+    switch (type) {
+      case Types.TINYINT:
+      case Types.SMALLINT:
+      case Types.INTEGER:
+      case Types.BIGINT:
+      case Types.FLOAT:
+      case Types.DOUBLE:
+        r.add(intMax);
+        break;
+      case Types.CHAR:
+      case Types.VARCHAR:
+        r.add(stringMax);
+        break;
+      default:
+        throw new TrainDBException("Not supported data type: " + type);
+    }
+  }
+
+  public static int compareStrings(String s1, String s2) {
+    for (int i = 0; i < s1.length() && i < s2.length(); i++) {
+      if ((int) s1.charAt(i) == (int) s2.charAt(i)) {
+        continue;
+      } else {
+        return (int) s1.charAt(i) - (int) s2.charAt(i);
+      }
+    }
+
+    if (s1.length() < s2.length()) {
+      return (s1.length() - s2.length());
+      //return 1;
+    } else if (s1.length() > s2.length()) {
+      return (s1.length() - s2.length());
+      //return -1;
+    } else {
+      return 0;
+    }
   }
 
   public static SqlValidator createSqlValidator(Context context,

@@ -258,7 +258,8 @@ public final class Session implements Runnable {
   private boolean isTrainDBStmtWithResultSet(TrainDBSqlCommand.Type type) {
     return type.toString().startsWith("SHOW")
         || type.toString().startsWith("DESCRIBE")
-        || type.toString().startsWith("EXPORT");
+        || type.toString().startsWith("EXPORT")
+        || type.toString().startsWith("INCREMENTAL");
   }
 
   private void sendRowDesc(ResultSetMetaData md) {

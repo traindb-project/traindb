@@ -25,6 +25,7 @@ import javax.sql.DataSource;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Table;
+import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.hadoop.service.AbstractService;
@@ -53,6 +54,13 @@ public final class SchemaManager extends AbstractService {
   private final Lock writeLock = lock.writeLock();
   private SchemaPlus rootSchema;
 
+  // for incremental query
+  public List<String> saveQuery;
+  public int saveQueryIdx;
+  public List<List<Object>> totalRes;
+  public List<String> header;
+  public List<SqlAggFunction> aggCalls;
+
   private SchemaManager(CatalogStore catalogStore) {
     super(SchemaManager.class.getName());
     this.catalogStore = catalogStore;
@@ -61,6 +69,11 @@ public final class SchemaManager extends AbstractService {
     dataSourceMap = new HashMap<>();
     schemaMap = new HashMap<>();
     tableMap = new HashMap<>();
+
+    saveQuery = new ArrayList<>();
+    totalRes = new ArrayList<>();
+    header = new ArrayList<>();
+    aggCalls = new ArrayList<>();
   }
 
   @Override
