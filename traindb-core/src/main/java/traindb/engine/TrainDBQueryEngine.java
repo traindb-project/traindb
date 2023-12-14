@@ -622,7 +622,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showTables(Map<String, Object> filterPatterns) throws Exception {
-    List<String> header = Arrays.asList("table");
+    List<String> header = Arrays.asList("schema", "table", "table_type");
     List<List<Object>> tableInfo = new ArrayList<>();
 
     T_tracer.startTaskTracer("show tables");
@@ -632,7 +632,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         conn.getCatalog(), conn.getSchema(), null, null);
 
     while (rs.next()) {
-      tableInfo.add(Arrays.asList(rs.getString(3)));
+      if (rs.getString(4).equals("INDEX")) {
+        continue;
+      }
+      tableInfo.add(Arrays.asList(rs.getString(2), rs.getString(3), rs.getString(4)));
     }
 
     T_tracer.closeTaskTime("SUCCESS");
