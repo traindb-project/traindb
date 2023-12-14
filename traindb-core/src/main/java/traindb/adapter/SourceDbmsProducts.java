@@ -79,7 +79,7 @@ public class SourceDbmsProducts {
 
   public static boolean useGetCatalogForSchema(Connection conn) throws SQLException {
     String connDbms = conn.getMetaData().getURL().split(":")[1];
-    if (connDbms.equals("mysql") || connDbms.equals("postgresql")) {
+    if (connDbms.equals("mysql")) {
       return true;
     }
     return false;
