@@ -305,14 +305,24 @@ public class JdbcToEnumerableConverter
                                   boolean offset) {
     switch (sqlTypeName) {
       case DATE:
+        return BuiltInMethod.DATE_TO_INT_OPTIONAL.method;
+        /*
         return (nullable
             ? BuiltInMethod.DATE_TO_INT_OPTIONAL
             : BuiltInMethod.DATE_TO_INT).method;
+         */
       case TIME:
+        return BuiltInMethod.TIME_TO_INT_OPTIONAL.method;
+        /*
         return (nullable
             ? BuiltInMethod.TIME_TO_INT_OPTIONAL
             : BuiltInMethod.TIME_TO_INT).method;
+         */
       case TIMESTAMP:
+        return (offset
+            ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
+            : BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL).method;
+        /*
         return (nullable
             ? (offset
             ? BuiltInMethod.TIMESTAMP_TO_LONG_OPTIONAL_OFFSET
@@ -320,6 +330,7 @@ public class JdbcToEnumerableConverter
             : (offset
             ? BuiltInMethod.TIMESTAMP_TO_LONG_OFFSET
             : BuiltInMethod.TIMESTAMP_TO_LONG)).method;
+         */
       default:
         throw new AssertionError(sqlTypeName + ":" + nullable);
     }

@@ -322,8 +322,12 @@ public final class Session implements Runnable {
             }
             case Types.TIMESTAMP: {
               Timestamp ts = rs.getTimestamp(i);
-              byte[] bytes = ts.toString().getBytes(StandardCharsets.UTF_8);
-              msgBld.putInt(bytes.length).putBytes(bytes);
+              if (ts == null) {
+                msgBld.putInt(0);
+              } else {
+                byte[] bytes = ts.toString().getBytes(StandardCharsets.UTF_8);
+                msgBld.putInt(bytes.length).putBytes(bytes);
+              }
               break;
             }
             case Types.VARBINARY: {
