@@ -29,9 +29,12 @@ import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 import java.sql.DatabaseMetaData;
+import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Time;
+import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
 import java.util.ArrayList;
 import java.util.Arrays;
@@ -368,6 +371,19 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
               break;
             case BOOLEAN:
               pstmt.setBoolean(i, Boolean.parseBoolean(row[i - 1]));
+              break;
+            case CHAR:
+            case VARCHAR:
+              pstmt.setString(i, row[i - 1]);
+              break;
+            case DATE:
+              pstmt.setDate(i, Date.valueOf(row[i - 1]));
+              break;
+            case TIME:
+              pstmt.setTime(i, Time.valueOf(row[i - 1]));
+              break;
+            case TIMESTAMP:
+              pstmt.setTimestamp(i, Timestamp.valueOf(row[i - 1]));
               break;
             default:
               pstmt.setObject(i, row[i - 1]);
