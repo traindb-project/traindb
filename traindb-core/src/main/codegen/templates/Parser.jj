@@ -4731,7 +4731,7 @@ SqlLiteral IntervalLiteral() :
         <PLUS> { sign = 1; }
     ]
     <QUOTED_STRING> { p = token.image; }
-    intervalQualifier = IntervalQualifierPrec(p.length() - 2, RelDataType.PRECISION_NOT_SPECIFIED) {
+    intervalQualifier = IntervalQualifier() {
         return SqlParserUtil.parseIntervalLiteral(s.end(intervalQualifier),
             sign, p, intervalQualifier);
     }
@@ -4758,7 +4758,7 @@ SqlNode IntervalLiteralOrExpression() :
     (
         // literal (with quoted string)
         <QUOTED_STRING> { p = token.image; }
-        intervalQualifier = IntervalQualifierPrec(p.length() - 2, RelDataType.PRECISION_NOT_SPECIFIED) {
+        intervalQualifier = IntervalQualifier() {
             return SqlParserUtil.parseIntervalLiteral(s.end(intervalQualifier),
                 sign, p, intervalQualifier);
         }
@@ -4925,63 +4925,6 @@ SqlIntervalQualifier IntervalQualifierStart() :
     )
     {
         return new SqlIntervalQualifier(start, startPrec, null, secondFracPrec,
-            s.end(this));
-    }
-}
-
-SqlIntervalQualifier IntervalQualifierPrec(int startPrec, int secondFracPrec) :
-{
-    final Span s;
-    final TimeUnit start;
-    TimeUnit end = null;
-}
-{
-    (
-        start = Year() { s = span(); }
-        [
-            LOOKAHEAD(2) <TO> end = Month()
-        ]
-    |
-        start = Month() { s = span(); }
-    |
-        start = Day() { s = span(); }
-        [
-            LOOKAHEAD(2) <TO>
-            (
-                end = Hour()
-            |
-                end = Minute()
-            |
-                end = Second()
-            )
-        ]
-    |
-        start = Hour() { s = span(); }
-        [
-            LOOKAHEAD(2) <TO>
-            (
-                end = Minute()
-            |
-                end = Second()
-                [ <LPAREN> UnsignedIntLiteral() <RPAREN> ]
-            )
-        ]
-    |
-        start = Minute() { s = span(); }
-        [
-            LOOKAHEAD(2) <TO> end = Second()
-            [ <LPAREN> UnsignedIntLiteral() <RPAREN> ]
-        ]
-    |
-        start = Second() { s = span(); }
-        [
-            <LPAREN> UnsignedIntLiteral()
-            [ <COMMA> UnsignedIntLiteral() ]
-            <RPAREN>
-        ]
-    )
-    {
-        return new SqlIntervalQualifier(start, startPrec, end, secondFracPrec,
             s.end(this));
     }
 }
