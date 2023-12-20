@@ -34,7 +34,7 @@ import traindb.util.NetUtils;
 public final class SessionManager extends AbstractService {
   private static final TrainDBLogger LOG = TrainDBLogger.getLogger(SessionManager.class);
 
-  private static final int SESSION_MAX_DEFAULT = 8;
+  private static final int SESSION_MAX_DEFAULT = 100;
   private static final long SESSION_KEEPALIVE_DEFAULT = 60;
   private static final long SESSION_SHUTDOWN_TIMEOUT_DEFAULT = 5;
 
