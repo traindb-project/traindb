@@ -2,10 +2,8 @@
 
 # TrainDB
 
-TrainDB is a ML-based approximate query processing engine that aims to answer time-consuming analytical queries in a few seconds.
+TrainDB is an ML model-based approximate query processing engine that aims to answer time-consuming analytical queries in a few seconds.
 TrainDB will provide SQL-like query interface and support various DBMS data sources.
-
-Currently, we are implementing a prototype for proof of concept.
 
 ## Requirements
 
@@ -44,7 +42,7 @@ Now, you can execute SQL statements using the command line interface.\
 You need to put JDBC driver for your DBMS into the directory included in CLASSPATH.
 
 ```console
-$ cd traindb-assembly/target/traindb-x.y.z-SNAPSHOT
+$ cd traindb-assembly/target/traindb-x.y-SNAPSHOT
 $ bin/trsql
 sqlline> !connect jdbc:traindb:<dbms>://<host>
 Enter username for jdbc:traindb:<dbms>://localhost: <username> 
