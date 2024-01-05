@@ -45,7 +45,6 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.schema.Schema;
-import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
@@ -84,6 +83,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private CatalogContext catalogContext;
   private SchemaManager schemaManager;
   public TaskTracer T_tracer;
+
+  public static final int BATCH_ROWS_MAX = 1000;
 
   public TrainDBQueryEngine(TrainDBConnectionImpl conn) {
     this.conn = conn;
@@ -379,6 +380,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     PreparedStatement pstmt = extConn.prepareStatement(sql);
     int collen = columns.size();
     String[] row;
+    int batch = 0;
     try {
       while ((row = csvReader.readNext()) != null) {
         for (int i = 1; i <= collen; i++) {
@@ -425,8 +427,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           }
         }
         pstmt.addBatch();
+        batch++;
+        if (batch >= BATCH_ROWS_MAX) {
+          pstmt.executeBatch();
+          batch = 0;
+        }
       }
-      pstmt.executeBatch();
+      if (batch != 0) {
+        pstmt.executeBatch();
+      }
       pstmt.close();
       extConn.close();
     } catch (Exception e) {
