@@ -21,10 +21,12 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
 import java.nio.charset.StandardCharsets;
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
@@ -104,6 +106,7 @@ import org.apache.calcite.tools.Frameworks;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.adapter.jdbc.JdbcUtils;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -848,7 +851,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     List<String> header = new ArrayList<>();
     try {
         changeQuery = schemaManager.saveQuery.get(0);
-        ResultSet rs = conn.executeQueryInternal(changeQuery);
+
+        Connection extConn = conn.getExtraConnection();
+        Statement stmt = extConn.createStatement();
+        ResultSet rs = stmt.executeQuery(changeQuery);
 
         int columnCount = rs.getMetaData().getColumnCount();
         ResultSetMetaData md = rs.getMetaData();
@@ -903,7 +909,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           totalRes.add(r);
         }
 
-        rs.close();
+        JdbcUtils.close(extConn, stmt, rs);
         schemaManager.saveQueryIdx++;
     } catch (SQLException e) {
       throw new RuntimeException(e);
@@ -944,7 +950,9 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     try {
       String currentIncrementalQuery = schemaManager.saveQuery.get(currentIdx);
-      ResultSet rs = conn.executeQueryInternal(currentIncrementalQuery);
+      Connection extConn = conn.getExtraConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
 
       int columnCount = rs.getMetaData().getColumnCount();
       ResultSetMetaData md = rs.getMetaData();
@@ -999,7 +1007,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         totalRes.add(r);
       }
 
-      rs.close();
+      JdbcUtils.close(extConn, stmt, rs);
       schemaManager.saveQueryIdx++;
     } catch (SQLException e) {
       throw new RuntimeException(e);

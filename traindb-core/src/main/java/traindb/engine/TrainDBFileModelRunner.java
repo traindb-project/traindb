@@ -20,12 +20,15 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.ResultSet;
+import java.sql.Statement;
 import java.util.List;
 import java.util.Map;
 import java.util.UUID;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.json.simple.JSONObject;
+import traindb.adapter.jdbc.JdbcUtils;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.pm.MModeltype;
 import traindb.common.TrainDBConfiguration;
@@ -66,10 +69,13 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
 
     String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
         table.getRowType(typeFactory));
-    ResultSet trainingData = conn.executeQueryInternal(sql);
+
+    Connection extConn = conn.getExtraConnection();
+    Statement stmt = extConn.createStatement();
+    ResultSet trainingData = stmt.executeQuery(sql);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();
     writeResultSetToCsv(trainingData, dataFilename);
-    trainingData.close();
+    JdbcUtils.close(extConn, stmt, trainingData);
 
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
 
@@ -187,19 +193,24 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     fileWriter.flush();
     fileWriter.close();
 
+    Connection extConn = conn.getExtraConnection();
+    Statement stmt = extConn.createStatement();
+
     String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
         table.getRowType(typeFactory));
-    ResultSet origData = conn.executeQueryInternal(origSql);
+    ResultSet origData = stmt.executeQuery(origSql);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();
     writeResultSetToCsv(origData, dataFilename);
     origData.close();
 
     String synSql = buildSelectTrainingDataQuery(schemaName, synopsisName, columnNames, 100,
         table.getRowType(typeFactory));
-    ResultSet synData = conn.executeQueryInternal(synSql);
+
+    ResultSet synData = stmt.executeQuery(synSql);
     String synFilename = Paths.get(outputPath, "syn.csv").toString();
     writeResultSetToCsv(synData, synFilename);
-    synData.close();
+
+    JdbcUtils.close(extConn, stmt, synData);
 
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     String analyzeReportPath = modelPath + "/analyze_" + synopsisName + ".json";

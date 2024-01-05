@@ -261,36 +261,9 @@ public abstract class TrainDBConnectionImpl
     return dataSource;
   }
 
-  private Connection extraConnection() {
+  public Connection getExtraConnection() {
     try {
       return dataSource.getConnection();
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public void executeInternal(String sql) {
-    try {
-      Statement stmt = extraConnection().createStatement();
-      stmt.execute(sql);
-      stmt.close();
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public ResultSet executeQueryInternal(String sql) {
-    try {
-      Statement stmt = extraConnection().createStatement();
-      return stmt.executeQuery(sql);
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
-    }
-  }
-
-  public PreparedStatement prepareInternal(String sql) {
-    try {
-      return extraConnection().prepareStatement(sql);
     } catch (SQLException e) {
       throw new RuntimeException(e);
     }

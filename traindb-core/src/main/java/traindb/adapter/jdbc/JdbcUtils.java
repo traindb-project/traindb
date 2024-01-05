@@ -50,7 +50,7 @@ import traindb.adapter.TrainDBSqlDialect;
 /**
  * Utilities for the JDBC provider.
  */
-final class JdbcUtils {
+public final class JdbcUtils {
   private JdbcUtils() {
     throw new AssertionError("no instances!");
   }

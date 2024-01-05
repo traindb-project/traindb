@@ -28,11 +28,13 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
 import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
+import java.sql.Statement;
 import java.sql.Time;
 import java.sql.Timestamp;
 import java.time.format.DateTimeFormatter;
@@ -51,6 +53,7 @@ import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
 import traindb.adapter.TrainDBSqlDialect;
+import traindb.adapter.jdbc.JdbcUtils;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MColumn;
@@ -310,17 +313,47 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
 
     String sql = sb.toString();
-    conn.executeInternal(sql);
-    conn.refreshRootSchema();
+    executeInternal(sql, true);
   }
+
+  private void executeInternal(String sql, boolean refresh) {
+    Connection extConn = null;
+    try {
+      extConn = conn.getExtraConnection();
+      Statement stmt = extConn.createStatement();
+      stmt.execute(sql);
+      stmt.close();
+      extConn.close();
+      if (refresh) {
+        conn.refreshRootSchema();
+      }
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } finally {
+      if (extConn != null) {
+        try {
+          extConn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
+      }
+    }
+  }
+
 
   private long getTableRowCount(String schemaName, String tableName) throws SQLException {
     String sql = "SELECT count(*) FROM " + schemaName + "." + tableName;
-    ResultSet rs = conn.executeQueryInternal(sql);
+
+    Connection extConn = conn.getExtraConnection();
+    Statement stmt = extConn.createStatement();
+    ResultSet rs = stmt.executeQuery(sql);
+
     long rowCount = 0;
     while (rs.next()) {
       rowCount = rs.getLong(1);
     }
+
+    JdbcUtils.close(extConn, stmt, rs);
     return rowCount;
   }
 
@@ -342,7 +375,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         .withSkipLines(1).build();
     String sql = sb.toString();
 
-    PreparedStatement pstmt = conn.prepareInternal(sql);
+    Connection extConn = conn.getExtraConnection();
+    PreparedStatement pstmt = extConn.prepareStatement(sql);
     int collen = columns.size();
     String[] row;
     try {
@@ -393,11 +427,17 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         pstmt.addBatch();
       }
       pstmt.executeBatch();
+      pstmt.close();
+      extConn.close();
     } catch (Exception e) {
       throw e;
     } finally {
-      if (pstmt != null) {
-        pstmt.close();
+      if (extConn != null) {
+        try {
+          extConn.close();
+        } catch (SQLException e) {
+          // ignore
+        }
       }
     }
   }
@@ -414,8 +454,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         .append(schemaName).append(".").append(newSynopsisName);
 
     String sql = sb.toString();
-    conn.executeInternal(sql);
-    conn.refreshRootSchema();
+    executeInternal(sql, true);
   }
 
   private AbstractTrainDBModelRunner createModelRunner(String modeltypeName, String modelName,
@@ -516,8 +555,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(synopsisName);
 
     String sql = sb.toString();
-    conn.executeInternal(sql);
-    conn.refreshRootSchema();
+    executeInternal(sql, true);
   }
 
   @Override
@@ -804,8 +842,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.startTaskTracer(stmt);
     T_tracer.openTaskTime("execute ddl");
 
-    conn.executeInternal(stmt);
-    conn.refreshRootSchema();
+    executeInternal(stmt, true);
 
     T_tracer.closeTaskTime("SUCCESS");
     T_tracer.endTaskTracer();
@@ -1083,7 +1120,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String sql = AbstractTrainDBModelRunner.buildExportTableQuery(
         mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
         table.getRowType(conn.getTypeFactory()));
-    ResultSet synopsisData = conn.executeQueryInternal(sql);
+
+    Connection extConn = conn.getExtraConnection();
+    Statement stmt = extConn.createStatement();
+    ResultSet synopsisData = stmt.executeQuery(sql);
 
     Path tempDir = Files.createTempDirectory("traindb-");
     Path tempSynDir = Paths.get(tempDir.toString(), synopsisName);
@@ -1091,7 +1131,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     String synopsisFile = Paths.get(tempSynDir.toString(), synopsisName + ".csv").toString();
     AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
-    synopsisData.close();
+    JdbcUtils.close(extConn, stmt, synopsisData);
 
     Path outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
     ZipUtils.pack(tempSynDir.toString(), outputPath.toString());
@@ -1181,6 +1221,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     return TrainDBListResultSet.empty();
   }
+
   @Override
   public void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception {
     T_tracer.startTaskTracer("rename synopsis " + synopsisName + " to " + newSynopsisName);
