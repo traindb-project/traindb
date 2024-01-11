@@ -686,14 +686,26 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showTables(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("schema", "table", "table_type");
-    List<List<Object>> tableInfo = new ArrayList<>();
+    checkShowWhereColumns(filterPatterns, header);
 
     T_tracer.startTaskTracer("show tables");
     T_tracer.openTaskTime("scan : table");
 
-    ResultSet rs = conn.getMetaData().getTables(
-        conn.getCatalog(), conn.getSchema(), null, null);
+    List<List<Object>> tableInfo = new ArrayList<>();
+    String schemaPattern = (String) filterPatterns.get("schema");
+    if (schemaPattern == null) {
+      schemaPattern = conn.getSchema();
+    }
+    String tablePattern = (String) filterPatterns.get("table");
+    String[] tableTypes = null;
+    String tableType = (String) filterPatterns.get("table_type");
+    if (tableType != null) {
+      tableTypes = new String[1];
+      tableTypes[0] = tableType;
+    }
 
+    ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), schemaPattern, tablePattern,
+        tableTypes);
     while (rs.next()) {
       if (rs.getString(4).equals("INDEX")) {
         continue;
