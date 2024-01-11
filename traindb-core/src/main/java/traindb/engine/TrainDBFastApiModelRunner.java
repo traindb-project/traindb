@@ -17,7 +17,6 @@ package traindb.engine;
 import java.io.BufferedReader;
 import java.io.DataOutputStream;
 import java.io.FileOutputStream;
-import java.io.FileWriter;
 import java.io.InputStream;
 import java.io.InputStreamReader;
 import java.io.OutputStream;
@@ -25,13 +24,8 @@ import java.net.HttpURLConnection;
 import java.net.URL;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
-import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.ResultSet;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.text.StringEscapeUtils;
 import org.json.simple.JSONObject;
@@ -39,7 +33,6 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.pm.MModeltype;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.TrainDBTable;
 
 public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
 
@@ -83,9 +76,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public void trainModel(TrainDBTable table, List<String> columnNames, float samplePercent,
-                         Map<String, Object> trainOptions, JavaTypeFactory typeFactory)
-      throws Exception {
+  public void trainModel(JSONObject tableMetadata, String trainingDataQuery) throws Exception {
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     URL url = new URL(checkTrailingSlash(mModeltype.getUri())
         + "modeltype/" + mModeltype.getClassName() + "/train");
@@ -95,14 +86,6 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     httpConn.setDoOutput(true);
 
     BasicDataSource ds = conn.getDataSource();
-    String schemaName = table.getSchema().getName();
-    String tableName = table.getName();
-    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
-        table.getRowType(typeFactory));
-
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
-        table.getRowType(typeFactory));
-
     OutputStream outputStream = httpConn.getOutputStream();
     DataOutputStream request = new DataOutputStream(outputStream);
 
@@ -112,7 +95,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     addString(request, "db_url", ds.getUrl());
     addString(request, "db_user", ds.getUsername());
     addString(request, "db_pwd", ds.getPassword());
-    addString(request, "select_training_data_sql", sql);
+    addString(request, "select_training_data_sql", trainingDataQuery);
     addMetadataFile(request, tableMetadata);
     finishMultipartRequest(request);
 
@@ -335,9 +318,8 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public String analyzeSynopsis(
-      TrainDBTable table, String synopsisName, List<String> columnNames,
-      JavaTypeFactory typeFactory) throws Exception {
+  public String analyzeSynopsis(JSONObject tableMetadata, String originalDataQuery,
+                                String synopsisDataQuery, String synopsisName) throws Exception {
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "synopsis/analyze");
     HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
@@ -346,15 +328,6 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     httpConn.setDoOutput(true);
 
     BasicDataSource ds = conn.getDataSource();
-    String schemaName = table.getSchema().getName();
-    String tableName = table.getName();
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, null,
-        table.getRowType(typeFactory));
-    String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
-        table.getRowType(typeFactory));
-    String synSql = buildSelectTrainingDataQuery(schemaName, synopsisName, columnNames, 100,
-        table.getRowType(typeFactory));
-
     OutputStream outputStream = httpConn.getOutputStream();
     DataOutputStream request = new DataOutputStream(outputStream);
 
@@ -362,13 +335,13 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
     addString(request, "db_url", ds.getUrl());
     addString(request, "db_user", ds.getUsername());
     addString(request, "db_pwd", ds.getPassword());
-    addString(request, "select_original_data_sql", origSql);
-    addString(request, "select_synopsis_data_sql", synSql);
+    addString(request, "select_original_data_sql", originalDataQuery);
+    addString(request, "select_synopsis_data_sql", synopsisDataQuery);
     addMetadataFile(request, tableMetadata);
     finishMultipartRequest(request);
 
     if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
-      throw new TrainDBException("failed to analyze synopsis" + synopsisName);
+      throw new TrainDBException("failed to analyze synopsis '" + synopsisName + "'");
     }
 
     StringBuilder response = new StringBuilder();

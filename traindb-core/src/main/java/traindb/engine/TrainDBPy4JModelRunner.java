@@ -22,9 +22,6 @@ import java.io.IOException;
 import java.net.ServerSocket;
 import java.nio.file.Files;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.commons.dbcp2.BasicDataSource;
 import org.apache.commons.exec.CommandLine;
 import org.apache.commons.exec.DefaultExecuteResultHandler;
@@ -37,7 +34,6 @@ import traindb.catalog.pm.MModeltype;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.TrainDBTable;
 import traindb.util.ZipUtils;
 
 public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
@@ -76,13 +72,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public void trainModel(
-      TrainDBTable table, List<String> columnNames, float samplePercent,
-      Map<String, Object> trainOptions, JavaTypeFactory typeFactory) throws Exception {
-    String schemaName = table.getSchema().getName();
-    String tableName = table.getName();
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
-        table.getRowType(typeFactory));
+  public void trainModel(JSONObject tableMetadata, String trainingDataQuery) throws Exception {
     // write metadata for model training scripts in python
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);
@@ -98,9 +88,7 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
       modelRunner.connect(
           ds.getDriverClassName(), ds.getUrl(), ds.getUsername(), ds.getPassword(),
           jdbcClass.getProtectionDomain().getCodeSource().getLocation().getPath());
-      modelRunner.trainModel(
-          buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
-              table.getRowType(typeFactory)),
+      modelRunner.trainModel(trainingDataQuery,
           mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
           tableMetadata.toJSONString(), modelPath.toString());
     } catch (Exception e) {

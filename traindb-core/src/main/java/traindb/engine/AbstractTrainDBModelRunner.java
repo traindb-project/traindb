@@ -19,21 +19,12 @@ import com.opencsv.ResultSetHelperService;
 import java.io.FileWriter;
 import java.nio.file.Path;
 import java.nio.file.Paths;
-import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
-import java.sql.SQLException;
-import java.util.List;
-import java.util.Map;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeField;
-import org.apache.calcite.sql.type.SqlTypeName;
 import org.json.simple.JSONObject;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.TrainDBTable;
 
 public abstract class AbstractTrainDBModelRunner {
 
@@ -50,9 +41,8 @@ public abstract class AbstractTrainDBModelRunner {
     this.modelName = modelName;
   }
 
-  public abstract void trainModel(
-      TrainDBTable table, List<String> columnNames, float samplePercent,
-      Map<String, Object> trainOptions, JavaTypeFactory typeFactory) throws Exception;
+  public abstract void trainModel(JSONObject tableMetadata, String trainingDataQuery)
+      throws Exception;
 
   public abstract void generateSynopsis(String synopsisName, int rows) throws Exception;
 
@@ -67,9 +57,8 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void renameModel(String newModelName) throws Exception;
 
-  public String analyzeSynopsis(
-      TrainDBTable table, String synopsisName, List<String> columnNames,
-      JavaTypeFactory typeFactory) throws Exception {
+  public String analyzeSynopsis(JSONObject tableMetadata, String originalDataQuery,
+      String synopsisDataQuery, String synopsisName) throws Exception {
     throw new TrainDBException("analyzeSynopsis does not supported yet in this model runner");
   }
 
@@ -96,53 +85,6 @@ public abstract class AbstractTrainDBModelRunner {
     return new TrainDBFileModelRunner(conn, catalogContext, modeltypeName, modelName);
   }
 
-  private String getTableSampleClause(float samplePercent) throws TrainDBException {
-    try {
-      String connDbms = conn.getMetaData().getURL().split(":")[1];
-      if (connDbms.equals("mysql")) {
-        return " WHERE rand() < " + (samplePercent / 100.0);
-      } else if (connDbms.equals("postgresql")) {
-        return " TABLESAMPLE BERNOULLI(" + samplePercent + ")";
-      }
-    } catch (SQLException e) {
-      // ignore
-    }
-    throw new TrainDBException("'SAMPLE' not supported for current connected DBMS");
-  }
-
-  protected String buildSelectTrainingDataQuery(
-      String schemaName, String tableName, List<String> columnNames, float samplePercent,
-      RelDataType relDataType) throws TrainDBException {
-    String query = buildExportTableQuery(schemaName, tableName, columnNames, relDataType);
-    if (samplePercent > 0 && samplePercent < 100) {
-      query = query + getTableSampleClause(samplePercent);
-    }
-    return query;
-  }
-
-  public static String buildExportTableQuery(String schemaName, String tableName,
-                                             List<String> columnNames, RelDataType relDataType) {
-    StringBuilder sb = new StringBuilder();
-    sb.append("SELECT ");
-    for (int i = 0; i < columnNames.size(); i++) {
-      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
-      if (field.getType().getSqlTypeName() == SqlTypeName.GEOMETRY) {
-        sb.append("ST_ASTEXT(").append(columnNames.get(i)).append(") AS ")
-            .append(columnNames.get(i));
-      } else {
-        sb.append(columnNames.get(i));
-      }
-      sb.append(",");
-    }
-    sb.deleteCharAt(sb.lastIndexOf(","));
-    sb.append(" FROM ");
-    sb.append(schemaName);
-    sb.append(".");
-    sb.append(tableName);
-
-    return sb.toString();
-  }
-
   public static void writeResultSetToCsv(ResultSet rs, String filePath) throws Exception {
     FileWriter datafileWriter = new FileWriter(filePath);
     CSVWriter csvWriter = new CSVWriter(datafileWriter, ',');
@@ -152,94 +94,6 @@ public abstract class AbstractTrainDBModelRunner {
     csvWriter.setResultService(resultSetHelperService);
     csvWriter.writeAll(rs, true);
     csvWriter.close();
-  }
-
-  protected JSONObject buildTableMetadata(
-      String schemaName, String tableName, List<String> columnNames,
-      Map<String, Object> trainOptions, RelDataType relDataType) {
-    JSONObject root = new JSONObject();
-    JSONObject fields = new JSONObject();
-    for (int i = 0; i < columnNames.size(); i++) {
-      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
-      JSONObject typeInfo = new JSONObject();
-
-      /* datatype (type, subtype)
-        ('categorical', None): 'object',
-        ('boolean', None): 'bool',
-        ('numerical', None): 'float',
-        ('numerical', 'float'): 'float',
-        ('numerical', 'integer'): 'int',
-        ('datetime', None): 'datetime64',
-        ('id', None): 'int',
-        ('id', 'integer'): 'int',
-        ('id', 'string'): 'str'
-
-        // geometry types
-        ('geometry', 'point'): 'point',
-        ('geometry', 'linestring'): 'linestring',
-        ('geometry', 'polygon'): 'polygon'
-       */
-      switch (field.getType().getSqlTypeName()) {
-        case CHAR:
-        case VARCHAR:
-          typeInfo.put("type", "categorical");
-          break;
-        case INTEGER:
-        case BIGINT:
-        case TINYINT:
-        case SMALLINT:
-          typeInfo.put("type", "numerical");
-          typeInfo.put("subtype", "integer");
-          break;
-        case FLOAT:
-        case DOUBLE:
-        case DECIMAL:
-          typeInfo.put("type", "numerical");
-          typeInfo.put("subtype", "float");
-          break;
-        case BOOLEAN:
-          typeInfo.put("type", "boolean");
-          break;
-        case DATE:
-        case TIME:
-        case TIME_WITH_LOCAL_TIME_ZONE:
-        case TIMESTAMP:
-        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
-          typeInfo.put("type", "datetime");
-          break;
-        case GEOMETRY: {
-          typeInfo.put("type", "geometry");
-          String subtype = "geometry";
-          try {
-            DatabaseMetaData md = conn.getMetaData();
-            ResultSet rs = md.getColumns("traindb", schemaName, tableName, field.getName());
-            while (rs.next()) {
-              subtype = rs.getString("TYPE_NAME");
-            }
-          } catch (SQLException e) {
-            // ignore
-          }
-          typeInfo.put("subtype", subtype.toLowerCase().replaceFirst("^st_", ""));
-          break;
-        }
-        default:
-          typeInfo.put("type", "unknown");
-          break;
-      }
-
-      fields.put(columnNames.get(i), typeInfo);
-    }
-    root.put("fields", fields);
-    root.put("schema", schemaName);
-    root.put("table", tableName);
-
-    if (trainOptions != null) {
-      JSONObject options = new JSONObject();
-      options.putAll(trainOptions);
-      root.put("options", options);
-    }
-
-    return root;
   }
 
   public String getModelName() {

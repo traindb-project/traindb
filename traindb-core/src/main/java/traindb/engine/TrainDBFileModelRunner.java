@@ -23,10 +23,7 @@ import java.nio.file.Paths;
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.Statement;
-import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.json.simple.JSONObject;
 import traindb.adapter.jdbc.JdbcUtils;
 import traindb.catalog.CatalogContext;
@@ -34,7 +31,6 @@ import traindb.catalog.pm.MModeltype;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBException;
 import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.TrainDBTable;
 import traindb.util.ZipUtils;
 
 public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
@@ -50,13 +46,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public void trainModel(TrainDBTable table, List<String> columnNames, float samplePercent,
-                         Map<String, Object> trainOptions, JavaTypeFactory typeFactory)
-      throws Exception {
-    String schemaName = table.getSchema().getName();
-    String tableName = table.getName();
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, trainOptions,
-        table.getRowType(typeFactory));
+  public void trainModel(JSONObject tableMetadata, String trainingDataQuery) throws Exception {
     // write metadata for model training scripts in python
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);
@@ -67,12 +57,9 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     fileWriter.flush();
     fileWriter.close();
 
-    String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
-        table.getRowType(typeFactory));
-
     Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
-    ResultSet trainingData = stmt.executeQuery(sql);
+    ResultSet trainingData = stmt.executeQuery(trainingDataQuery);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();
     writeResultSetToCsv(trainingData, dataFilename);
     JdbcUtils.close(extConn, stmt, trainingData);
@@ -176,13 +163,8 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
-  public String analyzeSynopsis(
-      TrainDBTable table, String synopsisName, List<String> columnNames,
-      JavaTypeFactory typeFactory) throws Exception {
-    String schemaName = table.getSchema().getName();
-    String tableName = table.getName();
-    JSONObject tableMetadata = buildTableMetadata(schemaName, tableName, columnNames, null,
-        table.getRowType(typeFactory));
+  public String analyzeSynopsis(JSONObject tableMetadata, String originalDataQuery,
+                                String synopsisDataQuery, String synopsisName) throws Exception {
     // write metadata for model training scripts in python
     Path modelPath = getModelPath();
     Files.createDirectories(modelPath);
@@ -196,23 +178,16 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
 
-    String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
-        table.getRowType(typeFactory));
-    ResultSet origData = stmt.executeQuery(origSql);
+    ResultSet origData = stmt.executeQuery(originalDataQuery);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();
     writeResultSetToCsv(origData, dataFilename);
     origData.close();
 
-    String synSql = buildSelectTrainingDataQuery(schemaName, synopsisName, columnNames, 100,
-        table.getRowType(typeFactory));
-
-    ResultSet synData = stmt.executeQuery(synSql);
+    ResultSet synData = stmt.executeQuery(synopsisDataQuery);
     String synFilename = Paths.get(outputPath, "syn.csv").toString();
     writeResultSetToCsv(synData, synFilename);
-
     JdbcUtils.close(extConn, stmt, synData);
 
-    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     String analyzeReportPath = modelPath + "/analyze_" + synopsisName + ".json";
 
     // train ML model
@@ -223,7 +198,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     process.waitFor();
 
     if (process.exitValue() != 0) {
-      throw new TrainDBException("failed to analyze synopsis");
+      throw new TrainDBException("failed to analyze synopsis '" + synopsisName + "'");
     }
 
     String analyzeReport =

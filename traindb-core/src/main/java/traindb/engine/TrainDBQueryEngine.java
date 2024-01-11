@@ -44,6 +44,8 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
@@ -152,6 +154,141 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.endTaskTracer();
   }
 
+  public JSONObject buildTableMetadata(
+      String schemaName, String tableName, List<String> columnNames,
+      Map<String, Object> trainOptions, RelDataType relDataType) {
+    JSONObject root = new JSONObject();
+    JSONObject fields = new JSONObject();
+    for (int i = 0; i < columnNames.size(); i++) {
+      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
+      JSONObject typeInfo = new JSONObject();
+
+      /* datatype (type, subtype)
+        ('categorical', None): 'object',
+        ('boolean', None): 'bool',
+        ('numerical', None): 'float',
+        ('numerical', 'float'): 'float',
+        ('numerical', 'integer'): 'int',
+        ('datetime', None): 'datetime64',
+        ('id', None): 'int',
+        ('id', 'integer'): 'int',
+        ('id', 'string'): 'str'
+
+        // geometry types
+        ('geometry', 'point'): 'point',
+        ('geometry', 'linestring'): 'linestring',
+        ('geometry', 'polygon'): 'polygon'
+       */
+      switch (field.getType().getSqlTypeName()) {
+        case CHAR:
+        case VARCHAR:
+          typeInfo.put("type", "categorical");
+          break;
+        case INTEGER:
+        case BIGINT:
+        case TINYINT:
+        case SMALLINT:
+          typeInfo.put("type", "numerical");
+          typeInfo.put("subtype", "integer");
+          break;
+        case FLOAT:
+        case DOUBLE:
+        case DECIMAL:
+          typeInfo.put("type", "numerical");
+          typeInfo.put("subtype", "float");
+          break;
+        case BOOLEAN:
+          typeInfo.put("type", "boolean");
+          break;
+        case DATE:
+        case TIME:
+        case TIME_WITH_LOCAL_TIME_ZONE:
+        case TIMESTAMP:
+        case TIMESTAMP_WITH_LOCAL_TIME_ZONE:
+          typeInfo.put("type", "datetime");
+          break;
+        case GEOMETRY: {
+          typeInfo.put("type", "geometry");
+          String subtype = "geometry";
+          try {
+            DatabaseMetaData md = conn.getMetaData();
+            ResultSet rs = md.getColumns("traindb", schemaName, tableName, field.getName());
+            while (rs.next()) {
+              subtype = rs.getString("TYPE_NAME");
+            }
+          } catch (SQLException e) {
+            // ignore
+          }
+          typeInfo.put("subtype", subtype.toLowerCase().replaceFirst("^st_", ""));
+          break;
+        }
+        default:
+          typeInfo.put("type", "unknown");
+          break;
+      }
+
+      fields.put(columnNames.get(i), typeInfo);
+    }
+    root.put("fields", fields);
+    root.put("schema", schemaName);
+    root.put("table", tableName);
+
+    if (trainOptions != null) {
+      JSONObject options = new JSONObject();
+      options.putAll(trainOptions);
+      root.put("options", options);
+    }
+
+    return root;
+  }
+
+  private String getTableSampleClause(float samplePercent) throws TrainDBException {
+    try {
+      String connDbms = conn.getMetaData().getURL().split(":")[1];
+      if (connDbms.equals("mysql")) {
+        return " WHERE rand() < " + (samplePercent / 100.0);
+      } else if (connDbms.equals("postgresql")) {
+        return " TABLESAMPLE BERNOULLI(" + samplePercent + ")";
+      }
+    } catch (SQLException e) {
+      // ignore
+    }
+    throw new TrainDBException("'SAMPLE' not supported for current connected DBMS");
+  }
+
+  private String buildSelectTrainingDataQuery(
+      String schemaName, String tableName, List<String> columnNames, float samplePercent,
+      RelDataType relDataType) throws TrainDBException {
+    String query = buildExportTableQuery(schemaName, tableName, columnNames, relDataType);
+    if (samplePercent > 0 && samplePercent < 100) {
+      query = query + getTableSampleClause(samplePercent);
+    }
+    return query;
+  }
+
+  private String buildExportTableQuery(String schemaName, String tableName,
+                                       List<String> columnNames, RelDataType relDataType) {
+    StringBuilder sb = new StringBuilder();
+    sb.append("SELECT ");
+    for (int i = 0; i < columnNames.size(); i++) {
+      RelDataTypeField field = relDataType.getField(columnNames.get(i), true, false);
+      if (field.getType().getSqlTypeName() == SqlTypeName.GEOMETRY) {
+        sb.append("ST_ASTEXT(").append(columnNames.get(i)).append(") AS ")
+            .append(columnNames.get(i));
+      } else {
+        sb.append(columnNames.get(i));
+      }
+      sb.append(",");
+    }
+    sb.deleteCharAt(sb.lastIndexOf(","));
+    sb.append(" FROM ");
+    sb.append(schemaName);
+    sb.append(".");
+    sb.append(tableName);
+
+    return sb.toString();
+  }
+
   @Override
   public void trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
@@ -192,17 +329,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     Long baseTableRows = getTableRowCount(schemaName, tableName);
     Long trainedRows = (long) (baseTableRows * (samplePercent / 100.0)); // FIXME: not exact
 
+    RelDataType rowType = table.getRowType(conn.getTypeFactory());
+    JSONObject tableMetadata = buildTableMetadata(
+        schemaName, tableName, columnNames, trainOptions, rowType);
+    String sql = buildSelectTrainingDataQuery(
+        schemaName, tableName, columnNames, samplePercent, rowType);
+
     T_tracer.openTaskTime("train model");
     AbstractTrainDBModelRunner runner = createModelRunner(
         modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
-    runner.trainModel(table, columnNames, samplePercent, trainOptions, conn.getTypeFactory());
+    runner.trainModel(tableMetadata, sql);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert model info");
-    JSONObject options = new JSONObject();
-    options.putAll(trainOptions);
+    JSONObject options = (JSONObject) tableMetadata.get("options");
     catalogContext.trainModel(modeltypeName, modelName, schemaName, tableName, columnNames,
-        table.getRowType(conn.getTypeFactory()), baseTableRows, trainedRows, options.toString());
+        rowType, baseTableRows, trainedRows, options.toString());
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.endTaskTracer();
@@ -1138,7 +1280,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     TrainDBTable table = schemaManager.getTable(
         mSynopsis.getSchemaName(), mSynopsis.getTableName());
 
-    String sql = AbstractTrainDBModelRunner.buildExportTableQuery(
+    String sql = buildExportTableQuery(
         mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
         table.getRowType(conn.getTypeFactory()));
 
@@ -1352,10 +1494,19 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String modelName = mSynopsis.getModelName();
     List<String> columnNames = mSynopsis.getColumnNames();
 
+    RelDataType rowType = table.getRowType(conn.getTypeFactory());
+    JSONObject tableMetadata = buildTableMetadata(
+        schemaName, tableName, columnNames, null, rowType);
+
+
     AbstractTrainDBModelRunner runner = createModelRunner(
         modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
-    String analyzeReport =
-        runner.analyzeSynopsis(table, synopsisName, columnNames, conn.getTypeFactory());
+    String origSql = buildSelectTrainingDataQuery(
+        schemaName, tableName, columnNames, 100, rowType);
+    String synSql = buildSelectTrainingDataQuery(
+        schemaName, synopsisName, columnNames, 100, rowType);
+
+    String analyzeReport = runner.analyzeSynopsis(tableMetadata, origSql, synSql, synopsisName);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("insert synopsis evaluation info");
