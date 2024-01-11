@@ -320,7 +320,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private void executeInternal(String sql, boolean refresh) {
     Connection extConn = null;
     try {
-      extConn = conn.getExtraConnection();
+      extConn = conn.getDataSourceConnection();
       Statement stmt = extConn.createStatement();
       stmt.execute(sql);
       stmt.close();
@@ -345,7 +345,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private long getTableRowCount(String schemaName, String tableName) throws SQLException {
     String sql = "SELECT count(*) FROM " + schemaName + "." + tableName;
 
-    Connection extConn = conn.getExtraConnection();
+    Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
     ResultSet rs = stmt.executeQuery(sql);
 
@@ -376,7 +376,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         .withSkipLines(1).build();
     String sql = sb.toString();
 
-    Connection extConn = conn.getExtraConnection();
+    Connection extConn = conn.getDataSourceConnection();
     PreparedStatement pstmt = extConn.prepareStatement(sql);
     int collen = columns.size();
     String[] row;
@@ -1142,7 +1142,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
         table.getRowType(conn.getTypeFactory()));
 
-    Connection extConn = conn.getExtraConnection();
+    Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
     ResultSet synopsisData = stmt.executeQuery(sql);
 

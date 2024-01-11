@@ -22,10 +22,8 @@ import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
 import java.sql.Connection;
-import java.sql.PreparedStatement;
 import java.sql.ResultSet;
 import java.sql.SQLException;
-import java.sql.Statement;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.LinkedHashMap;
@@ -261,7 +259,7 @@ public abstract class TrainDBConnectionImpl
     return dataSource;
   }
 
-  public Connection getExtraConnection() {
+  public Connection getDataSourceConnection() {
     try {
       return dataSource.getConnection();
     } catch (SQLException e) {

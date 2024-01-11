@@ -20,14 +20,12 @@ import static org.apache.calcite.util.Static.RESOURCE;
 import com.google.common.collect.ImmutableList;
 import com.google.common.collect.ImmutableMap;
 import java.lang.reflect.Type;
-import java.nio.charset.StandardCharsets;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
 import java.sql.SQLException;
 import java.sql.Statement;
-import java.sql.Timestamp;
 import java.sql.Types;
 import java.time.LocalDateTime;
 import java.time.format.DateTimeFormatter;
@@ -64,8 +62,6 @@ import org.apache.calcite.prepare.Prepare;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
-import org.apache.calcite.rel.core.Aggregate;
-import org.apache.calcite.rel.core.AggregateCall;
 import org.apache.calcite.rel.core.Filter;
 import org.apache.calcite.rel.core.Project;
 import org.apache.calcite.rel.core.TableModify;
@@ -852,7 +848,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     try {
         changeQuery = schemaManager.saveQuery.get(0);
 
-        Connection extConn = conn.getExtraConnection();
+        Connection extConn = conn.getDataSourceConnection();
         Statement stmt = extConn.createStatement();
         ResultSet rs = stmt.executeQuery(changeQuery);
 
@@ -950,7 +946,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     try {
       String currentIncrementalQuery = schemaManager.saveQuery.get(currentIdx);
-      Connection extConn = conn.getExtraConnection();
+      Connection extConn = conn.getDataSourceConnection();
       Statement stmt = extConn.createStatement();
       ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
 

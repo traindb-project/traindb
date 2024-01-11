@@ -70,7 +70,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     String sql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, samplePercent,
         table.getRowType(typeFactory));
 
-    Connection extConn = conn.getExtraConnection();
+    Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
     ResultSet trainingData = stmt.executeQuery(sql);
     String dataFilename = Paths.get(outputPath, "data.csv").toString();
@@ -193,7 +193,7 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     fileWriter.flush();
     fileWriter.close();
 
-    Connection extConn = conn.getExtraConnection();
+    Connection extConn = conn.getDataSourceConnection();
     Statement stmt = extConn.createStatement();
 
     String origSql = buildSelectTrainingDataQuery(schemaName, tableName, columnNames, 100,
