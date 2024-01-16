@@ -193,6 +193,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           break;
         case FLOAT:
         case DOUBLE:
+        case REAL:
         case DECIMAL:
           typeInfo.put("type", "numerical");
           typeInfo.put("subtype", "float");
