@@ -16,4 +16,4 @@ bin=$(dirname -- "${BASH_SOURCE-$0}")
 bin=$(cd -- "$bin"; pwd)
 
 source "$bin/traindb-config.sh"
-exec "$JAVA" -cp $CLASSPATH $TRAINDB_OPTS sqlline.SqlLine -d traindb.jdbc.Driver "$@"
+exec "$JAVA" -cp $CLASSPATH $TRAINDB_OPTS sqlline.SqlLine -d traindb.jdbc.Driver --isolation=TRANSACTION_NONE "$@"
