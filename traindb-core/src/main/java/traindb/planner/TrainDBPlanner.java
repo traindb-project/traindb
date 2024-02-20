@@ -44,6 +44,7 @@ import org.apache.calcite.rel.metadata.DefaultRelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
+import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
@@ -111,6 +112,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
     removeRule(CoreRules.FILTER_REDUCE_EXPRESSIONS);
     removeRule(CoreRules.AGGREGATE_CASE_TO_FILTER);
     removeRule(CoreRules.AGGREGATE_REDUCE_FUNCTIONS);
+    removeRule(JoinPushThroughJoinRule.LEFT);
     addRule(TrainDBRules.AGGREGATE_REDUCE_FUNCTIONS);
     addRelTraitDef(ConventionTraitDef.INSTANCE);
     addRelTraitDef(RelCollationTraitDef.INSTANCE);
