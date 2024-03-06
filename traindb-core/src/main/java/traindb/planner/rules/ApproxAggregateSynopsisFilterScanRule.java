@@ -115,8 +115,8 @@ public class ApproxAggregateSynopsisFilterScanRule
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
 
-      List<RexNode> aggProjects =
-          ApproxAggregateUtil.makeAggregateProjects(aggregate, scan.getTable(), synopsisTable);
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
+          aggregate, scan.getTable(), synopsisTable.getRowCount());
       List<RexNode> newGroupSet = ApproxAggregateUtil.makeAggregateGroupSet(aggregate, mapping);
 
       final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();

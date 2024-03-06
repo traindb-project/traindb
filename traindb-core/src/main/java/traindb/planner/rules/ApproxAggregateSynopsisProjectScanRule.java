@@ -105,8 +105,8 @@ public class ApproxAggregateSynopsisProjectScanRule
       TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
           (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
 
-      List<RexNode> aggProjects =
-          ApproxAggregateUtil.makeAggregateProjects(aggregate, scan.getTable(), synopsisTable);
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
+          aggregate, scan.getTable(), synopsisTable.getRowCount());
 
       RelNode node = relBuilder.push(newScan)
           .project(newProjects, project.getRowType().getFieldNames())
