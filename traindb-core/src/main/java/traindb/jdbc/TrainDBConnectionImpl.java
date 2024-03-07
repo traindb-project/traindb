@@ -107,6 +107,7 @@ public abstract class TrainDBConnectionImpl
   public final JavaTypeFactory typeFactory;
   private SchemaManager schemaManager;
   private BasicDataSource dataSource;
+  private boolean standalone;
 
   final Function1<Context, CalcitePrepare> prepareFactory;
   final CalciteServer server = new CalciteServerImpl();
@@ -138,8 +139,10 @@ public abstract class TrainDBConnectionImpl
     catalogStore.start(cfg.getProps());
     this.schemaManager = SchemaManager.getInstance(catalogStore);
     if (url == null) {  // traindb-only mode (no datasource)
+      standalone = true;
       schemaManager.loadCatalogDataSource();
     } else {
+      standalone = false;
       this.dataSource = dataSource(url, info);
       schemaManager.loadDataSource(dataSource);
       addSqlDialectProperties(schemaManager.getDialect(), cfg);
@@ -164,8 +167,10 @@ public abstract class TrainDBConnectionImpl
     this.cfg.loadConfiguration();
     this.schemaManager = schemaManager;
     if (url == null) {  // traindb-only mode (no datasource)
+      standalone = true;
       schemaManager.loadCatalogDataSource();
     } else {
+      standalone = false;
       this.dataSource = dataSource(url, info);
       schemaManager.loadDataSource(dataSource);
       addSqlDialectProperties(schemaManager.getDialect(), cfg);
@@ -290,6 +295,10 @@ public abstract class TrainDBConnectionImpl
 
   public SchemaManager getSchemaManager() {
     return schemaManager;
+  }
+
+  public boolean isStandalone() {
+    return standalone;
   }
 
   public TrainDBMetaImpl meta() {

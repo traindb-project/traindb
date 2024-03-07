@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
@@ -50,6 +51,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -676,6 +678,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     T_tracer.openTaskTime("create synopsis table");
     try {
+      if (conn.isStandalone()) {
+        Path synPath = getLocalSynopsisPath(synopsisName);
+        new File(synPath.toString()).mkdirs();
+        Files.move(Paths.get(outputPath), synPath, StandardCopyOption.REPLACE_EXISTING);
+        catalogContext.createSynopsisExt(synopsisName, "csv", synPath.toString());
+        T_tracer.closeTaskTime("SUCCESS");
+        return;
+      }
+
       createSynopsisTable(synopsisName, mModel.getSchemaName(), mModel.getTableName(),
           mModel.getColumnNames(), mModel.getTable(), false);
       T_tracer.closeTaskTime("SUCCESS");
@@ -724,6 +735,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new CatalogException(msg);
     }
     T_tracer.closeTaskTime("SUCCESS");
+
+    if (catalogContext.synopsisExtExists(synopsisName)) {
+      T_tracer.openTaskTime("delete synopsis file and catalog");
+      String synPath = catalogContext.getSynopsisExt(synopsisName).getSynopsisUri();
+      catalogContext.dropSynopsis(synopsisName);
+      FileUtils.deleteDirectory(new File(Paths.get(synPath).getParent().toString()));
+      T_tracer.closeTaskTime("SUCCESS");
+      return;
+    }
 
     T_tracer.openTaskTime("drop table");
     dropSynopsisTable(synopsisName);
@@ -1562,6 +1582,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         return;
       }
     }
+  }
+
+  private Path getLocalSynopsisPath(String synopsisName) {
+    return Paths.get(conn.cfg.getTrainDBPrefixPath(), "synopses", synopsisName,
+        synopsisName + ".csv");
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

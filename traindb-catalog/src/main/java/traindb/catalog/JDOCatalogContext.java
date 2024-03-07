@@ -35,6 +35,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MSynopsisExt;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
@@ -425,6 +426,9 @@ public final class JDOCatalogContext implements CatalogContext {
     try {
       tx.begin();
 
+      if (synopsisExtExists(name)) {
+        pm.deletePersistent(getSynopsisExt(name));
+      }
       pm.deletePersistent(getSynopsis(name));
 
       tx.commit();
@@ -457,7 +461,7 @@ public final class JDOCatalogContext implements CatalogContext {
       Double ratio = (Double) exportMetadata.get("ratio");
 
       MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
-          columnNames,mTable);
+          columnNames, mTable);
       pm.makePersistent(mSynopsis);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to import synopsis '" + synopsisName + "'", e);
@@ -508,6 +512,37 @@ public final class JDOCatalogContext implements CatalogContext {
     } catch (RuntimeException e) {
       throw new CatalogException("failed to update synopsis statistics '" + synopsisName + "'", e);
     }
+  }
+
+  @Override
+  public MSynopsisExt createSynopsisExt(String name, String format, String uri)
+      throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(name);
+      MSynopsisExt mSynopsisExt = new MSynopsisExt(name, format, uri, mSynopsis);
+      pm.makePersistent(mSynopsisExt);
+      return mSynopsisExt;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create synopsis_ext '" + name + "'", e);
+    }
+  }
+
+  @Override
+  public boolean synopsisExtExists(String name) {
+    return getSynopsisExt(name) != null;
+  }
+
+  @Override
+  public @Nullable MSynopsisExt getSynopsisExt(String name) {
+    try {
+      Query query = pm.newQuery(MSynopsisExt.class);
+      setFilterPatterns(query, ImmutableMap.of("synopsis_name", name));
+      query.setUnique(true);
+
+      return (MSynopsisExt) query.execute(name);
+    } catch (RuntimeException e) {
+    }
+    return null;
   }
 
   @Override
