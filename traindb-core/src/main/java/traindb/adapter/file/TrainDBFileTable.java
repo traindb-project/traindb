@@ -15,39 +15,71 @@
 package traindb.adapter.file;
 
 import java.lang.reflect.Type;
+import java.util.ArrayList;
+import java.util.List;
 import java.util.concurrent.atomic.AtomicBoolean;
 import org.apache.calcite.DataContext;
 import org.apache.calcite.adapter.file.CsvEnumerator;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
+import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.linq4j.Enumerable;
 import org.apache.calcite.linq4j.QueryProvider;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.RelOptTable;
 import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.type.RelProtoDataType;
+import org.apache.calcite.rel.type.RelDataType;
+import org.apache.calcite.rel.type.RelDataTypeFactory;
+import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.QueryableTable;
+import org.apache.calcite.schema.Schema;
 import org.apache.calcite.schema.SchemaPlus;
 import org.apache.calcite.schema.Schemas;
 import org.apache.calcite.schema.TranslatableTable;
 import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Source;
+import org.apache.calcite.util.Sources;
+import org.checkerframework.checker.nullness.qual.Nullable;
+import traindb.schema.TrainDBSchema;
+import traindb.schema.TrainDBTable;
 
 /**
- * Table based on a CSV file.
+ * Table based on a file.
  */
-public class CsvTranslatableTable extends CsvTable
-    implements QueryableTable, TranslatableTable {
+public class TrainDBFileTable extends TrainDBTable implements QueryableTable, TranslatableTable {
+
+  protected final Source source;
+  private @Nullable List<RelDataType> fieldTypes;
+
+  public TrainDBFileTable(String name, TrainDBSchema schema, MetaImpl.MetaTable tableDef,
+                          RelDataType protoType, String uri) {
+    super(name, schema, Schema.TableType.valueOf(tableDef.tableType), protoType);
+    this.source = Sources.file(null, uri);
+  }
+
   /**
-   * Creates a CsvTable.
+   * Returns the field types of this table.
    */
-  CsvTranslatableTable(Source source, RelProtoDataType protoRowType) {
-    super(source, protoRowType);
+  public List<RelDataType> getFieldTypes(RelDataTypeFactory typeFactory) {
+    if (fieldTypes == null) {
+      fieldTypes = new ArrayList<>();
+      for (RelDataTypeField field : getRowType(typeFactory).getFieldList()) {
+        fieldTypes.add(field.getType());
+      }
+    }
+    return fieldTypes;
+  }
+
+  /**
+   * Returns whether the table represents a stream.
+   */
+  protected boolean isStream() {
+    return false;
   }
 
   @Override
   public String toString() {
-    return "CsvTranslatableTable";
+    return "TrainDBFileTable {" + getName() + "}";
   }
 
   /**

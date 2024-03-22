@@ -14,6 +14,7 @@
 
 package traindb.catalog.pm;
 
+import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -23,47 +24,48 @@ import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
-public final class MSynopsisExt {
+@JsonIgnoreProperties({ "table" })
+public final class MTableExt {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
 
   @Persistent
-  @Unique(name = "SYNOPSIS_NAME_IDX")
+  @Unique(name = "TABLEEXT_NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String synopsis_name;
+  private String table_name;
 
   @Persistent
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String synopsis_format;
+  private String external_table_format;
 
   @Persistent
   @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
-  private String synopsis_uri;
+  private String external_table_uri;
 
   @Persistent(dependent = "false")
-  private MSynopsis synopsis;
+  private MTable table;
 
-  public MSynopsisExt(String name, String format, String uri, MSynopsis synopsis) {
-    this.synopsis_name = name;
-    this.synopsis_format = format;
-    this.synopsis_uri = uri;
-    this.synopsis = synopsis;
+  public MTableExt(String name, String format, String uri, MTable table) {
+    this.table_name = name;
+    this.external_table_format = format;
+    this.external_table_uri = uri;
+    this.table = table;
   }
 
-  public String getSynopsisName() {
-    return synopsis_name;
+  public String getTableName() {
+    return table_name;
   }
 
-  public String getSynopsisFormat() {
-    return synopsis_format;
+  public String getExternalTableFormat() {
+    return external_table_format;
   }
 
-  public String getSynopsisUri() {
-    return synopsis_uri;
+  public String getExternalTableUri() {
+    return external_table_uri;
   }
 
-  public MSynopsis getSynopsis() {
-    return synopsis;
+  public MTable getTable() {
+    return table;
   }
 }

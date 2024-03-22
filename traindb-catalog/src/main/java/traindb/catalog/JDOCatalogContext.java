@@ -35,7 +35,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
-import traindb.catalog.pm.MSynopsisExt;
+import traindb.catalog.pm.MTableExt;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
@@ -426,10 +426,11 @@ public final class JDOCatalogContext implements CatalogContext {
     try {
       tx.begin();
 
-      if (synopsisExtExists(name)) {
-        pm.deletePersistent(getSynopsisExt(name));
+      MSynopsis mSynopsis = getSynopsis(name);
+      if (externalTableExists(name)) {
+        pm.deletePersistent(getTable(mSynopsis.getSchemaName(), name));
       }
-      pm.deletePersistent(getSynopsis(name));
+      pm.deletePersistent(mSynopsis);
 
       tx.commit();
     } catch (RuntimeException e) {
@@ -515,31 +516,50 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public MSynopsisExt createSynopsisExt(String name, String format, String uri)
+  public MTableExt createExternalTable(String name, String format, String uri)
       throws CatalogException {
     try {
       MSynopsis mSynopsis = getSynopsis(name);
-      MSynopsisExt mSynopsisExt = new MSynopsisExt(name, format, uri, mSynopsis);
-      pm.makePersistent(mSynopsisExt);
-      return mSynopsisExt;
+      MSchema mSchema = mSynopsis.getTable().getSchema();
+      MTable mTable = new MTable(name, "FOREIGN_TABLE", mSchema);
+      pm.makePersistent(mTable);
+
+      Collection<MColumn> mColumns = mSynopsis.getTable().getColumns();
+      List<String> synColumnNames = mSynopsis.getColumnNames();
+      for (String synColumnName : synColumnNames) {
+        for (MColumn mColumn : mColumns) {
+          if (mColumn.getColumnName().equals(synColumnName)) {
+            MColumn mSynColumn = new MColumn(
+                mColumn.getColumnName(), mColumn.getColumnType(), mColumn.getPrecision(),
+                mColumn.getScale(), mColumn.isNullable(), mTable);
+            pm.makePersistent(mSynColumn);
+            break;
+          }
+        }
+      }
+
+      MTableExt mTableExt = new MTableExt(name, format, uri, mTable);
+      pm.makePersistent(mTableExt);
+
+      return mTableExt;
     } catch (RuntimeException e) {
-      throw new CatalogException("failed to create synopsis_ext '" + name + "'", e);
+      throw new CatalogException("failed to create external table '" + name + "'", e);
     }
   }
 
   @Override
-  public boolean synopsisExtExists(String name) {
-    return getSynopsisExt(name) != null;
+  public boolean externalTableExists(String name) {
+    return getExternalTable(name) != null;
   }
 
   @Override
-  public @Nullable MSynopsisExt getSynopsisExt(String name) {
+  public @Nullable MTableExt getExternalTable(String name) {
     try {
-      Query query = pm.newQuery(MSynopsisExt.class);
-      setFilterPatterns(query, ImmutableMap.of("synopsis_name", name));
+      Query query = pm.newQuery(MTableExt.class);
+      setFilterPatterns(query, ImmutableMap.of("table_name", name));
       query.setUnique(true);
 
-      return (MSynopsisExt) query.execute(name);
+      return (MTableExt) query.execute(name);
     } catch (RuntimeException e) {
     }
     return null;

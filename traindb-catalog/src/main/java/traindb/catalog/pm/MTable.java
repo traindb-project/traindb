@@ -45,6 +45,9 @@ public final class MTable {
   @Persistent(mappedBy = "table", dependentElement = "true")
   private Collection<MColumn> columns;
 
+  @Persistent(mappedBy = "table", dependentElement = "true")
+  private Collection<MTableExt> tableExts;
+
   public MTable(String name, String type, MSchema schema) {
     this.table_name = name;
     this.table_type = type;
@@ -74,5 +77,9 @@ public final class MTable {
       }
     }
     return null;
+  }
+
+  public Collection<MTableExt> getTableExts() {
+    return tableExts;
   }
 }

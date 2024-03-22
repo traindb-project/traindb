@@ -25,7 +25,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
-import traindb.catalog.pm.MSynopsisExt;
+import traindb.catalog.pm.MTableExt;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
@@ -105,11 +105,12 @@ public interface CatalogContext {
 
   void updateSynopsisStatistics(String synopsisName, String statistics) throws CatalogException;
 
-  MSynopsisExt createSynopsisExt(String name, String format, String uri) throws CatalogException;
+  /* External Table */
+  MTableExt createExternalTable(String name, String format, String uri) throws CatalogException;
 
-  boolean synopsisExtExists(String name);
+  boolean externalTableExists(String name);
 
-  @Nullable MSynopsisExt getSynopsisExt(String name);
+  @Nullable MTableExt getExternalTable(String name);
 
   /* Schema & Table */
   MSchema getSchema(String name);

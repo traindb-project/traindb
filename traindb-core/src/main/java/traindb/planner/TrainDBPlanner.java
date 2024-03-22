@@ -18,10 +18,8 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
-import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
-import java.util.Map;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -47,7 +45,6 @@ import org.apache.calcite.rel.metadata.RelMetadataProvider;
 import org.apache.calcite.rel.metadata.RelMetadataQuery;
 import org.apache.calcite.rel.rules.CoreRules;
 import org.apache.calcite.rel.rules.JoinPushThroughJoinRule;
-import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.sql2rel.RelDecorrelator;
 import org.apache.calcite.sql2rel.RelFieldTrimmer;
@@ -59,8 +56,6 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
-import traindb.adapter.file.CsvTableFactory;
-import traindb.adapter.file.CsvTranslatableTable;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
@@ -177,14 +172,6 @@ public class TrainDBPlanner extends VolcanoPlanner {
     } catch (CatalogException e) {
     }
     return null;
-  }
-
-  public CsvTranslatableTable getCsvSynopsisTable(String name, RelDataType rowType) {
-    CsvTableFactory csvTableFactory = new CsvTableFactory();
-    Map<String, Object> operand = new HashMap<>();
-    operand.put("file", catalogContext.getSynopsisExt(name).getSynopsisUri());
-    return (CsvTranslatableTable) csvTableFactory.create(
-        catalogReader.getRootSchema().plus(), name, operand, rowType);
   }
 
   public RelOptTable getSynopsisTable(MSynopsis synopsis, RelOptTable baseTable) {

@@ -44,11 +44,11 @@ import org.checkerframework.checker.nullness.qual.Nullable;
  * <p>Like any table scan, it serves as a leaf node of a query tree.
  */
 public class CsvTableScan extends TableScan implements EnumerableRel {
-  final CsvTranslatableTable csvTable;
+  final TrainDBFileTable csvTable;
   final int[] fields;
 
-  public CsvTableScan(RelOptCluster cluster, RelOptTable table,
-                      CsvTranslatableTable csvTable, int[] fields) {
+  public CsvTableScan(RelOptCluster cluster, RelOptTable table, TrainDBFileTable csvTable,
+                      int[] fields) {
     super(cluster, cluster.traitSetOf(EnumerableConvention.INSTANCE), ImmutableList.of(), table);
     this.csvTable = csvTable;
     this.fields = fields;
@@ -80,7 +80,6 @@ public class CsvTableScan extends TableScan implements EnumerableRel {
 
   @Override
   public void register(RelOptPlanner planner) {
-    planner.addRule(CsvToEnumerableConverterRule.INSTANCE);
     planner.addRule(CsvRules.PROJECT_SCAN);
   }
 
@@ -111,12 +110,12 @@ public class CsvTableScan extends TableScan implements EnumerableRel {
     return implementor.result(
         physType,
         Blocks.toBlock(
-            Expressions.call(table.getExpression(CsvTranslatableTable.class),
+            Expressions.call(table.getExpression(TrainDBFileTable.class),
                 "project", implementor.getRootExpression(),
                 Expressions.constant(fields))));
   }
 
-  public CsvTranslatableTable getCsvTable() {
+  public TrainDBFileTable getCsvTable() {
     return csvTable;
   }
 }

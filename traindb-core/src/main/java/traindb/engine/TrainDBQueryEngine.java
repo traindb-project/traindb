@@ -682,7 +682,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         Path synPath = getLocalSynopsisPath(synopsisName);
         new File(synPath.toString()).mkdirs();
         Files.move(Paths.get(outputPath), synPath, StandardCopyOption.REPLACE_EXISTING);
-        catalogContext.createSynopsisExt(synopsisName, "csv", synPath.toString());
+        catalogContext.createExternalTable(synopsisName, "csv", synPath.toString());
+        conn.refreshRootSchema();
         T_tracer.closeTaskTime("SUCCESS");
         return;
       }
@@ -697,7 +698,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
       catalogContext.dropSynopsis(synopsisName);
-      dropSynopsisTable(synopsisName);
+      if (!conn.isStandalone()) {
+        dropSynopsisTable(synopsisName);
+      }
 
       String msg = "failed to create synopsis " + synopsisName;
       T_tracer.closeTaskTime(msg);
@@ -736,9 +739,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
     T_tracer.closeTaskTime("SUCCESS");
 
-    if (catalogContext.synopsisExtExists(synopsisName)) {
+    if (catalogContext.externalTableExists(synopsisName)) {
       T_tracer.openTaskTime("delete synopsis file and catalog");
-      String synPath = catalogContext.getSynopsisExt(synopsisName).getSynopsisUri();
+      String synPath = catalogContext.getExternalTable(synopsisName).getExternalTableUri();
       catalogContext.dropSynopsis(synopsisName);
       FileUtils.deleteDirectory(new File(Paths.get(synPath).getParent().toString()));
       T_tracer.closeTaskTime("SUCCESS");
