@@ -697,10 +697,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModel.getTable(), outputPath);
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
-      catalogContext.dropSynopsis(synopsisName);
-      if (!conn.isStandalone()) {
+      try {
         dropSynopsisTable(synopsisName);
+      } catch (Exception de) {
+        // ignore
       }
+      catalogContext.dropSynopsis(synopsisName);
 
       String msg = "failed to create synopsis " + synopsisName;
       T_tracer.closeTaskTime(msg);
