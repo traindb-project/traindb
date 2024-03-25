@@ -713,6 +713,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {
+    if (catalogContext.externalTableExists(synopsisName)) {
+      String synPath = catalogContext.getExternalTable(synopsisName).getExternalTableUri();
+      FileUtils.deleteDirectory(new File(Paths.get(synPath).getParent().toString()));
+      return;
+    }
+
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
     StringBuilder sb = new StringBuilder();
     sb.append("DROP TABLE ");
@@ -738,15 +744,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       throw new CatalogException(msg);
     }
     T_tracer.closeTaskTime("SUCCESS");
-
-    if (catalogContext.externalTableExists(synopsisName)) {
-      T_tracer.openTaskTime("delete synopsis file and catalog");
-      String synPath = catalogContext.getExternalTable(synopsisName).getExternalTableUri();
-      catalogContext.dropSynopsis(synopsisName);
-      FileUtils.deleteDirectory(new File(Paths.get(synPath).getParent().toString()));
-      T_tracer.closeTaskTime("SUCCESS");
-      return;
-    }
 
     T_tracer.openTaskTime("drop table");
     dropSynopsisTable(synopsisName);
