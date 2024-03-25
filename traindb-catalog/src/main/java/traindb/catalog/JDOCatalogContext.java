@@ -520,11 +520,11 @@ public final class JDOCatalogContext implements CatalogContext {
       throws CatalogException {
     try {
       MSynopsis mSynopsis = getSynopsis(name);
-      MSchema mSchema = mSynopsis.getTable().getSchema();
+      MSchema mSchema = mSynopsis.getBaseTable().getSchema();
       MTable mTable = new MTable(name, "FOREIGN_TABLE", mSchema);
       pm.makePersistent(mTable);
 
-      Collection<MColumn> mColumns = mSynopsis.getTable().getColumns();
+      Collection<MColumn> mColumns = mSynopsis.getBaseTable().getColumns();
       List<String> synColumnNames = mSynopsis.getColumnNames();
       for (String synColumnName : synColumnNames) {
         for (MColumn mColumn : mColumns) {
