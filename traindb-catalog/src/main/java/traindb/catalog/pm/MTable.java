@@ -17,6 +17,8 @@ package traindb.catalog.pm;
 import com.fasterxml.jackson.annotation.JsonIgnoreProperties;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.Collections;
+import java.util.Comparator;
 import javax.jdo.annotations.Column;
 import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
@@ -67,7 +69,13 @@ public final class MTable {
   }
 
   public Collection<MColumn> getColumns() {
-    return new ArrayList<MColumn>(columns);
+    ArrayList<MColumn> columnList = new ArrayList<>(columns);
+    Collections.sort(columnList, new Comparator<MColumn>() {
+      public int compare(MColumn c1, MColumn c2) {
+        return c1.getId() < c2.getId() ? -1 : 1;
+      }
+    });
+    return columnList;
   }
 
   public MColumn getColumn(String name) {

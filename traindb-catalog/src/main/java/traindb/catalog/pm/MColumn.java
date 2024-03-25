@@ -53,6 +53,10 @@ public final class MColumn {
     this.table = table;
   }
 
+  public long getId() {
+    return id;
+  }
+
   public String getColumnName() {
     return column_name;
   }
