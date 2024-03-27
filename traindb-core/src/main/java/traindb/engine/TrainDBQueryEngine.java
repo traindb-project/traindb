@@ -1377,6 +1377,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     catalogContext.importSynopsis(synopsisName, json);
     T_tracer.closeTaskTime("SUCCESS");
 
+    boolean isExternal = conn.isStandalone();
     try {
       T_tracer.openTaskTime("create synopsis table");
       String schemaName = (String) json.get("schemaName");
@@ -1387,7 +1388,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       for (int i = 0; i < jsonColumnNames.size(); i++) {
         columnNames.add((String) jsonColumnNames.get(i));
       }
-      createSynopsisTable(synopsisName, schemaName, tableName, columnNames, mTable, true);
+      if (!isExternal) {
+        createSynopsisTable(synopsisName, schemaName, tableName, columnNames, mTable, true);
+      }
       T_tracer.closeTaskTime("SUCCESS");
 
       T_tracer.openTaskTime("load synopsis into table");
@@ -1395,11 +1398,25 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       ZipUtils.unpack(zipBytes, tempDir.toString());
       String oldSynopsisName = (String) json.get("synopsisName");
       String synopsisFile = Paths.get(tempDir.toString(), oldSynopsisName + ".csv").toString();
-      loadSynopsisIntoTable(synopsisName, schemaName, columnNames, mTable, synopsisFile);
+
+      if (isExternal) {
+        Path synPath = getLocalSynopsisPath(synopsisName);
+        new File(synPath.toString()).mkdirs();
+        Files.move(Paths.get(synopsisFile), synPath, StandardCopyOption.REPLACE_EXISTING);
+        catalogContext.createExternalTable(synopsisName, "csv", synPath.toString());
+        conn.refreshRootSchema();
+      } else {
+        loadSynopsisIntoTable(synopsisName, schemaName, columnNames, mTable, synopsisFile);
+      }
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
       try {
         dropSynopsisTable(synopsisName);
+      } catch (Exception ee) {
+        // ignore
+      }
+      try {
+        catalogContext.dropSynopsis(synopsisName);
       } catch (Exception ee) {
         // ignore
       }

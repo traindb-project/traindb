@@ -462,7 +462,7 @@ public final class JDOCatalogContext implements CatalogContext {
 
       Integer rows = ((Long) exportMetadata.get("rows")).intValue();
       Double ratio = (Double) exportMetadata.get("ratio");
-      boolean isExternal = false; // FIXME
+      boolean isExternal = (Boolean) exportMetadata.get("external");
 
       MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
           columnNames, isExternal, mTable);
