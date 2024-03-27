@@ -20,7 +20,6 @@ import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
-import org.apache.calcite.adapter.file.CsvEnumerator;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
 import org.apache.calcite.plan.volcano.RelSubset;
@@ -41,11 +40,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.immutables.value.Value;
-import traindb.adapter.file.CsvTableScan;
-import traindb.adapter.file.TrainDBFileTable;
-import traindb.adapter.jdbc.JdbcConvention;
-import traindb.adapter.jdbc.JdbcTableScan;
-import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.TrainDBPlanner;
 
@@ -210,15 +204,7 @@ public class ApproxAggregateSynopsisRule
       if (synopsisTable == null) {
         return;
       }
-      TableScan newScan;
-      if (planner.getCatalogContext().externalTableExists(bestSynopsis.getSynopsisName())) {
-        newScan = new CsvTableScan(scan.getCluster(), synopsisTable,
-            (TrainDBFileTable) synopsisTable.table(),
-            CsvEnumerator.identityList(bestSynopsis.getColumnNames().size()));
-      } else {
-        newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-            (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
-      }
+      TableScan newScan = planner.createSynopsisTableScan(bestSynopsis, synopsisTable, scan);
       relBuilder.push(newScan);
 
       final List<String> synopsisColumns = bestSynopsis.getColumnNames();
