@@ -80,8 +80,8 @@ public interface CatalogContext {
   void disableModel(String modelName) throws CatalogException;
 
   /* Synopsis */
-  MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
-      throws CatalogException;
+  MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio,
+                           boolean isExternal) throws CatalogException;
 
   Collection<MSynopsis> getAllSynopses() throws CatalogException;
 

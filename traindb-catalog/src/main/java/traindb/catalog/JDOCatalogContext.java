@@ -368,10 +368,12 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
-                                  @Nullable Double ratio) throws CatalogException {
+                                  @Nullable Double ratio, boolean isExternal)
+      throws CatalogException {
     try {
       MModel mModel = getModel(modelName);
-      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, mModel.getTable());
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, isExternal,
+          mModel.getTable());
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
@@ -460,9 +462,10 @@ public final class JDOCatalogContext implements CatalogContext {
 
       Integer rows = ((Long) exportMetadata.get("rows")).intValue();
       Double ratio = (Double) exportMetadata.get("ratio");
+      boolean isExternal = false; // FIXME
 
       MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
-          columnNames, mTable);
+          columnNames, isExternal, mTable);
       pm.makePersistent(mSynopsis);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to import synopsis '" + synopsisName + "'", e);

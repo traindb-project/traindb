@@ -671,14 +671,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     runner.generateSynopsis(outputPath, limitRows);
     T_tracer.closeTaskTime("SUCCESS");
 
+    boolean isExternal = conn.isStandalone();
+
     T_tracer.openTaskTime("create synopsis");
     double ratio = (double) limitRows / (double) mModel.getTableRows();
-    catalogContext.createSynopsis(synopsisName, modelName, limitRows, ratio);
+    catalogContext.createSynopsis(synopsisName, modelName, limitRows, ratio, isExternal);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create synopsis table");
     try {
-      if (conn.isStandalone()) {
+      if (isExternal) {
         Path synPath = getLocalSynopsisPath(synopsisName);
         new File(synPath.toString()).mkdirs();
         Files.move(Paths.get(outputPath), synPath, StandardCopyOption.REPLACE_EXISTING);
