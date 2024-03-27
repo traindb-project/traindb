@@ -112,8 +112,7 @@ public class ApproxAggregateSynopsisFilterScanRule
 
       RelOptTableImpl synopsisTable =
           (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, scan.getTable());
-      TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+      TableScan newScan = planner.createSynopsisTableScan(bestSynopsis, synopsisTable, scan);
 
       List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
           aggregate, scan.getTable(), synopsisTable.getRowCount());
