@@ -1356,8 +1356,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString)
-      throws Exception {
+  public TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString,
+                                             String importFilename) throws Exception {
     T_tracer.startTaskTracer("import synopsis " + synopsisName);
 
     T_tracer.openTaskTime("find : synopsis");
@@ -1372,7 +1372,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("decode synopsis binary string");
-    byte[] zipBytes = Hex.decodeHex(synopsisBinaryString);
+    byte[] zipBytes;
+    if (importFilename != null) {
+      zipBytes = Files.readAllBytes(Paths.get(importFilename).toAbsolutePath());
+    } else {
+      zipBytes = Hex.decodeHex(synopsisBinaryString);
+    }
     byte[] exportMetadata = ZipUtils.extractZipEntry(zipBytes, "export_synopsis.json");
     if (exportMetadata == null) {
       throw new TrainDBException(

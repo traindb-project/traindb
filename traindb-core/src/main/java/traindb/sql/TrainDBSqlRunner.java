@@ -82,8 +82,8 @@ public interface TrainDBSqlRunner {
 
   TrainDBListResultSet exportSynopsis(String synopsisName, String exportFilename) throws Exception;
 
-  TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString)
-      throws Exception;
+  TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString,
+                                      String importFilename) throws Exception;
 
   void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception;
 
