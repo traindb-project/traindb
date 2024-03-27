@@ -113,7 +113,7 @@ public final class MSynopsis {
     return model;
   }
 
-  public MTable getBaseTable() {
+  public MTable getTable() {
     return table;
   }
 
