@@ -80,7 +80,7 @@ public interface TrainDBSqlRunner {
 
   void disableModel(String modelName) throws Exception;
 
-  TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception;
+  TrainDBListResultSet exportSynopsis(String synopsisName, String exportFilename) throws Exception;
 
   TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString)
       throws Exception;

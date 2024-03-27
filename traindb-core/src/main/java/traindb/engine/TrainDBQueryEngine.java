@@ -1286,7 +1286,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception {
+  public TrainDBListResultSet exportSynopsis(String synopsisName, String exportFilename)
+      throws Exception {
     T_tracer.startTaskTracer("export synopsis " + synopsisName);
 
     T_tracer.openTaskTime("find : synopsis");
@@ -1328,19 +1329,28 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       JdbcUtils.close(extConn, stmt, synopsisData);
     }
 
-    Path outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
+    Path outputPath;
+    if (exportFilename != null) {
+      outputPath = Paths.get(exportFilename).toAbsolutePath();
+    } else {
+      outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
+    }
     ZipUtils.pack(synopsisDir.toString(), outputPath.toString());
     ObjectMapper mapper = new ObjectMapper();
     ZipUtils.addNewFileFromStringToZip("export_synopsis.json",
         mapper.writeValueAsString(mSynopsis), outputPath);
 
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    if (exportFilename != null) {
+      return TrainDBListResultSet.empty();
+    }
+
     List<String> header = Arrays.asList("export_synopsis");
     List<List<Object>> exportSynopsisInfo = new ArrayList<>();
     ByteArray byteArray = convertFileToByteArray(new File(outputPath.toString()));
     exportSynopsisInfo.add(Arrays.asList(byteArray));
-
-    T_tracer.closeTaskTime("SUCCESS");
-    T_tracer.endTaskTracer();
 
     return new TrainDBListResultSet(header, exportSynopsisInfo);
   }

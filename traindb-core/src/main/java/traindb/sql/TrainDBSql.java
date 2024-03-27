@@ -164,7 +164,7 @@ public final class TrainDBSql {
       }
       case EXPORT_SYNOPSIS:
         TrainDBSqlExportSynopsis exportSynopsis = (TrainDBSqlExportSynopsis) command;
-        return runner.exportSynopsis(exportSynopsis.getSynopsisName());
+        return runner.exportSynopsis(exportSynopsis.getSynopsisName(), exportSynopsis.getExportFilename());
       case IMPORT_SYNOPSIS:
         TrainDBSqlImportSynopsis importSynopsis = (TrainDBSqlImportSynopsis) command;
         return runner.importSynopsis(importSynopsis.getSynopsisName(),
@@ -396,8 +396,12 @@ public final class TrainDBSql {
     @Override
     public void exitExportSynopsis(TrainDBSqlParser.ExportSynopsisContext ctx) {
       String synopsisName = ctx.synopsisName().getText();
+      String exportFilename = null;
+      if (ctx.exportToClause() != null) {
+        exportFilename = ctx.exportToClause().filenameString().getText();
+      }
       LOG.debug("EXPORT SYNOPSIS: name=" + synopsisName);
-      commands.add(new TrainDBSqlExportSynopsis(synopsisName));
+      commands.add(new TrainDBSqlExportSynopsis(synopsisName, exportFilename));
     }
 
     @Override

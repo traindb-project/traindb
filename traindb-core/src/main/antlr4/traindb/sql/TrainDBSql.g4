@@ -158,7 +158,11 @@ modelBinaryString
     ;
 
 exportSynopsis
-    : K_EXPORT K_SYNOPSIS synopsisName
+    : K_EXPORT K_SYNOPSIS synopsisName exportToClause?
+    ;
+
+exportToClause
+    : K_TO K_FILE filenameString
     ;
 
 importSynopsis
@@ -167,6 +171,10 @@ importSynopsis
 
 analyzeSynopsis
     : K_ANALYZE K_SYNOPSIS synopsisName
+    ;
+
+filenameString
+    : STRING_LITERAL
     ;
 
 synopsisBinaryString
@@ -318,6 +326,7 @@ K_DISABLE : D I S A B L E ;
 K_DROP : D R O P ;
 K_ENABLE : E N A B L E ;
 K_EXPORT : E X P O R T ;
+K_FILE : F I L E ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
 K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;
