@@ -1303,27 +1303,33 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("export synopsis");
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
 
-    TrainDBTable table = schemaManager.getTable(
-        mSynopsis.getSchemaName(), mSynopsis.getTableName());
-
-    String sql = buildExportTableQuery(
-        mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
-        table.getRowType(conn.getTypeFactory()));
-
-    Connection extConn = conn.getDataSourceConnection();
-    Statement stmt = extConn.createStatement();
-    ResultSet synopsisData = stmt.executeQuery(sql);
-
+    Path synopsisDir;
     Path tempDir = Files.createTempDirectory("traindb-");
-    Path tempSynDir = Paths.get(tempDir.toString(), synopsisName);
-    new File(tempSynDir.toString()).mkdirs();
+    if (mSynopsis.getExternal()) {
+      synopsisDir = Paths.get(catalogContext.getExternalTable(synopsisName).getExternalTableUri())
+          .getParent();
+    } else {
+      TrainDBTable table = schemaManager.getTable(
+          mSynopsis.getSchemaName(), mSynopsis.getTableName());
 
-    String synopsisFile = Paths.get(tempSynDir.toString(), synopsisName + ".csv").toString();
-    AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
-    JdbcUtils.close(extConn, stmt, synopsisData);
+      String sql = buildExportTableQuery(
+          mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
+          table.getRowType(conn.getTypeFactory()));
+
+      Connection extConn = conn.getDataSourceConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet synopsisData = stmt.executeQuery(sql);
+
+      synopsisDir = Paths.get(tempDir.toString(), synopsisName);
+      new File(synopsisDir.toString()).mkdirs();
+
+      String synopsisFile = Paths.get(synopsisDir.toString(), synopsisName + ".csv").toString();
+      AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
+      JdbcUtils.close(extConn, stmt, synopsisData);
+    }
 
     Path outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
-    ZipUtils.pack(tempSynDir.toString(), outputPath.toString());
+    ZipUtils.pack(synopsisDir.toString(), outputPath.toString());
     ObjectMapper mapper = new ObjectMapper();
     ZipUtils.addNewFileFromStringToZip("export_synopsis.json",
         mapper.writeValueAsString(mSynopsis), outputPath);
