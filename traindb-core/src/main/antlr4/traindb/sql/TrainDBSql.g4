@@ -166,7 +166,7 @@ exportToClause
     ;
 
 importSynopsis
-    : K_IMPORT K_SYNOPSIS synopsisName synopsisTypeClause+? K_FROM ( synopsisBinaryString | K_FILE filenameString )?
+    : K_IMPORT K_SYNOPSIS synopsisName K_FROM ( synopsisBinaryString | K_FILE filenameString )?
     ;
 
 analyzeSynopsis
