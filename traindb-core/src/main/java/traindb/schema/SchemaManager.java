@@ -29,6 +29,7 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.tools.Frameworks;
 import org.apache.hadoop.service.AbstractService;
+import traindb.adapter.TrainDBStandaloneSqlDialect;
 import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogStore;
@@ -42,9 +43,8 @@ public final class SchemaManager extends AbstractService {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(SchemaManager.class);
   private static SchemaManager singletonInstance;
   private final CatalogStore catalogStore;
-  public TrainDBDataSource traindbDataSource;
 
-  private final Map<String, List<TrainDBDataSource>> dataSourceMap;
+  private final Map<String, TrainDBDataSource> dataSourceMap;
   private final Map<String, List<TrainDBSchema>> schemaMap;
   private final Map<String, List<TrainDBTable>> tableMap;
 
@@ -65,7 +65,6 @@ public final class SchemaManager extends AbstractService {
     super(SchemaManager.class.getName());
     this.catalogStore = catalogStore;
     rootSchema = Frameworks.createRootSchema(false);
-    traindbDataSource = null;
     dataSourceMap = new HashMap<>();
     schemaMap = new HashMap<>();
     tableMap = new HashMap<>();
@@ -96,45 +95,47 @@ public final class SchemaManager extends AbstractService {
     return singletonInstance;
   }
 
-  public void loadCatalogDataSource() {
+  public void loadDataSource(DataSource dataSource) {
     SchemaPlus newRootSchema = Frameworks.createRootSchema(true);
     TrainDBCatalogDataSource catalogDataSource = new TrainDBCatalogDataSource(getCatalogContext());
     newRootSchema.add(catalogDataSource.getName(), catalogDataSource);
     addDataSourceToMaps(catalogDataSource);
 
-    writeLock.lock();
-    this.traindbDataSource = catalogDataSource;
-    this.rootSchema = newRootSchema;
-    writeLock.unlock();
-  }
-
-  public void loadDataSource(DataSource dataSource) {
-    SchemaPlus newRootSchema = Frameworks.createRootSchema(true);
-    TrainDBJdbcDataSource newJdbcDataSource = new TrainDBJdbcDataSource(newRootSchema, dataSource);
-    newRootSchema.add(newJdbcDataSource.getName(), newJdbcDataSource);
-    addDataSourceToMaps(newJdbcDataSource);
+    if (dataSource != null) {
+      TrainDBJdbcDataSource newJdbcDataSource =
+          new TrainDBJdbcDataSource(newRootSchema, dataSource);
+      newRootSchema.add(newJdbcDataSource.getName(), newJdbcDataSource);
+      addDataSourceToMaps(newJdbcDataSource);
+    }
 
     writeLock.lock();
-    this.traindbDataSource = newJdbcDataSource;
     this.rootSchema = newRootSchema;
     writeLock.unlock();
   }
 
   public void refreshDataSource() {
+    DataSource dataSource = null;
+    for (Map.Entry<String, TrainDBDataSource> entry : dataSourceMap.entrySet()) {
+      if (entry.getValue() instanceof TrainDBJdbcDataSource) {
+        dataSource = ((TrainDBJdbcDataSource) entry.getValue()).getDataSource();
+        break;
+      }
+    }
     writeLock.lock();
     dataSourceMap.clear();
     schemaMap.clear();
     tableMap.clear();
-    if (traindbDataSource instanceof TrainDBJdbcDataSource) {
-      loadDataSource(((TrainDBJdbcDataSource) traindbDataSource).getDataSource());
-    } else if (traindbDataSource instanceof TrainDBCatalogDataSource) {
-      loadCatalogDataSource();
-    }
+
+    loadDataSource(dataSource);
     writeLock.unlock();
   }
 
+  public TrainDBDataSource getJdbcDataSource() {
+    return dataSourceMap.get("jdbc");
+  }
+
   private void addDataSourceToMaps(TrainDBDataSource traindbDataSource) {
-    addToListMap(dataSourceMap, traindbDataSource.getName(), traindbDataSource);
+    dataSourceMap.put(traindbDataSource.getName(), traindbDataSource);
     for (Schema schema : traindbDataSource.getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
       addToListMap(schemaMap, traindbSchema.getName(), traindbSchema);
@@ -167,7 +168,12 @@ public final class SchemaManager extends AbstractService {
   }
 
   public SqlDialect getDialect() {
-    return traindbDataSource.getDialect();
+    for (Map.Entry<String, TrainDBDataSource> entry : dataSourceMap.entrySet()) {
+      if (entry.getValue() instanceof TrainDBJdbcDataSource) {
+        return ((TrainDBJdbcDataSource) entry.getValue()).getDialect();
+      }
+    }
+    return new TrainDBStandaloneSqlDialect();
   }
 
   public TrainDBTable getTable(String schemaName, String tableName) {

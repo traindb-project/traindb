@@ -33,7 +33,7 @@ public final class MSchema {
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
   private String schema_name;
 
-  @Persistent(mappedBy = "schema", dependentElement = "true")
+  @Persistent(mappedBy = "schema", dependentElement = "true", cacheable = "false")
   private Collection<MTable> tables;
 
   public MSchema(String name) {

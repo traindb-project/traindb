@@ -15,7 +15,7 @@
 package traindb.schema;
 
 import com.google.common.collect.ImmutableMap;
-import javax.annotation.Nullable;
+import java.util.Collection;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeFactory;
@@ -23,10 +23,11 @@ import org.apache.calcite.rel.type.RelDataTypeSystem;
 import org.apache.calcite.schema.Table;
 import org.apache.calcite.sql.type.SqlTypeFactoryImpl;
 import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.util.Util;
+import traindb.adapter.file.TrainDBFileTable;
 import traindb.catalog.pm.MColumn;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MTable;
+import traindb.catalog.pm.MTableExt;
 import traindb.common.TrainDBLogger;
 
 public class TrainDBCatalogSchema extends TrainDBSchema {
@@ -49,8 +50,21 @@ public class TrainDBCatalogSchema extends TrainDBSchema {
       MetaImpl.MetaTable tableDef =
           new MetaImpl.MetaTable(catalogName, schemaName, tableName, tableTypeName);
 
-      builder.put(tableName,
-          new TrainDBCatalogTable(tableName, this, tableDef, getProtoType(mTable)));
+      if (tableTypeName.equals("FOREIGN_TABLE")) {
+        Collection<MTableExt> mTableExts = mTable.getTableExts();
+        StringBuilder sb = new StringBuilder();
+        for (MTableExt mTableExt : mTableExts) {
+          sb.append(mTableExt.getExternalTableUri());
+          sb.append(";");
+        }
+        sb.setLength(sb.length() - 1);
+
+        builder.put(tableName,
+            new TrainDBFileTable(tableName, this, tableDef, getProtoType(mTable), sb.toString()));
+      } else {
+        builder.put(tableName,
+            new TrainDBCatalogTable(tableName, this, tableDef, getProtoType(mTable)));
+      }
     }
     setTableMap(builder.build());
   }

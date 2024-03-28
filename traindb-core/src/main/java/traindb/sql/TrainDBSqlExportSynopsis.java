@@ -16,13 +16,19 @@ package traindb.sql;
 
 class TrainDBSqlExportSynopsis extends TrainDBSqlCommand {
   private final String synopsisName;
+  private final String exportFilename;
 
-  TrainDBSqlExportSynopsis(String synopsisName) {
+  TrainDBSqlExportSynopsis(String synopsisName, String exportFilename) {
     this.synopsisName = synopsisName;
+    this.exportFilename = exportFilename;
   }
 
   String getSynopsisName() {
     return synopsisName;
+  }
+
+  String getExportFilename() {
+    return exportFilename;
   }
 
   @Override

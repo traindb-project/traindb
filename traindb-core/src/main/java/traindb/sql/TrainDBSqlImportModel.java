@@ -17,10 +17,12 @@ package traindb.sql;
 class TrainDBSqlImportModel extends TrainDBSqlCommand {
   private final String modelName;
   private final String modelBinaryString;
+  private final String importFilename;
 
-  TrainDBSqlImportModel(String modelName, String modelBinaryString) {
+  TrainDBSqlImportModel(String modelName, String modelBinaryString, String importFilename) {
     this.modelName = modelName;
     this.modelBinaryString = modelBinaryString;
+    this.importFilename = importFilename;
   }
 
   String getModelName() {
@@ -29,6 +31,10 @@ class TrainDBSqlImportModel extends TrainDBSqlCommand {
 
   String getModelBinaryString() {
     return modelBinaryString;
+  }
+
+  String getImportFilename() {
+    return importFilename;
   }
 
   @Override

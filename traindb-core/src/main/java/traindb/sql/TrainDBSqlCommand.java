@@ -53,4 +53,10 @@ public abstract class TrainDBSqlCommand {
     ANALYZE_SYNOPSIS,
     OTHER
   }
+
+  public enum SynopsisType {
+    TABLE,
+    FILE,
+    DEFAULT
+  }
 }

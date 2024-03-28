@@ -812,7 +812,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     }
 
     List<String> partitionList = null;
-    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+    for (Schema schema : schemaManager.getJdbcDataSource().getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
 
       if (!traindbSchema.getName().equals(schemaName)) {

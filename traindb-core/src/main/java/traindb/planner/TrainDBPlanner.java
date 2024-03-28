@@ -20,6 +20,7 @@ import java.util.Arrays;
 import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import org.apache.calcite.adapter.file.CsvEnumerator;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Context;
 import org.apache.calcite.plan.ConventionTraitDef;
@@ -56,6 +57,8 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
+import traindb.adapter.file.CsvTableScan;
+import traindb.adapter.file.TrainDBFileTable;
 import traindb.adapter.jdbc.JdbcConvention;
 import traindb.adapter.jdbc.JdbcTableScan;
 import traindb.adapter.jdbc.TrainDBJdbcTable;
@@ -176,8 +179,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
   public RelOptTable getSynopsisTable(MSynopsis synopsis, RelOptTable baseTable) {
     List<String> qualifiedSynopsisName = new ArrayList(Arrays.asList(
-        baseTable.getQualifiedName().get(0), baseTable.getQualifiedName().get(1),
-        synopsis.getSynopsisName()));
+        synopsis.getExternal() ? "traindb" : baseTable.getQualifiedName().get(0),
+        baseTable.getQualifiedName().get(1), synopsis.getSynopsisName()));
     double ratio = synopsis.getRatio();
     if (ratio == 0d) {
       ratio = DEFAULT_SYNOPSIS_SIZE_RATIO;
@@ -268,10 +271,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
       if (synopsisTable == null) {
         continue;
       }
-      TableScan synopsisScan =
-          new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-              (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
-
+      TableScan synopsisScan = createSynopsisTableScan(synopsis, synopsisTable, scan);
       RelMetadataQuery mq = scan.getCluster().getMetadataQuery();
       RelOptCost synopsisScanCost = mq.getCumulativeCost(synopsisScan);
 
@@ -286,6 +286,17 @@ public class TrainDBPlanner extends VolcanoPlanner {
       }
     }
     return bestSynopsis;
+  }
+
+  public TableScan createSynopsisTableScan(MSynopsis synopsis, RelOptTableImpl synopsisTable,
+                                           TableScan baseTableScan) {
+    if (synopsis.getExternal()) {
+      return new CsvTableScan(baseTableScan.getCluster(), synopsisTable,
+          (TrainDBFileTable) synopsisTable.table(),
+          CsvEnumerator.identityList(synopsis.getColumnNames().size()));
+    }
+    return new JdbcTableScan(baseTableScan.getCluster(), baseTableScan.getHints(), synopsisTable,
+          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) baseTableScan.getConvention());
   }
 
   public Collection<MModel> getAvailableInferenceModels(

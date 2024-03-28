@@ -35,6 +35,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTableExt;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
@@ -367,10 +368,12 @@ public final class JDOCatalogContext implements CatalogContext {
 
   @Override
   public MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows,
-                                  @Nullable Double ratio) throws CatalogException {
+                                  @Nullable Double ratio, boolean isExternal)
+      throws CatalogException {
     try {
       MModel mModel = getModel(modelName);
-      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, mModel.getTable());
+      MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, mModel, isExternal,
+          mModel.getTable());
       pm.makePersistent(mSynopsis);
       return mSynopsis;
     } catch (RuntimeException e) {
@@ -425,7 +428,11 @@ public final class JDOCatalogContext implements CatalogContext {
     try {
       tx.begin();
 
-      pm.deletePersistent(getSynopsis(name));
+      MSynopsis mSynopsis = getSynopsis(name);
+      if (externalTableExists(name)) {
+        pm.deletePersistent(getTable(mSynopsis.getSchemaName(), name));
+      }
+      pm.deletePersistent(mSynopsis);
 
       tx.commit();
     } catch (RuntimeException e) {
@@ -438,7 +445,7 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public void importSynopsis(String synopsisName, JSONObject exportMetadata)
+  public void importSynopsis(String synopsisName, boolean isExternal, JSONObject exportMetadata)
       throws CatalogException {
     try {
       String schemaName = (String) exportMetadata.get("schemaName");
@@ -457,7 +464,7 @@ public final class JDOCatalogContext implements CatalogContext {
       Double ratio = (Double) exportMetadata.get("ratio");
 
       MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
-          columnNames,mTable);
+          columnNames, isExternal, mTable);
       pm.makePersistent(mSynopsis);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to import synopsis '" + synopsisName + "'", e);
@@ -508,6 +515,56 @@ public final class JDOCatalogContext implements CatalogContext {
     } catch (RuntimeException e) {
       throw new CatalogException("failed to update synopsis statistics '" + synopsisName + "'", e);
     }
+  }
+
+  @Override
+  public MTableExt createExternalTable(String name, String format, String uri)
+      throws CatalogException {
+    try {
+      MSynopsis mSynopsis = getSynopsis(name);
+      MSchema mSchema = mSynopsis.getTable().getSchema();
+      MTable mTable = new MTable(name, "FOREIGN_TABLE", mSchema);
+      pm.makePersistent(mTable);
+
+      Collection<MColumn> mColumns = mSynopsis.getTable().getColumns();
+      List<String> synColumnNames = mSynopsis.getColumnNames();
+      for (String synColumnName : synColumnNames) {
+        for (MColumn mColumn : mColumns) {
+          if (mColumn.getColumnName().equals(synColumnName)) {
+            MColumn mSynColumn = new MColumn(
+                mColumn.getColumnName(), mColumn.getColumnType(), mColumn.getPrecision(),
+                mColumn.getScale(), mColumn.isNullable(), mTable);
+            pm.makePersistent(mSynColumn);
+            break;
+          }
+        }
+      }
+
+      MTableExt mTableExt = new MTableExt(name, format, uri, mTable);
+      pm.makePersistent(mTableExt);
+
+      return mTableExt;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create external table '" + name + "'", e);
+    }
+  }
+
+  @Override
+  public boolean externalTableExists(String name) {
+    return getExternalTable(name) != null;
+  }
+
+  @Override
+  public @Nullable MTableExt getExternalTable(String name) {
+    try {
+      Query query = pm.newQuery(MTableExt.class);
+      setFilterPatterns(query, ImmutableMap.of("table_name", name));
+      query.setUnique(true);
+
+      return (MTableExt) query.execute(name);
+    } catch (RuntimeException e) {
+    }
+    return null;
   }
 
   @Override

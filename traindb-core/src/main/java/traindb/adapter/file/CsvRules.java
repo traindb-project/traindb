@@ -12,27 +12,19 @@
  * limitations under the License.
  */
 
-package traindb.sql;
+package traindb.adapter.file;
 
-class TrainDBSqlExportModel extends TrainDBSqlCommand {
-  private final String modelName;
-  private final String exportFilename;
-
-  TrainDBSqlExportModel(String modelName, String exportFilename) {
-    this.modelName = modelName;
-    this.exportFilename = exportFilename;
+/**
+ * Planner rules relating to the CSV adapter.
+ */
+public abstract class CsvRules {
+  private CsvRules() {
   }
 
-  String getModelName() {
-    return modelName;
-  }
-
-  String getExportFilename() {
-    return exportFilename;
-  }
-
-  @Override
-  public Type getType() {
-    return Type.EXPORT_MODEL;
-  }
+  /**
+   * Rule that matches a {@link org.apache.calcite.rel.core.Project} on
+   * a CsvTableScan and pushes down projects if possible.
+   */
+  public static final CsvProjectTableScanRule PROJECT_SCAN =
+      CsvProjectTableScanRule.Config.DEFAULT.toRule();
 }

@@ -40,9 +40,6 @@ import org.apache.calcite.rex.RexUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.immutables.value.Value;
-import traindb.adapter.jdbc.JdbcConvention;
-import traindb.adapter.jdbc.JdbcTableScan;
-import traindb.adapter.jdbc.TrainDBJdbcTable;
 import traindb.catalog.pm.MSynopsis;
 import traindb.planner.TrainDBPlanner;
 
@@ -204,8 +201,10 @@ public class ApproxAggregateSynopsisRule
       }
       RelOptTableImpl synopsisTable =
           (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, scan.getTable());
-      TableScan newScan = new JdbcTableScan(scan.getCluster(), scan.getHints(), synopsisTable,
-          (TrainDBJdbcTable) synopsisTable.table(), (JdbcConvention) scan.getConvention());
+      if (synopsisTable == null) {
+        return;
+      }
+      TableScan newScan = planner.createSynopsisTableScan(bestSynopsis, synopsisTable, scan);
       relBuilder.push(newScan);
 
       final List<String> synopsisColumns = bestSynopsis.getColumnNames();
@@ -279,8 +278,8 @@ public class ApproxAggregateSynopsisRule
         relBuilder.aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build());
       }
 
-      List<RexNode> aggProjects =
-          ApproxAggregateUtil.makeAggregateProjects(aggregate, scan.getTable(), synopsisTable);
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
+          aggregate, scan.getTable(), synopsisTable.getRowCount());
       relBuilder.project(aggProjects, aggregate.getRowType().getFieldNames());
 
       call.transformTo(relBuilder.build());

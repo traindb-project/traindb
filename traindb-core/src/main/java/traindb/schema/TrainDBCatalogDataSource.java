@@ -30,7 +30,7 @@ public class TrainDBCatalogDataSource extends TrainDBDataSource {
   private final SqlDialect dialect;
 
   public TrainDBCatalogDataSource(CatalogContext catalogContext) {
-    super();
+    super("traindb");
     this.catalogContext = catalogContext;
     this.dialect = new TrainDBStandaloneSqlDialect();
     computeSubSchemaMap();
