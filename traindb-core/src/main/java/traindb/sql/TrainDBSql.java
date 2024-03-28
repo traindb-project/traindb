@@ -89,8 +89,9 @@ public final class TrainDBSql {
         break;
       case CREATE_SYNOPSIS:
         TrainDBSqlCreateSynopsis createSynopsis = (TrainDBSqlCreateSynopsis) command;
-        runner.createSynopsis(createSynopsis.getSynopsisName(), createSynopsis.getModelName(),
-            createSynopsis.getLimitRows(), createSynopsis.getLimitPercent());
+        runner.createSynopsis(createSynopsis.getSynopsisName(), createSynopsis.getSynopsisType(),
+            createSynopsis.getModelName(), createSynopsis.getLimitRows(),
+            createSynopsis.getLimitPercent());
         break;
       case DROP_SYNOPSIS:
         TrainDBSqlDropSynopsis dropSynopsis = (TrainDBSqlDropSynopsis) command;
@@ -311,17 +312,27 @@ public final class TrainDBSql {
     @Override
     public void exitCreateSynopsis(TrainDBSqlParser.CreateSynopsisContext ctx) {
       String synopsisName = ctx.synopsisName().getText();
+      TrainDBSqlCommand.SynopsisType synopsisType = TrainDBSqlCommand.SynopsisType.DEFAULT;
+      if (ctx.synopsisTypeClause() != null) {
+        if (ctx.synopsisTypeClause().K_TABLE() != null) {
+          synopsisType = TrainDBSqlCommand.SynopsisType.TABLE;
+        } else if (ctx.synopsisTypeClause().K_FILE() != null) {
+          synopsisType = TrainDBSqlCommand.SynopsisType.FILE;
+        }
+      }
       String modelName = ctx.modelName().getText();
       if (ctx.limitSizeClause().limitRows() != null) {
         int limitRows = Integer.parseInt(ctx.limitSizeClause().limitRows().getText());
         LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
             + " limitRows=" + limitRows);
-        commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, limitRows, 0));
+        commands.add(
+            new TrainDBSqlCreateSynopsis(synopsisName, synopsisType, modelName, limitRows, 0));
       } else if (ctx.limitSizeClause().limitPercent() != null) {
         float limitPercent = Float.parseFloat(ctx.limitSizeClause().limitPercent().getText());
         LOG.debug("CREATE SYNOPSIS: synopsis=" + synopsisName + " model=" + modelName
             + " limitPercent=" + limitPercent);
-        commands.add(new TrainDBSqlCreateSynopsis(synopsisName, modelName, 0, limitPercent));
+        commands.add(
+            new TrainDBSqlCreateSynopsis(synopsisName, synopsisType, modelName, 0, limitPercent));
       }
     }
 

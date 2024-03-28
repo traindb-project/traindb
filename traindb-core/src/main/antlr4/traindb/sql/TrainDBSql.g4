@@ -228,7 +228,11 @@ newModelName
     ;
 
 createSynopsis
-    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitSizeClause
+    : K_CREATE K_SYNOPSIS synopsisName synopsisTypeClause? K_FROM K_MODEL modelName K_LIMIT limitSizeClause
+    ;
+
+synopsisTypeClause
+    : K_AS ( K_TABLE | K_FILE | K_DEFAULT )
     ;
 
 limitSizeClause
@@ -319,6 +323,7 @@ K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
 K_CREATE : C R E A T E ;
+K_DEFAULT : D E F A U L T ;
 K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;

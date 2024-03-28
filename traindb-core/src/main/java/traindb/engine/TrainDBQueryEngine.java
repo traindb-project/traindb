@@ -75,6 +75,7 @@ import traindb.schema.SchemaManager;
 import traindb.schema.TrainDBPartition;
 import traindb.schema.TrainDBSchema;
 import traindb.schema.TrainDBTable;
+import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
 import traindb.util.ZipUtils;
@@ -618,8 +619,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void createSynopsis(String synopsisName, String modelName,
-                             int limitRows, float limitPercent)
+  public void createSynopsis(String synopsisName, TrainDBSqlCommand.SynopsisType synopsisType,
+                             String modelName, int limitRows, float limitPercent)
       throws Exception {
 
     T_tracer.startTaskTracer("create synopsis " + synopsisName);
@@ -671,7 +672,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     runner.generateSynopsis(outputPath, limitRows);
     T_tracer.closeTaskTime("SUCCESS");
 
-    boolean isExternal = conn.isStandalone();
+    boolean isExternal = false;
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.FILE
+        || (synopsisType == TrainDBSqlCommand.SynopsisType.DEFAULT && conn.isStandalone())) {
+      isExternal = true;
+    }
 
     T_tracer.openTaskTime("create synopsis");
     double ratio = (double) limitRows / (double) mModel.getTableRows();
