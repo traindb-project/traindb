@@ -95,7 +95,8 @@ public interface CatalogContext {
 
   void dropSynopsis(String name) throws CatalogException;
 
-  void importSynopsis(String synopsisName, JSONObject exportMetadata) throws CatalogException;
+  void importSynopsis(String synopsisName, boolean isExternal, JSONObject exportMetadata)
+      throws CatalogException;
 
   void renameSynopsis(String synopsisName, String newSynopsisName) throws CatalogException;
 

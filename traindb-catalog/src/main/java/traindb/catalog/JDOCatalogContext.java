@@ -445,7 +445,7 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
-  public void importSynopsis(String synopsisName, JSONObject exportMetadata)
+  public void importSynopsis(String synopsisName, boolean isExternal, JSONObject exportMetadata)
       throws CatalogException {
     try {
       String schemaName = (String) exportMetadata.get("schemaName");
@@ -462,7 +462,6 @@ public final class JDOCatalogContext implements CatalogContext {
 
       Integer rows = ((Long) exportMetadata.get("rows")).intValue();
       Double ratio = (Double) exportMetadata.get("ratio");
-      boolean isExternal = (Boolean) exportMetadata.get("external");
 
       MSynopsis mSynopsis = new MSynopsis(synopsisName, rows, ratio, "-", schemaName, tableName,
           columnNames, isExternal, mTable);

@@ -16,18 +16,24 @@ package traindb.sql;
 
 class TrainDBSqlImportSynopsis extends TrainDBSqlCommand {
   private final String synopsisName;
+  private final SynopsisType synopsisType;
   private final String synopsisBinaryString;
   private final String importFilename;
 
-  TrainDBSqlImportSynopsis(String synopsisName, String synopsisBinaryString,
-                           String importFilename) {
+  TrainDBSqlImportSynopsis(String synopsisName, SynopsisType synopsisType,
+                           String synopsisBinaryString, String importFilename) {
     this.synopsisName = synopsisName;
+    this.synopsisType = synopsisType;
     this.synopsisBinaryString = synopsisBinaryString;
     this.importFilename = importFilename;
   }
 
   String getSynopsisName() {
     return synopsisName;
+  }
+
+  SynopsisType getSynopsisType() {
+    return synopsisType;
   }
 
   String getSynopsisBinaryString() {

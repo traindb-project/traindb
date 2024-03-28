@@ -169,7 +169,8 @@ public final class TrainDBSql {
       case IMPORT_SYNOPSIS:
         TrainDBSqlImportSynopsis importSynopsis = (TrainDBSqlImportSynopsis) command;
         return runner.importSynopsis(importSynopsis.getSynopsisName(),
-            importSynopsis.getSynopsisBinaryString(), importSynopsis.getImportFilename());
+            importSynopsis.getSynopsisType(), importSynopsis.getSynopsisBinaryString(),
+            importSynopsis.getImportFilename());
       case ALTER_SYNOPSIS_RENAME: {
         TrainDBSqlAlterSynopsis alterSynopsis = (TrainDBSqlAlterSynopsis) command;
         runner.renameSynopsis(alterSynopsis.getSynopsisName(), alterSynopsis.getNewSynopsisName());
@@ -418,6 +419,14 @@ public final class TrainDBSql {
     @Override
     public void exitImportSynopsis(TrainDBSqlParser.ImportSynopsisContext ctx) {
       String synopsisName = ctx.synopsisName().getText();
+      TrainDBSqlCommand.SynopsisType synopsisType = TrainDBSqlCommand.SynopsisType.DEFAULT;
+      if (ctx.synopsisTypeClause() != null) {
+        if (ctx.synopsisTypeClause().K_TABLE() != null) {
+          synopsisType = TrainDBSqlCommand.SynopsisType.TABLE;
+        } else if (ctx.synopsisTypeClause().K_FILE() != null) {
+          synopsisType = TrainDBSqlCommand.SynopsisType.FILE;
+        }
+      }
       String synopsisBinaryString = null;
       String importFilename = null;
       if (ctx.synopsisBinaryString() != null) {
@@ -426,7 +435,7 @@ public final class TrainDBSql {
         importFilename = ctx.filenameString().getText();
       }
       LOG.debug("IMPORT SYNOPSIS: name=" + synopsisName);
-      commands.add(new TrainDBSqlImportSynopsis(synopsisName, synopsisBinaryString,
+      commands.add(new TrainDBSqlImportSynopsis(synopsisName, synopsisType, synopsisBinaryString,
           importFilename));
     }
 

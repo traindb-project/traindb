@@ -647,7 +647,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     if (synopsisType == TrainDBSqlCommand.SynopsisType.TABLE && conn.isStandalone()) {
-      throw new TrainDBException("cannot create synopsis table without source DBMS connection.");
+      throw new TrainDBException("cannot create synopsis as table without source DBMS connection.");
     }
 
     T_tracer.openTaskTime("generate synopsis");
@@ -1364,8 +1364,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString,
-                                             String importFilename) throws Exception {
+  public TrainDBListResultSet importSynopsis(String synopsisName,
+      TrainDBSqlCommand.SynopsisType synopsisType, String synopsisBinaryString,
+      String importFilename) throws Exception {
     T_tracer.startTaskTracer("import synopsis " + synopsisName);
 
     T_tracer.openTaskTime("find : synopsis");
@@ -1396,11 +1397,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     JSONObject json = (JSONObject) parser.parse(metadata);
     T_tracer.closeTaskTime("SUCCESS");
 
+    boolean isExternal = false;
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.FILE
+        || (synopsisType == TrainDBSqlCommand.SynopsisType.DEFAULT
+            && (Boolean) json.get("external"))) {
+      isExternal = true;
+    }
+    if (conn.isStandalone() && !isExternal) {
+      throw new TrainDBException("cannot import synopsis as table without source DBMS connection.");
+    }
+
     T_tracer.openTaskTime("insert synopsis info");
-    catalogContext.importSynopsis(synopsisName, json);
+    catalogContext.importSynopsis(synopsisName, isExternal, json);
     T_tracer.closeTaskTime("SUCCESS");
 
-    boolean isExternal = conn.isStandalone();
     try {
       T_tracer.openTaskTime("create synopsis table");
       String schemaName = (String) json.get("schemaName");
@@ -1444,7 +1454,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         // ignore
       }
 
-      String msg = "failed to create synopsis " + synopsisName;
+      String msg = "failed to import synopsis " + synopsisName;
       T_tracer.closeTaskTime(msg);
       T_tracer.endTaskTracer();
 
