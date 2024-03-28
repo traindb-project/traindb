@@ -179,8 +179,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
   public RelOptTable getSynopsisTable(MSynopsis synopsis, RelOptTable baseTable) {
     List<String> qualifiedSynopsisName = new ArrayList(Arrays.asList(
-        baseTable.getQualifiedName().get(0), baseTable.getQualifiedName().get(1),
-        synopsis.getSynopsisName()));
+        synopsis.getExternal() ? "traindb" : baseTable.getQualifiedName().get(0),
+        baseTable.getQualifiedName().get(1), synopsis.getSynopsisName()));
     double ratio = synopsis.getRatio();
     if (ratio == 0d) {
       ratio = DEFAULT_SYNOPSIS_SIZE_RATIO;

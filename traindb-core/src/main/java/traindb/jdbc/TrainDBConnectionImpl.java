@@ -140,13 +140,13 @@ public abstract class TrainDBConnectionImpl
     this.schemaManager = SchemaManager.getInstance(catalogStore);
     if (url == null) {  // traindb-only mode (no datasource)
       standalone = true;
-      schemaManager.loadCatalogDataSource();
+      this.dataSource = null;
     } else {
       standalone = false;
       this.dataSource = dataSource(url, info);
-      schemaManager.loadDataSource(dataSource);
-      addSqlDialectProperties(schemaManager.getDialect(), cfg);
     }
+    schemaManager.loadDataSource(dataSource);
+    addSqlDialectProperties(schemaManager.getDialect(), cfg);
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema
@@ -168,13 +168,13 @@ public abstract class TrainDBConnectionImpl
     this.schemaManager = schemaManager;
     if (url == null) {  // traindb-only mode (no datasource)
       standalone = true;
-      schemaManager.loadCatalogDataSource();
+      this.dataSource = null;
     } else {
       standalone = false;
       this.dataSource = dataSource(url, info);
-      schemaManager.loadDataSource(dataSource);
-      addSqlDialectProperties(schemaManager.getDialect(), cfg);
     }
+    schemaManager.loadDataSource(dataSource);
+    addSqlDialectProperties(schemaManager.getDialect(), cfg);
     this.rootSchema =
         requireNonNull(rootSchema != null
             ? rootSchema

@@ -216,7 +216,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           String subtype = "geometry";
           try {
             DatabaseMetaData md = conn.getMetaData();
-            ResultSet rs = md.getColumns("traindb", schemaName, tableName, field.getName());
+            ResultSet rs = md.getColumns("jdbc", schemaName, tableName, field.getName());
             while (rs.next()) {
               subtype = rs.getString("TYPE_NAME");
             }
@@ -424,8 +424,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
             String columnType = "geometry";
             try {
               DatabaseMetaData md = conn.getMetaData();
-              ResultSet rs = md.getColumns(
-                  "traindb", schemaName, tableName, columnName);
+              ResultSet rs = md.getColumns("jdbc", schemaName, tableName, columnName);
               while (rs.next()) {
                 columnType = rs.getString("TYPE_NAME");
               }
@@ -971,7 +970,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.startTaskTracer("show partitions");
     T_tracer.openTaskTime("scan : partitions");
 
-    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+    for (Schema schema : schemaManager.getJdbcDataSource().getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
       Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
