@@ -647,6 +647,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
     T_tracer.closeTaskTime("SUCCESS");
 
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.TABLE && conn.isStandalone()) {
+      throw new TrainDBException("cannot create synopsis table without source DBMS connection.");
+    }
+
     T_tracer.openTaskTime("generate synopsis");
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
