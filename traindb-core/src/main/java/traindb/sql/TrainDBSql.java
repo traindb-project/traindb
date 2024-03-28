@@ -144,7 +144,7 @@ public final class TrainDBSql {
         break;
       case EXPORT_MODEL:
         TrainDBSqlExportModel exportModel = (TrainDBSqlExportModel) command;
-        return runner.exportModel(exportModel.getModelName());
+        return runner.exportModel(exportModel.getModelName(), exportModel.getExportFilename());
       case IMPORT_MODEL:
         TrainDBSqlImportModel importModel = (TrainDBSqlImportModel) command;
         return runner.importModel(importModel.getModelName(), importModel.getModelBinaryString());
@@ -375,8 +375,12 @@ public final class TrainDBSql {
     @Override
     public void exitExportModel(TrainDBSqlParser.ExportModelContext ctx) {
       String modelName = ctx.modelName().getText();
+      String exportFilename = null;
+      if (ctx.exportToClause() != null) {
+        exportFilename = ctx.exportToClause().filenameString().getText();
+      }
       LOG.debug("EXPORT MODEL: name=" + modelName);
-      commands.add(new TrainDBSqlExportModel(modelName));
+      commands.add(new TrainDBSqlExportModel(modelName, exportFilename));
     }
 
     @Override

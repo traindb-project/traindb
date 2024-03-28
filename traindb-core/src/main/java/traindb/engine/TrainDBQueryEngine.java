@@ -1102,7 +1102,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet exportModel(String modelName) throws Exception {
+  public TrainDBListResultSet exportModel(String modelName, String exportFilename)
+      throws Exception {
     T_tracer.startTaskTracer("export model " + modelName);
 
     T_tracer.openTaskTime("find : model");
@@ -1131,12 +1132,21 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       catalogContext.updateTrainingStatus(modelName, "FINISHED");
     }
 
-    Path outputPath = Paths.get(runner.getModelPath().getParent().toString(), modelName + ".zip");
+    Path outputPath;
+    if (exportFilename != null) {
+      outputPath = Paths.get(exportFilename).toAbsolutePath();
+    } else {
+      outputPath = Paths.get(runner.getModelPath().getParent().toString(), modelName + ".zip");
+    }
     runner.exportModel(outputPath.toString());
 
     ObjectMapper mapper = new ObjectMapper();
     ZipUtils.addNewFileFromStringToZip("export_metadata.json",
         mapper.writeValueAsString(mModel), outputPath);
+
+    if (exportFilename != null) {
+      return TrainDBListResultSet.empty();
+    }
 
     List<String> header = Arrays.asList("export_model");
     List<List<Object>> exportModelInfo = new ArrayList<>();

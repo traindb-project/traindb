@@ -16,13 +16,19 @@ package traindb.sql;
 
 class TrainDBSqlExportModel extends TrainDBSqlCommand {
   private final String modelName;
+  private final String exportFilename;
 
-  TrainDBSqlExportModel(String modelName) {
+  TrainDBSqlExportModel(String modelName, String exportFilename) {
     this.modelName = modelName;
+    this.exportFilename = exportFilename;
   }
 
   String getModelName() {
     return modelName;
+  }
+
+  String getExportFilename() {
+    return exportFilename;
   }
 
   @Override

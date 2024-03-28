@@ -146,7 +146,7 @@ optionValue
     ;
 
 exportModel
-    : K_EXPORT K_MODEL modelName
+    : K_EXPORT K_MODEL modelName exportToClause?
     ;
 
 importModel
