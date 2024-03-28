@@ -147,7 +147,8 @@ public final class TrainDBSql {
         return runner.exportModel(exportModel.getModelName(), exportModel.getExportFilename());
       case IMPORT_MODEL:
         TrainDBSqlImportModel importModel = (TrainDBSqlImportModel) command;
-        return runner.importModel(importModel.getModelName(), importModel.getModelBinaryString());
+        return runner.importModel(importModel.getModelName(), importModel.getModelBinaryString(),
+            importModel.getImportFilename());
       case ALTER_MODEL_RENAME: {
         TrainDBSqlAlterModel alterModel = (TrainDBSqlAlterModel) command;
         runner.renameModel(alterModel.getModelName(), alterModel.getNewModelName());
@@ -386,9 +387,15 @@ public final class TrainDBSql {
     @Override
     public void exitImportModel(TrainDBSqlParser.ImportModelContext ctx) {
       String modelName = ctx.modelName().getText();
-      String modelBinaryString = ctx.modelBinaryString().getText();
+      String modelBinaryString = null;
+      String importFilename = null;
+      if (ctx.modelBinaryString() != null) {
+        modelBinaryString = ctx.modelBinaryString().getText();
+      } else if (ctx.filenameString() != null) {
+        importFilename = ctx.filenameString().getText();
+      }
       LOG.debug("IMPORT MODEL: name=" + modelName);
-      commands.add(new TrainDBSqlImportModel(modelName, modelBinaryString));
+      commands.add(new TrainDBSqlImportModel(modelName, modelBinaryString, importFilename));
     }
 
     @Override

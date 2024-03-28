@@ -1160,8 +1160,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet importModel(String modelName, String modelBinaryString)
-      throws Exception {
+  public TrainDBListResultSet importModel(String modelName, String modelBinaryString,
+                                          String importFilename) throws Exception {
     T_tracer.startTaskTracer("import model " + modelName);
 
     T_tracer.openTaskTime("find : model");
@@ -1176,7 +1176,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("decode model binary string");
-    byte[] zipModel = Hex.decodeHex(modelBinaryString);
+    byte[] zipModel;
+    if (importFilename != null) {
+      zipModel = Files.readAllBytes(Paths.get(importFilename).toAbsolutePath());
+    } else {
+      zipModel = Hex.decodeHex(modelBinaryString);
+    }
     byte[] exportMetadata = ZipUtils.extractZipEntry(zipModel, "export_metadata.json");
     if (exportMetadata == null) {
       throw new TrainDBException(

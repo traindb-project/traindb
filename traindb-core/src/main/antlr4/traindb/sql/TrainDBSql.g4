@@ -150,7 +150,7 @@ exportModel
     ;
 
 importModel
-    : K_IMPORT K_MODEL modelName K_FROM modelBinaryString
+    : K_IMPORT K_MODEL modelName K_FROM ( modelBinaryString | K_FILE filenameString )?
     ;
 
 modelBinaryString
