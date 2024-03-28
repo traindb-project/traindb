@@ -359,6 +359,7 @@ K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
+K_TABLE : T A B L E ;
 K_TABLES : T A B L E S ;
 K_TASKS : T A S K S ;
 K_TO : T O ;
