@@ -20,65 +20,52 @@ import javax.jdo.annotations.IdGeneratorStrategy;
 import javax.jdo.annotations.PersistenceCapable;
 import javax.jdo.annotations.Persistent;
 import javax.jdo.annotations.PrimaryKey;
+import javax.jdo.annotations.Unique;
 import traindb.catalog.CatalogConstants;
 
 @PersistenceCapable
 @JsonIgnoreProperties({ "table" })
-public final class MColumn {
+public final class MTableExt {
   @PrimaryKey
   @Persistent(valueStrategy = IdGeneratorStrategy.INCREMENT)
   private long id;
 
   @Persistent
+  @Unique(name = "TABLEEXT_NAME_IDX")
   @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
-  private String column_name;
+  private String table_name;
 
-  private int column_type;
+  @Persistent
+  @Column(length = CatalogConstants.IDENTIFIER_MAX_LENGTH)
+  private String external_table_format;
 
-  private int precision;
-
-  private int scale;
-
-  private boolean nullable;
+  @Persistent
+  @Column(length = CatalogConstants.CONNECTION_STRING_MAX_LENGTH)
+  private String external_table_uri;
 
   @Persistent(dependent = "false")
   private MTable table;
 
-  public MColumn(String name, int type, int precision, int scale, boolean nullable, MTable table) {
-    this.column_name = name;
-    this.column_type = type;
-    this.precision = precision;
-    this.scale = scale;
-    this.nullable = nullable;
+  public MTableExt(String name, String format, String uri, MTable table) {
+    this.table_name = name;
+    this.external_table_format = format;
+    this.external_table_uri = uri;
     this.table = table;
   }
 
-  public long getId() {
-    return id;
+  public String getTableName() {
+    return table_name;
   }
 
-  public String getColumnName() {
-    return column_name;
+  public String getExternalTableFormat() {
+    return external_table_format;
   }
 
-  public int getColumnType() {
-    return column_type;
-  }
-
-  public int getPrecision() {
-    return precision;
-  }
-
-  public int getScale() {
-    return scale;
-  }
-
-  public boolean isNullable() {
-    return nullable;
+  public String getExternalTableUri() {
+    return external_table_uri;
   }
 
   public MTable getTable() {
     return table;
   }
-
 }

@@ -31,8 +31,8 @@ public interface TrainDBSqlRunner {
 
   void dropModel(String modelName) throws Exception;
 
-  void createSynopsis(String synopsisName, String modelName, int limitRows, float limitPercent)
-      throws Exception;
+  void createSynopsis(String synopsisName, TrainDBSqlCommand.SynopsisType synopsisType,
+                      String modelName, int limitRows, float limitPercent) throws Exception;
 
   void dropSynopsis(String synopsisName) throws Exception;
 
@@ -70,9 +70,10 @@ public interface TrainDBSqlRunner {
 
   void deleteTasks(Integer cnt) throws Exception;
 
-  TrainDBListResultSet exportModel(String modelName) throws Exception;
+  TrainDBListResultSet exportModel(String modelName, String exportFilename) throws Exception;
 
-  TrainDBListResultSet importModel(String modelName, String modelBinaryString) throws Exception;
+  TrainDBListResultSet importModel(String modelName, String modelBinaryString,
+                                   String importFilename) throws Exception;
 
   void renameModel(String modelName, String newModelName) throws Exception;
 
@@ -80,10 +81,11 @@ public interface TrainDBSqlRunner {
 
   void disableModel(String modelName) throws Exception;
 
-  TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception;
+  TrainDBListResultSet exportSynopsis(String synopsisName, String exportFilename) throws Exception;
 
-  TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString)
-      throws Exception;
+  TrainDBListResultSet importSynopsis(String synopsisName,
+      TrainDBSqlCommand.SynopsisType synopsisType, String synopsisBinaryString,
+      String importFilename) throws Exception;
 
   void renameSynopsis(String synopsisName, String newSynopsisName) throws Exception;
 

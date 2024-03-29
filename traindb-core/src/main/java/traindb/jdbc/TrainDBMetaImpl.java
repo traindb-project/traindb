@@ -95,10 +95,16 @@ public class TrainDBMetaImpl extends MetaImpl {
 
   public TrainDBMetaImpl(TrainDBConnectionImpl connection) {
     super(connection);
+    String catalogName;
+    if (connection.isStandalone()) {
+      catalogName = "traindb";
+    } else {
+      catalogName = "jdbc";
+    }
     this.connProps
         .setAutoCommit(false)
         .setReadOnly(false)
-        .setCatalog("traindb")
+        .setCatalog(catalogName)
         .setTransactionIsolation(Connection.TRANSACTION_NONE);
     this.connProps.setDirty(false);
   }

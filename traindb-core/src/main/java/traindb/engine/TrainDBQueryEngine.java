@@ -28,6 +28,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
 import java.nio.file.Paths;
+import java.nio.file.StandardCopyOption;
 import java.sql.Connection;
 import java.sql.DatabaseMetaData;
 import java.sql.Date;
@@ -50,6 +51,7 @@ import org.apache.calcite.schema.Schema;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.commons.codec.binary.Hex;
+import org.apache.commons.io.FileUtils;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import org.json.simple.parser.JSONParser;
@@ -73,6 +75,7 @@ import traindb.schema.SchemaManager;
 import traindb.schema.TrainDBPartition;
 import traindb.schema.TrainDBSchema;
 import traindb.schema.TrainDBTable;
+import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.TrainDBSqlRunner;
 import traindb.task.TaskTracer;
 import traindb.util.ZipUtils;
@@ -213,7 +216,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           String subtype = "geometry";
           try {
             DatabaseMetaData md = conn.getMetaData();
-            ResultSet rs = md.getColumns("traindb", schemaName, tableName, field.getName());
+            ResultSet rs = md.getColumns("jdbc", schemaName, tableName, field.getName());
             while (rs.next()) {
               subtype = rs.getString("TYPE_NAME");
             }
@@ -421,8 +424,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
             String columnType = "geometry";
             try {
               DatabaseMetaData md = conn.getMetaData();
-              ResultSet rs = md.getColumns(
-                  "traindb", schemaName, tableName, columnName);
+              ResultSet rs = md.getColumns("jdbc", schemaName, tableName, columnName);
               while (rs.next()) {
                 columnType = rs.getString("TYPE_NAME");
               }
@@ -616,8 +618,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public void createSynopsis(String synopsisName, String modelName,
-                             int limitRows, float limitPercent)
+  public void createSynopsis(String synopsisName, TrainDBSqlCommand.SynopsisType synopsisType,
+                             String modelName, int limitRows, float limitPercent)
       throws Exception {
 
     T_tracer.startTaskTracer("create synopsis " + synopsisName);
@@ -644,6 +646,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     }
     T_tracer.closeTaskTime("SUCCESS");
 
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.TABLE && conn.isStandalone()) {
+      throw new TrainDBException("cannot create synopsis as table without source DBMS connection.");
+    }
+
     T_tracer.openTaskTime("generate synopsis");
     MModel mModel = catalogContext.getModel(modelName);
     MModeltype mModeltype = mModel.getModeltype();
@@ -669,13 +675,29 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     runner.generateSynopsis(outputPath, limitRows);
     T_tracer.closeTaskTime("SUCCESS");
 
+    boolean isExternal = false;
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.FILE
+        || (synopsisType == TrainDBSqlCommand.SynopsisType.DEFAULT && conn.isStandalone())) {
+      isExternal = true;
+    }
+
     T_tracer.openTaskTime("create synopsis");
     double ratio = (double) limitRows / (double) mModel.getTableRows();
-    catalogContext.createSynopsis(synopsisName, modelName, limitRows, ratio);
+    catalogContext.createSynopsis(synopsisName, modelName, limitRows, ratio, isExternal);
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("create synopsis table");
     try {
+      if (isExternal) {
+        Path synPath = getLocalSynopsisPath(synopsisName);
+        new File(synPath.toString()).mkdirs();
+        Files.move(Paths.get(outputPath), synPath, StandardCopyOption.REPLACE_EXISTING);
+        catalogContext.createExternalTable(synopsisName, "csv", synPath.toString());
+        conn.refreshRootSchema();
+        T_tracer.closeTaskTime("SUCCESS");
+        return;
+      }
+
       createSynopsisTable(synopsisName, mModel.getSchemaName(), mModel.getTableName(),
           mModel.getColumnNames(), mModel.getTable(), false);
       T_tracer.closeTaskTime("SUCCESS");
@@ -685,8 +707,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mModel.getTable(), outputPath);
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
+      try {
+        dropSynopsisTable(synopsisName);
+      } catch (Exception de) {
+        // ignore
+      }
       catalogContext.dropSynopsis(synopsisName);
-      dropSynopsisTable(synopsisName);
 
       String msg = "failed to create synopsis " + synopsisName;
       T_tracer.closeTaskTime(msg);
@@ -699,6 +725,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {
+    if (catalogContext.externalTableExists(synopsisName)) {
+      String synPath = catalogContext.getExternalTable(synopsisName).getExternalTableUri();
+      FileUtils.deleteDirectory(new File(Paths.get(synPath).getParent().toString()));
+      return;
+    }
+
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
     StringBuilder sb = new StringBuilder();
     sb.append("DROP TABLE ");
@@ -784,7 +816,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public TrainDBListResultSet showSynopses(Map<String, Object> filterPatterns) throws Exception {
     List<String> header = Arrays.asList("synopsis_name", "model_name", "schema_name", "table_name",
-        "columns", "rows", "ratio", "synopsis_status", "synopsis_statistics");
+        "columns", "rows", "ratio", "external", "synopsis_status", "synopsis_statistics");
     checkShowWhereColumns(filterPatterns, header);
     //addPrefixToPatternFilter(filterPatterns, ImmutableList.of("model_name"), "model");
 
@@ -797,6 +829,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           mSynopsis.getSchemaName(), mSynopsis.getTableName(),
           mSynopsis.getColumnNames().toString(),
           mSynopsis.getRows(), String.format("%.8f", mSynopsis.getRatio()),
+          mSynopsis.getExternal() ? "YES" : "NO",
           mSynopsis.getSynopsisStatus(), mSynopsis.getSynopsisStatistics()));
     }
 
@@ -937,7 +970,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.startTaskTracer("show partitions");
     T_tracer.openTaskTime("scan : partitions");
 
-    for (Schema schema : schemaManager.traindbDataSource.getSubSchemaMap().values()) {
+    for (Schema schema : schemaManager.getJdbcDataSource().getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
       Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
@@ -1069,7 +1102,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet exportModel(String modelName) throws Exception {
+  public TrainDBListResultSet exportModel(String modelName, String exportFilename)
+      throws Exception {
     T_tracer.startTaskTracer("export model " + modelName);
 
     T_tracer.openTaskTime("find : model");
@@ -1098,12 +1132,21 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       catalogContext.updateTrainingStatus(modelName, "FINISHED");
     }
 
-    Path outputPath = Paths.get(runner.getModelPath().getParent().toString(), modelName + ".zip");
+    Path outputPath;
+    if (exportFilename != null) {
+      outputPath = Paths.get(exportFilename).toAbsolutePath();
+    } else {
+      outputPath = Paths.get(runner.getModelPath().getParent().toString(), modelName + ".zip");
+    }
     runner.exportModel(outputPath.toString());
 
     ObjectMapper mapper = new ObjectMapper();
     ZipUtils.addNewFileFromStringToZip("export_metadata.json",
         mapper.writeValueAsString(mModel), outputPath);
+
+    if (exportFilename != null) {
+      return TrainDBListResultSet.empty();
+    }
 
     List<String> header = Arrays.asList("export_model");
     List<List<Object>> exportModelInfo = new ArrayList<>();
@@ -1117,8 +1160,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet importModel(String modelName, String modelBinaryString)
-      throws Exception {
+  public TrainDBListResultSet importModel(String modelName, String modelBinaryString,
+                                          String importFilename) throws Exception {
     T_tracer.startTaskTracer("import model " + modelName);
 
     T_tracer.openTaskTime("find : model");
@@ -1133,7 +1176,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("decode model binary string");
-    byte[] zipModel = Hex.decodeHex(modelBinaryString);
+    byte[] zipModel;
+    if (importFilename != null) {
+      zipModel = Files.readAllBytes(Paths.get(importFilename).toAbsolutePath());
+    } else {
+      zipModel = Hex.decodeHex(modelBinaryString);
+    }
     byte[] exportMetadata = ZipUtils.extractZipEntry(zipModel, "export_metadata.json");
     if (exportMetadata == null) {
       throw new TrainDBException(
@@ -1261,7 +1309,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
-  public TrainDBListResultSet exportSynopsis(String synopsisName) throws Exception {
+  public TrainDBListResultSet exportSynopsis(String synopsisName, String exportFilename)
+      throws Exception {
     T_tracer.startTaskTracer("export synopsis " + synopsisName);
 
     T_tracer.openTaskTime("find : synopsis");
@@ -1278,45 +1327,61 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("export synopsis");
     MSynopsis mSynopsis = catalogContext.getSynopsis(synopsisName);
 
-    TrainDBTable table = schemaManager.getTable(
-        mSynopsis.getSchemaName(), mSynopsis.getTableName());
-
-    String sql = buildExportTableQuery(
-        mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
-        table.getRowType(conn.getTypeFactory()));
-
-    Connection extConn = conn.getDataSourceConnection();
-    Statement stmt = extConn.createStatement();
-    ResultSet synopsisData = stmt.executeQuery(sql);
-
+    Path synopsisDir;
     Path tempDir = Files.createTempDirectory("traindb-");
-    Path tempSynDir = Paths.get(tempDir.toString(), synopsisName);
-    new File(tempSynDir.toString()).mkdirs();
+    if (mSynopsis.getExternal()) {
+      synopsisDir = Paths.get(catalogContext.getExternalTable(synopsisName).getExternalTableUri())
+          .getParent();
+    } else {
+      TrainDBTable table = schemaManager.getTable(
+          mSynopsis.getSchemaName(), mSynopsis.getTableName());
 
-    String synopsisFile = Paths.get(tempSynDir.toString(), synopsisName + ".csv").toString();
-    AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
-    JdbcUtils.close(extConn, stmt, synopsisData);
+      String sql = buildExportTableQuery(
+          mSynopsis.getSchemaName(), mSynopsis.getSynopsisName(), mSynopsis.getColumnNames(),
+          table.getRowType(conn.getTypeFactory()));
 
-    Path outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
-    ZipUtils.pack(tempSynDir.toString(), outputPath.toString());
+      Connection extConn = conn.getDataSourceConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet synopsisData = stmt.executeQuery(sql);
+
+      synopsisDir = Paths.get(tempDir.toString(), synopsisName);
+      new File(synopsisDir.toString()).mkdirs();
+
+      String synopsisFile = Paths.get(synopsisDir.toString(), synopsisName + ".csv").toString();
+      AbstractTrainDBModelRunner.writeResultSetToCsv(synopsisData, synopsisFile);
+      JdbcUtils.close(extConn, stmt, synopsisData);
+    }
+
+    Path outputPath;
+    if (exportFilename != null) {
+      outputPath = Paths.get(exportFilename).toAbsolutePath();
+    } else {
+      outputPath = Paths.get(tempDir.toString(), synopsisName + ".zip");
+    }
+    ZipUtils.pack(synopsisDir.toString(), outputPath.toString());
     ObjectMapper mapper = new ObjectMapper();
     ZipUtils.addNewFileFromStringToZip("export_synopsis.json",
         mapper.writeValueAsString(mSynopsis), outputPath);
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    if (exportFilename != null) {
+      return TrainDBListResultSet.empty();
+    }
 
     List<String> header = Arrays.asList("export_synopsis");
     List<List<Object>> exportSynopsisInfo = new ArrayList<>();
     ByteArray byteArray = convertFileToByteArray(new File(outputPath.toString()));
     exportSynopsisInfo.add(Arrays.asList(byteArray));
 
-    T_tracer.closeTaskTime("SUCCESS");
-    T_tracer.endTaskTracer();
-
     return new TrainDBListResultSet(header, exportSynopsisInfo);
   }
 
   @Override
-  public TrainDBListResultSet importSynopsis(String synopsisName, String synopsisBinaryString)
-      throws Exception {
+  public TrainDBListResultSet importSynopsis(String synopsisName,
+      TrainDBSqlCommand.SynopsisType synopsisType, String synopsisBinaryString,
+      String importFilename) throws Exception {
     T_tracer.startTaskTracer("import synopsis " + synopsisName);
 
     T_tracer.openTaskTime("find : synopsis");
@@ -1331,7 +1396,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("decode synopsis binary string");
-    byte[] zipBytes = Hex.decodeHex(synopsisBinaryString);
+    byte[] zipBytes;
+    if (importFilename != null) {
+      zipBytes = Files.readAllBytes(Paths.get(importFilename).toAbsolutePath());
+    } else {
+      zipBytes = Hex.decodeHex(synopsisBinaryString);
+    }
     byte[] exportMetadata = ZipUtils.extractZipEntry(zipBytes, "export_synopsis.json");
     if (exportMetadata == null) {
       throw new TrainDBException(
@@ -1342,8 +1412,18 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     JSONObject json = (JSONObject) parser.parse(metadata);
     T_tracer.closeTaskTime("SUCCESS");
 
+    boolean isExternal = false;
+    if (synopsisType == TrainDBSqlCommand.SynopsisType.FILE
+        || (synopsisType == TrainDBSqlCommand.SynopsisType.DEFAULT
+            && (Boolean) json.get("external"))) {
+      isExternal = true;
+    }
+    if (conn.isStandalone() && !isExternal) {
+      throw new TrainDBException("cannot import synopsis as table without source DBMS connection.");
+    }
+
     T_tracer.openTaskTime("insert synopsis info");
-    catalogContext.importSynopsis(synopsisName, json);
+    catalogContext.importSynopsis(synopsisName, isExternal, json);
     T_tracer.closeTaskTime("SUCCESS");
 
     try {
@@ -1356,7 +1436,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       for (int i = 0; i < jsonColumnNames.size(); i++) {
         columnNames.add((String) jsonColumnNames.get(i));
       }
-      createSynopsisTable(synopsisName, schemaName, tableName, columnNames, mTable, true);
+      if (!isExternal) {
+        createSynopsisTable(synopsisName, schemaName, tableName, columnNames, mTable, true);
+      }
       T_tracer.closeTaskTime("SUCCESS");
 
       T_tracer.openTaskTime("load synopsis into table");
@@ -1364,7 +1446,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       ZipUtils.unpack(zipBytes, tempDir.toString());
       String oldSynopsisName = (String) json.get("synopsisName");
       String synopsisFile = Paths.get(tempDir.toString(), oldSynopsisName + ".csv").toString();
-      loadSynopsisIntoTable(synopsisName, schemaName, columnNames, mTable, synopsisFile);
+
+      if (isExternal) {
+        Path synPath = getLocalSynopsisPath(synopsisName);
+        new File(synPath.toString()).mkdirs();
+        Files.move(Paths.get(synopsisFile), synPath, StandardCopyOption.REPLACE_EXISTING);
+        catalogContext.createExternalTable(synopsisName, "csv", synPath.toString());
+        conn.refreshRootSchema();
+      } else {
+        loadSynopsisIntoTable(synopsisName, schemaName, columnNames, mTable, synopsisFile);
+      }
       T_tracer.closeTaskTime("SUCCESS");
     } catch (Exception e) {
       try {
@@ -1372,8 +1463,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       } catch (Exception ee) {
         // ignore
       }
+      try {
+        catalogContext.dropSynopsis(synopsisName);
+      } catch (Exception ee) {
+        // ignore
+      }
 
-      String msg = "failed to create synopsis " + synopsisName;
+      String msg = "failed to import synopsis " + synopsisName;
       T_tracer.closeTaskTime(msg);
       T_tracer.endTaskTracer();
 
@@ -1562,6 +1658,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         return;
       }
     }
+  }
+
+  private Path getLocalSynopsisPath(String synopsisName) {
+    return Paths.get(conn.cfg.getTrainDBPrefixPath(), "synopses", synopsisName,
+        synopsisName + ".csv");
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)

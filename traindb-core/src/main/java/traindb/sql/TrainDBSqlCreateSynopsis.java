@@ -17,13 +17,15 @@ package traindb.sql;
 class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
 
   private final String synopsisName;
+  private final SynopsisType synopsisType;
   private final String modelName;
   private final int limitRows;
   private final float limitPercent;
 
-  TrainDBSqlCreateSynopsis(String synopsisName, String modelName, int limitRows,
-                           float limitPercent) {
+  TrainDBSqlCreateSynopsis(String synopsisName, SynopsisType synopsisType, String modelName,
+                           int limitRows, float limitPercent) {
     this.synopsisName = synopsisName;
+    this.synopsisType = synopsisType;
     this.modelName = modelName;
     this.limitRows = limitRows;
     this.limitPercent = limitPercent;
@@ -31,6 +33,10 @@ class TrainDBSqlCreateSynopsis extends TrainDBSqlCommand {
 
   String getSynopsisName() {
     return synopsisName;
+  }
+
+  SynopsisType getSynopsisType() {
+    return synopsisType;
   }
 
   String getModelName() {

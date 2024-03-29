@@ -146,11 +146,11 @@ optionValue
     ;
 
 exportModel
-    : K_EXPORT K_MODEL modelName
+    : K_EXPORT K_MODEL modelName exportToClause?
     ;
 
 importModel
-    : K_IMPORT K_MODEL modelName K_FROM modelBinaryString
+    : K_IMPORT K_MODEL modelName K_FROM ( modelBinaryString | K_FILE filenameString )?
     ;
 
 modelBinaryString
@@ -158,15 +158,23 @@ modelBinaryString
     ;
 
 exportSynopsis
-    : K_EXPORT K_SYNOPSIS synopsisName
+    : K_EXPORT K_SYNOPSIS synopsisName exportToClause?
+    ;
+
+exportToClause
+    : K_TO K_FILE filenameString
     ;
 
 importSynopsis
-    : K_IMPORT K_SYNOPSIS synopsisName K_FROM synopsisBinaryString
+    : K_IMPORT K_SYNOPSIS synopsisName synopsisTypeClause? K_FROM ( synopsisBinaryString | K_FILE filenameString )?
     ;
 
 analyzeSynopsis
     : K_ANALYZE K_SYNOPSIS synopsisName
+    ;
+
+filenameString
+    : STRING_LITERAL
     ;
 
 synopsisBinaryString
@@ -220,7 +228,11 @@ newModelName
     ;
 
 createSynopsis
-    : K_CREATE K_SYNOPSIS synopsisName K_FROM K_MODEL modelName K_LIMIT limitSizeClause
+    : K_CREATE K_SYNOPSIS synopsisName synopsisTypeClause? K_FROM K_MODEL modelName K_LIMIT limitSizeClause
+    ;
+
+synopsisTypeClause
+    : K_AS ( K_TABLE | K_FILE | K_DEFAULT )
     ;
 
 limitSizeClause
@@ -294,7 +306,7 @@ limitNumber
     ;
 
 ddlString
-    : ( . | WHITESPACES )+
+    : ( . | WHITESPACES )+?
     ;
 
 error
@@ -311,6 +323,7 @@ K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
 K_CREATE : C R E A T E ;
+K_DEFAULT : D E F A U L T ;
 K_DELETE : D E L E T E ;
 K_DESC : D E S C ;
 K_DESCRIBE : D E S C R I B E ;
@@ -318,6 +331,7 @@ K_DISABLE : D I S A B L E ;
 K_DROP : D R O P ;
 K_ENABLE : E N A B L E ;
 K_EXPORT : E X P O R T ;
+K_FILE : F I L E ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
 K_HYPERPARAMETERS : H Y P E R P A R A M E T E R S ;
@@ -345,6 +359,7 @@ K_SCHEMAS : S C H E M A S ;
 K_SHOW : S H O W ;
 K_SYNOPSES : S Y N O P S E S ;
 K_SYNOPSIS : S Y N O P S I S ;
+K_TABLE : T A B L E ;
 K_TABLES : T A B L E S ;
 K_TASKS : T A S K S ;
 K_TO : T O ;

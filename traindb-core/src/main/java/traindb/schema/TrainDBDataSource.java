@@ -25,8 +25,8 @@ public abstract class TrainDBDataSource extends AbstractSchema {
   private final String name;
   private ImmutableMap<String, Schema> subSchemaMap;
 
-  public TrainDBDataSource() {
-    this.name = "traindb"; // FIXME
+  public TrainDBDataSource(String name) {
+    this.name = name;
   }
 
   public final String getName() {

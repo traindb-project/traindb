@@ -42,7 +42,7 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
   private final JdbcConvention convention;
 
   public TrainDBJdbcDataSource(SchemaPlus parentSchema, DataSource dataSource) {
-    super();
+    super("jdbc");
     this.dataSource = dataSource;
     final Expression expression =
         Schemas.subSchemaExpression(parentSchema, getName(), TrainDBJdbcSchema.class);

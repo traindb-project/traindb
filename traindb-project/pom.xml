@@ -107,6 +107,11 @@ limitations under the License.
             </dependency>
             <dependency>
                 <groupId>org.apache.calcite</groupId>
+                <artifactId>calcite-file</artifactId>
+                <version>${calcite.version}</version>
+            </dependency>
+            <dependency>
+                <groupId>org.apache.calcite</groupId>
                 <artifactId>calcite-testkit</artifactId>
                 <version>${calcite.version}</version>
                 <scope>test</scope>

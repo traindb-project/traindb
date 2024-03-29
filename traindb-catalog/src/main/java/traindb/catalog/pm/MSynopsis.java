@@ -58,6 +58,9 @@ public final class MSynopsis {
   private double ratio;
 
   @Persistent
+  private boolean isExternal;
+
+  @Persistent
   @Column(length = 8)  // 'ENABLED', 'DISABLED'
   private String synopsis_status;
 
@@ -70,14 +73,15 @@ public final class MSynopsis {
   @Persistent(dependent = "false")
   private MTable table;
 
-  public MSynopsis(String name, Integer rows, Double ratio, MModel model, MTable table) {
+  public MSynopsis(String name, Integer rows, Double ratio, MModel model, boolean isExternal,
+                   MTable table) {
     this(name, rows, ratio, model.getModelName(), model.getSchemaName(), model.getTableName(),
-        model.getColumnNames(), table);
+        model.getColumnNames(), isExternal, table);
     this.model = model;
   }
 
   public MSynopsis(String name, Integer rows, Double ratio, String modelName, String schemaName,
-                   String tableName, List<String> columns, MTable table) {
+                   String tableName, List<String> columns, boolean isExternal, MTable table) {
     this.synopsis_name = name;
     this.rows = rows;
     this.ratio = (ratio == null) ? 0 : ratio;
@@ -86,6 +90,7 @@ public final class MSynopsis {
     this.schema_name = schemaName;
     this.table_name = tableName;
     this.columns = columns;
+    this.isExternal = isExternal;
     this.table = table;
 
     this.model = null;
@@ -126,6 +131,10 @@ public final class MSynopsis {
 
   public List<String> getColumnNames() {
     return columns;
+  }
+
+  public boolean getExternal() {
+    return isExternal;
   }
 
   public String getSynopsisStatus() {

@@ -25,6 +25,7 @@ import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTableExt;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
@@ -79,8 +80,8 @@ public interface CatalogContext {
   void disableModel(String modelName) throws CatalogException;
 
   /* Synopsis */
-  MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio)
-      throws CatalogException;
+  MSynopsis createSynopsis(String synopsisName, String modelName, Integer rows, Double ratio,
+                           boolean isExternal) throws CatalogException;
 
   Collection<MSynopsis> getAllSynopses() throws CatalogException;
 
@@ -94,7 +95,8 @@ public interface CatalogContext {
 
   void dropSynopsis(String name) throws CatalogException;
 
-  void importSynopsis(String synopsisName, JSONObject exportMetadata) throws CatalogException;
+  void importSynopsis(String synopsisName, boolean isExternal, JSONObject exportMetadata)
+      throws CatalogException;
 
   void renameSynopsis(String synopsisName, String newSynopsisName) throws CatalogException;
 
@@ -103,6 +105,13 @@ public interface CatalogContext {
   void disableSynopsis(String synopsisName) throws CatalogException;
 
   void updateSynopsisStatistics(String synopsisName, String statistics) throws CatalogException;
+
+  /* External Table */
+  MTableExt createExternalTable(String name, String format, String uri) throws CatalogException;
+
+  boolean externalTableExists(String name);
+
+  @Nullable MTableExt getExternalTable(String name);
 
   /* Schema & Table */
   MSchema getSchema(String name);
