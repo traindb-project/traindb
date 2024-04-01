@@ -104,7 +104,7 @@ modeltypeSpecClause
     ;
 
 modeltypeLocation
-    : K_LOCAL
+    : ( K_LOCAL )?
     | K_REMOTE
     ;
 

@@ -231,6 +231,9 @@ public final class TrainDBSql {
       String name = ctx.modeltypeName().getText();
       String category = ctx.modeltypeCategory().getText();
       String location = ctx.modeltypeSpecClause().modeltypeLocation().getText();
+      if (location.isEmpty()) {
+        location = new String("LOCAL");
+      }
       String className = ctx.modeltypeSpecClause().modeltypeClassName().getText();
       String uri = ctx.modeltypeSpecClause().modeltypeUri().getText();
       LOG.debug("CREATE MODELTYPE: name=" + name + " category=" + category
