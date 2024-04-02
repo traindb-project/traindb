@@ -1,9 +1,11 @@
 [![Java CI with Maven](https://github.com/traindb-project/traindb/actions/workflows/maven.yml/badge.svg)](https://github.com/traindb-project/traindb/actions/workflows/maven.yml)
 
-# TrainDB
+# <img src="traindb-project/images/traindb_logo.png" alt="TrainDB" width="200" />
 
 TrainDB is an ML model-based approximate query processing engine that aims to answer time-consuming analytical queries in a few seconds.
 TrainDB will provide SQL-like query interface and support various DBMS data sources.
+
+[Docs(English)](https://traindb-doc.readthedocs.io/en/latest/) • [Docs(Korean)](https://traindb-doc.readthedocs.io/ko/latest/)
 
 ## Requirements
 
