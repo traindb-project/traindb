@@ -6,7 +6,7 @@
 TrainDB is an ML model-based approximate query processing engine that aims to answer time-consuming analytical queries in a few seconds.
 TrainDB will provide SQL-like query interface and support various DBMS data sources.
 
-[Docs(English)](https://traindb-doc.readthedocs.io/en/latest/) • [Docs(Korean)](https://traindb-doc.readthedocs.io/ko/latest/)
+[Docs(English)](https://traindb-doc.readthedocs.io/en/latest/) • [Docs(Korean)](https://traindb-doc.readthedocs.io/ko/latest/) • [Tutorial(Colab)](https://colab.research.google.com/github/traindb-project/traindb/blob/main/examples/traindb_tutorial.ipynb)
 
 ## Requirements
 
