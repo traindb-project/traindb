@@ -1,4 +1,5 @@
 [![Java CI with Maven](https://github.com/traindb-project/traindb/actions/workflows/maven.yml/badge.svg)](https://github.com/traindb-project/traindb/actions/workflows/maven.yml)
+[![Open in Colab](https://colab.research.google.com/assets/colab-badge.svg)](https://colab.research.google.com/github/traindb-project/traindb/blob/main/examples/traindb_tutorial.ipynb)
 
 # <img src="traindb-project/images/traindb_logo.png" alt="TrainDB" width="200" />
 
