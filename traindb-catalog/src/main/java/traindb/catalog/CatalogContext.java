@@ -122,6 +122,8 @@ public interface CatalogContext {
 
   MTable getTable(String schemaName, String tableName);
 
+  Collection<MTable> getTables(Map<String, Object> filterPatterns) throws CatalogException;
+
   /* Querylog */
   Collection<MQueryLog> getQueryLogs() throws CatalogException;
 

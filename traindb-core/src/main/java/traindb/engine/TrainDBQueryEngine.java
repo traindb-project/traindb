@@ -63,6 +63,7 @@ import traindb.catalog.pm.MColumn;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
+import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTask;
@@ -847,10 +848,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.startTaskTracer("show schemas");
     T_tracer.openTaskTime("scan : schema");
 
-    ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
-
-    while (rows.next()) {
-      schemaInfo.add(Arrays.asList(rows.getString(1)));
+    if (conn.isStandalone()) {
+      replacePatternFilterColumn(filterPatterns, "schema", "schema.schema_name");
+      for (MSchema mSchema : catalogContext.getSchemas(filterPatterns)) {
+        schemaInfo.add(Arrays.asList(mSchema.getSchemaName()));
+      }
+    } else {
+      ResultSet rows = conn.getMetaData().getSchemas(conn.getCatalog(), null);
+      while (rows.next()) {
+        schemaInfo.add(Arrays.asList(rows.getString(1)));
+      }
     }
 
     T_tracer.closeTaskTime("SUCCESS");
@@ -868,25 +875,32 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("scan : table");
 
     List<List<Object>> tableInfo = new ArrayList<>();
-    String schemaPattern = (String) filterPatterns.get("schema");
-    if (schemaPattern == null) {
-      schemaPattern = conn.getSchema();
-    }
-    String tablePattern = (String) filterPatterns.get("table");
-    String[] tableTypes = null;
-    String tableType = (String) filterPatterns.get("table_type");
-    if (tableType != null) {
-      tableTypes = new String[1];
-      tableTypes[0] = tableType;
-    }
-
-    ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), schemaPattern, tablePattern,
-        tableTypes);
-    while (rs.next()) {
-      if (rs.getString(4).equals("INDEX")) {
-        continue;
+    if (conn.isStandalone()) {
+      replacePatternFilterColumn(filterPatterns, "schema", "schema.schema_name");
+      for (MTable mTable : catalogContext.getTables(filterPatterns)) {
+        tableInfo.add(Arrays.asList(mTable.getSchema().getSchemaName(), mTable.getTableName(),
+            mTable.getTableType()));
       }
-      tableInfo.add(Arrays.asList(rs.getString(2), rs.getString(3), rs.getString(4)));
+    } else {
+      String schemaPattern = (String) filterPatterns.get("schema");
+      if (schemaPattern == null) {
+        schemaPattern = conn.getSchema();
+      }
+      String tablePattern = (String) filterPatterns.get("table");
+      String[] tableTypes = null;
+      String tableType = (String) filterPatterns.get("table_type");
+      if (tableType != null) {
+        tableTypes = new String[1];
+        tableTypes[0] = tableType;
+      }
+      ResultSet rs = conn.getMetaData().getTables(conn.getCatalog(), schemaPattern, tablePattern,
+          tableTypes);
+      while (rs.next()) {
+        if (rs.getString(4).equals("INDEX")) {
+          continue;
+        }
+        tableInfo.add(Arrays.asList(rs.getString(2), rs.getString(3), rs.getString(4)));
+      }
     }
 
     T_tracer.closeTaskTime("SUCCESS");
@@ -1022,10 +1036,18 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     if (schemaName == null) {
       schemaName = conn.getSchema();
     }
-    ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), schemaName, tableName, null);
 
-    while (rs.next()) {
-      columnInfo.add(Arrays.asList(rs.getString(4), rs.getString(6)));
+    if (conn.isStandalone()) {
+      MTable mTable = catalogContext.getTable(schemaName, tableName);
+      for (MColumn mColumn : mTable.getColumns()) {
+        columnInfo.add(Arrays.asList(mColumn.getColumnName(),
+            SqlTypeName.getNameForJdbcType(mColumn.getColumnType())));
+      }
+    } else {
+      ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), schemaName, tableName, null);
+      while (rs.next()) {
+        columnInfo.add(Arrays.asList(rs.getString(4), rs.getString(6)));
+      }
     }
 
     T_tracer.closeTaskTime("SUCCESS");
