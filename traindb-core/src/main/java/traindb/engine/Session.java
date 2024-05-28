@@ -269,6 +269,9 @@ public final class Session implements Runnable {
       for (int i = 1; i <= columnCount; i++) {
         msgBld.putCString(md.getColumnName(i));
         int type = md.getColumnType(i);
+        if (type == Types.DECIMAL) {
+          type = Types.DOUBLE;
+        }
         msgBld.putInt(type);
         if (type == Types.VARCHAR) {
           msgBld.putInt(md.getPrecision(i));
@@ -311,6 +314,9 @@ public final class Session implements Runnable {
               break;
             case Types.FLOAT:
               msgBld.putInt(getTypeSize(type)).putFloat(rs.getFloat(i));
+              break;
+            case Types.DECIMAL:
+              msgBld.putInt(getTypeSize(type)).putDouble(rs.getBigDecimal(i).doubleValue());
               break;
             case Types.DOUBLE:
               msgBld.putInt(getTypeSize(type)).putDouble(rs.getDouble(i));
@@ -371,6 +377,7 @@ public final class Session implements Runnable {
         return ByteBuffers.LONG_BYTES;
       case Types.FLOAT:
         return ByteBuffers.FLOAT_BYTES;
+      case Types.DECIMAL:
       case Types.DOUBLE:
         return ByteBuffers.DOUBLE_BYTES;
       default:
