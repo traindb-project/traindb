@@ -165,4 +165,8 @@ public final class MessageStream {
 
     sendBuffer.clear();
   }
+
+  public void discard() throws IOException {
+    recvBuffer.flip();
+  }
 }

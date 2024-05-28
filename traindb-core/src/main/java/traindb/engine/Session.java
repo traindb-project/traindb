@@ -130,6 +130,7 @@ public final class Session implements Runnable {
             sessHandler.handleQuery(msg.getBodyString());
             break;
           default:
+            messageStream.discard();
             throw new TrainDBException("invalid message type '" + type + "'");
         }
       } catch (Exception e) {
