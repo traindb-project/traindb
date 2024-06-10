@@ -53,6 +53,9 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     if (prefix == null) {
       prefix = System.getenv("TRAINDB_PREFIX");
     }
+    if (prefix == null) {
+      throw new RuntimeException("The TRAINDB_PREFIX directory path is not defined.");
+    }
     return prefix.trim();
   }
 
