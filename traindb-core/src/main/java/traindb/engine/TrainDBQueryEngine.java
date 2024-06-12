@@ -911,7 +911,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public TrainDBListResultSet showColumns(Map<String, Object> filterPatterns) throws Exception {
-    List<String> header = Arrays.asList("schema_name", "table_name", "table_type", "column_name",
+    List<String> header = Arrays.asList("schema_name", "table_name", "column_name",
         "data_type", "type_name", "column_size", "is_nullable");
     checkShowWhereColumns(filterPatterns, header);
 
@@ -920,27 +920,27 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     List<List<Object>> columnInfo = new ArrayList<>();
     if (conn.isStandalone()) {
-      replacePatternFilterColumn(filterPatterns, "schema", "schema.schema_name");
+      replacePatternFilterColumn(filterPatterns, "schema_name", "schema.schema_name");
       for (MTable mTable : catalogContext.getTables(filterPatterns)) {
         for (MColumn mColumn : mTable.getColumns()) {
           columnInfo.add(Arrays.asList(mTable.getSchema().getSchemaName(), mTable.getTableName(),
-              mTable.getTableType(), mColumn.getColumnName(), mColumn.getColumnType(),
+              mColumn.getColumnName(), mColumn.getColumnType(),
               SqlTypeName.getNameForJdbcType(mColumn.getColumnType()).getName(),
               mColumn.getScale(), mColumn.isNullable() ? "YES" : "NO"));
         }
       }
     } else {
-      String schemaPattern = (String) filterPatterns.get("schema");
+      String schemaPattern = (String) filterPatterns.get("schema_name");
       if (schemaPattern == null) {
         schemaPattern = conn.getSchema();
       }
-      String tablePattern = (String) filterPatterns.get("table");
-      String columnPattern = (String) filterPatterns.get("column");
+      String tablePattern = (String) filterPatterns.get("table_name");
+      String columnPattern = (String) filterPatterns.get("column_name");
       ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), schemaPattern, tablePattern,
           columnPattern);
       while (rs.next()) {
-        columnInfo.add(Arrays.asList(rs.getString(1), rs.getString(2), rs.getString(3),
-            rs.getString(4), rs.getInt(5), rs.getString(6), rs.getInt(7), rs.getString(18)));
+        columnInfo.add(Arrays.asList(rs.getString(2), rs.getString(3), rs.getString(4),
+            rs.getInt(5), rs.getString(6), rs.getInt(7), rs.getString(18)));
       }
     }
 
