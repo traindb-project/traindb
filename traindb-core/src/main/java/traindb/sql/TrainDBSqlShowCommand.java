@@ -83,6 +83,17 @@ abstract class TrainDBSqlShowCommand extends TrainDBSqlCommand {
     }
   }
 
+  static class Columns extends TrainDBSqlShowCommand {
+    Columns(Map<String, Object> whereExprMap) {
+      super(whereExprMap);
+    }
+
+    @Override
+    public Type getType() {
+      return Type.SHOW_COLUMNS;
+    }
+  }
+
   static class Hyperparameters extends TrainDBSqlShowCommand {
     Hyperparameters(Map<String, Object> whereExprMap) {
       super(whereExprMap);

@@ -910,6 +910,47 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   }
 
   @Override
+  public TrainDBListResultSet showColumns(Map<String, Object> filterPatterns) throws Exception {
+    List<String> header = Arrays.asList("schema_name", "table_name", "table_type", "column_name",
+        "data_type", "type_name", "column_size", "is_nullable");
+    checkShowWhereColumns(filterPatterns, header);
+
+    T_tracer.startTaskTracer("show columns");
+    T_tracer.openTaskTime("scan : table");
+
+    List<List<Object>> columnInfo = new ArrayList<>();
+    if (conn.isStandalone()) {
+      replacePatternFilterColumn(filterPatterns, "schema", "schema.schema_name");
+      for (MTable mTable : catalogContext.getTables(filterPatterns)) {
+        for (MColumn mColumn : mTable.getColumns()) {
+          columnInfo.add(Arrays.asList(mTable.getSchema().getSchemaName(), mTable.getTableName(),
+              mTable.getTableType(), mColumn.getColumnName(), mColumn.getColumnType(),
+              SqlTypeName.getNameForJdbcType(mColumn.getColumnType()).getName(),
+              mColumn.getScale(), mColumn.isNullable() ? "YES" : "NO"));
+        }
+      }
+    } else {
+      String schemaPattern = (String) filterPatterns.get("schema");
+      if (schemaPattern == null) {
+        schemaPattern = conn.getSchema();
+      }
+      String tablePattern = (String) filterPatterns.get("table");
+      String columnPattern = (String) filterPatterns.get("column");
+      ResultSet rs = conn.getMetaData().getColumns(conn.getCatalog(), schemaPattern, tablePattern,
+          columnPattern);
+      while (rs.next()) {
+        columnInfo.add(Arrays.asList(rs.getString(1), rs.getString(2), rs.getString(3),
+            rs.getString(4), rs.getInt(5), rs.getString(6), rs.getInt(7), rs.getString(18)));
+      }
+    }
+
+    T_tracer.closeTaskTime("SUCCESS");
+    T_tracer.endTaskTracer();
+
+    return new TrainDBListResultSet(header, columnInfo);
+  }
+
+  @Override
   public TrainDBListResultSet showHyperparameters(Map<String, Object> filterPatterns)
       throws Exception {
     List<String> header = Arrays.asList("modeltype_name", "hyperparameter_name", "value_type",

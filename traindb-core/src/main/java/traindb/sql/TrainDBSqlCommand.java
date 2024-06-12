@@ -30,6 +30,7 @@ public abstract class TrainDBSqlCommand {
     SHOW_SYNOPSES,
     SHOW_SCHEMAS,
     SHOW_TABLES,
+    SHOW_COLUMNS,
     SHOW_HYPERPARAMETERS,
     SHOW_PARTITIONS,
     USE_SCHEMA,

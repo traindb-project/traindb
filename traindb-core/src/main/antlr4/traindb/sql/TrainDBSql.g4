@@ -191,6 +191,7 @@ showTargets
     | K_SYNOPSES
     | K_SCHEMAS
     | K_TABLES
+    | K_COLUMNS
     | K_HYPERPARAMETERS
     | K_TRAININGS
     | K_QUERYLOGS
@@ -322,6 +323,7 @@ K_AND : A N D ;
 K_AS : A S ;
 K_BYPASS : B Y P A S S ;
 K_CLASS : C L A S S ;
+K_COLUMNS : C O L U M N S ;
 K_CREATE : C R E A T E ;
 K_DEFAULT : D E F A U L T ;
 K_DELETE : D E L E T E ;
