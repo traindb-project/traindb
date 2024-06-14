@@ -20,9 +20,12 @@ import org.apache.calcite.avatica.util.Casing;
 import org.apache.calcite.config.NullCollation;
 import org.apache.calcite.sql.SqlBinaryStringLiteral;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlUtil;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.apache.calcite.util.BitString;
+import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.sql.SqlZeroXBinaryStringLiteral;
 
 public class KairosSqlDialect extends TrainDBSqlDialect {
@@ -57,6 +60,12 @@ public class KairosSqlDialect extends TrainDBSqlDialect {
   @Override
   public boolean supportCreateTableAsSelect() {
     return false;
+  }
+
+  @Override
+  public void unparseOffsetFetch(SqlWriter writer, @Nullable SqlNode offset,
+                                 @Nullable SqlNode fetch) {
+    unparseFetchUsingLimit(writer, offset, fetch);
   }
 
   public boolean useCustomBinaryString() {

@@ -21,6 +21,7 @@ import org.apache.calcite.sql.SqlAlienSystemTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlNode;
+import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
@@ -76,5 +77,11 @@ public class TiberoSqlDialect extends TrainDBSqlDialect {
     return new SqlDataTypeSpec(
         new SqlAlienSystemTypeNameSpec(castSpec, type.getSqlTypeName(), SqlParserPos.ZERO),
         SqlParserPos.ZERO);
+  }
+
+  @Override
+  public void unparseOffsetFetch(SqlWriter writer, @Nullable SqlNode offset,
+                                 @Nullable SqlNode fetch) {
+    unparseFetchUsingLimit(writer, offset, fetch);
   }
 }
