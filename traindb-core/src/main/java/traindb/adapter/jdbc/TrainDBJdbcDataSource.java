@@ -80,6 +80,12 @@ public class TrainDBJdbcDataSource extends TrainDBDataSource {
           final String schemaName = requireNonNull(
               resultSet.getString(1),
               () -> "got null schemaName from the database");
+
+          // The same public schema was duplicated in postgresql
+          if (schemaName.equals("public")){
+            continue;
+          }
+
           builder.put(schemaName, new TrainDBJdbcSchema(schemaName, this));
         }
       }
