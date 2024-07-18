@@ -22,6 +22,7 @@ import java.sql.SQLException;
 import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.SqlType;
 import org.apache.calcite.rel.type.RelDataType;
@@ -71,16 +72,16 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         final String schemaName = resultSet.getString(2);
         final String tableName = resultSet.getString(3);
 
-        // DB users can access the tables of implicit schemas - ISSUE #41
-        if (supportCatalog) {
-          if (catalogName != null && !catalogName.equals(getName())) {
-            continue;
+          // DB users can access the tables of implicit schemas - ISSUE #41
+          if (supportCatalog) {
+            if (catalogName != null && !catalogName.equals(getName())) {
+              continue;
+            }
+          } else {
+            if (schemaName != null && !schemaName.equals(getName())) {
+              continue;
+            }
           }
-        } else {
-          if (schemaName != null && !schemaName.equals(getName())) {
-            continue;
-          }
-        }
 
         // original code
         //final String tableTypeName = resultSet.getString(4).replace(" ", "_");
@@ -157,13 +158,24 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       TrainDBJdbcDataSource dataSource = (TrainDBJdbcDataSource) getDataSource();
       connection = dataSource.getDataSource().getConnection();
       DatabaseMetaData databaseMetaData = connection.getMetaData();
+
       String url = databaseMetaData.getURL();
       String db_query = url.split(":")[1];
 
       String sql = null;
       if (db_query.equals("kairos")) {
-        sql = "SELECT * FROM sys_table_partitions where owner_name like LOWER('"
+        sql = "SELECT owner_name, table_name, partition_name   FROM sys_table_partitions where owner_name like LOWER('"
             + getName() + "')";
+      } else if (db_query.equals("mysql")) {
+        sql = "SELECT TABLE_SCHEMA, TABLE_NAME, PARTITION_NAME FROM INFORMATION_SCHEMA.PARTITIONS where TABLE_SCHEMA = '"
+                + getName() + "'";
+      } else if (db_query.equals("postgresql")) {
+        sql = "SELECT nmsp_parent.nspname AS parent_schema, parent.relname AS parent, child.relname       AS child_schema "
+            + "FROM pg_inherits JOIN pg_class parent        ON pg_inherits.inhparent = parent.oid "
+            + "JOIN pg_class child         ON pg_inherits.inhrelid   = child.oid "
+            + "JOIN pg_namespace nmsp_parent   ON nmsp_parent.oid  = parent.relnamespace "
+            + "JOIN pg_namespace nmsp_child    ON nmsp_child.oid   = child.relnamespace "
+            + "WHERE nmsp_parent.nspname = '" + getName() + "'";
       } else {
         return;
       }
@@ -198,7 +210,6 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       }
 
       if (oldTableName != null) {
-        //partitionList.add(partitionName);
         TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
         builder.put(tableName, partitionDef);
       }
