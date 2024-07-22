@@ -168,7 +168,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
             + getName() + "')";
       } else if (db_query.equals("mysql")) {
         sql = "SELECT TABLE_SCHEMA, TABLE_NAME, PARTITION_NAME FROM INFORMATION_SCHEMA.PARTITIONS where TABLE_SCHEMA = '"
-                + getName() + "'";
+                + getName() + "' and PARTITION_NAME is not null";
       } else if (db_query.equals("postgresql")) {
         sql = "SELECT nmsp_parent.nspname AS parent_schema, parent.relname AS parent, child.relname       AS child_schema "
             + "FROM pg_inherits JOIN pg_class parent        ON pg_inherits.inhparent = parent.oid "
@@ -176,6 +176,8 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
             + "JOIN pg_namespace nmsp_parent   ON nmsp_parent.oid  = parent.relnamespace "
             + "JOIN pg_namespace nmsp_child    ON nmsp_child.oid   = child.relnamespace "
             + "WHERE nmsp_parent.nspname = '" + getName() + "'";
+      } else if (db_query.equals("tibero")) {
+        sql = "SELECT owner, table_name, partition_name  FROM ALL_TAB_PARTITIONS WHERE  owner = '"+ getName() + "'";
       } else {
         return;
       }
@@ -203,7 +205,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
             TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
             builder.put(oldTableName, partitionDef);
             partitionList = new ArrayList<>();
-
+            partitionList.add(partitionName);
             oldTableName = tableName;
           }
         }
