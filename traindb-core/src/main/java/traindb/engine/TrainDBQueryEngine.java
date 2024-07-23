@@ -97,6 +97,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     this.catalogContext = conn.getCatalogContext();
     this.schemaManager = conn.getSchemaManager();
     this.T_tracer = new TaskTracer();
+
+    if (conn.isStandalone()) {
+      try {
+        conn.setCatalog("traindb");
+      } catch (SQLException e) {
+        // ignore
+      }
+    }
   }
 
   @Override
