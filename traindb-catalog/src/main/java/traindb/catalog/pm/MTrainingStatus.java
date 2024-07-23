@@ -68,6 +68,10 @@ public final class MTrainingStatus {
     return model;
   }
 
+  public void setModelName(String modelName) {
+    this.model_name = modelName;
+  }
+
   public void setTrainingStatus(String status) {
     this.training_status = status;
   }
