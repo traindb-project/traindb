@@ -916,7 +916,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     return convertResultToSignature(context, sql,
         new TrainDBListResultSet(header, totalRes));
   }
-
+  
   <T> CalciteSignature<T> executeIncrementalNext(
       Context context,
       TrainDBSqlCommand commands) {
@@ -1092,7 +1092,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           intSum = (int) res.getValue(columnIdx);
           totalIntSum = totalIntSum + intSum;
 
-          intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
+          Object value = res.getValue(columnIdx + 1);
+          if (value instanceof Long) {
+            intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
+          } else {
+            intCnt = (int) res.getValue(columnIdx + 1);
+          }
           totalIntCnt = totalIntCnt + intCnt;
           break;
         case Types.FLOAT:
