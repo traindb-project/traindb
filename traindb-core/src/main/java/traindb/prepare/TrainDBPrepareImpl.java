@@ -772,19 +772,19 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         SqlIdentifier inNode = (SqlIdentifier) call.getOperandList().get(0);
         String inName = inNode.toString();
 
-        if (callOp.getName().equals("count")) {
+        if (callOp.getName().equalsIgnoreCase("count")) {
           schemaManager.aggCalls.add(SqlStdOperatorTable.COUNT);
           columnList = columnList + "count(" + inName + ")";
-        } else if (callOp.getName().equals("sum")) {
+        } else if (callOp.getName().equalsIgnoreCase("sum")) {
           schemaManager.aggCalls.add(SqlStdOperatorTable.SUM);
           columnList = columnList + "sum(" + inName + ")";
-        } else if (callOp.getName().equals("min")) {
+        } else if (callOp.getName().equalsIgnoreCase("min")) {
           schemaManager.aggCalls.add(SqlStdOperatorTable.MIN);
           columnList = columnList + "min(" + inName + ")";
-        } else if (callOp.getName().equals("max")) {
+        } else if (callOp.getName().equalsIgnoreCase("max")) {
           schemaManager.aggCalls.add(SqlStdOperatorTable.MAX);
           columnList = columnList + "max(" + inName + ")";
-        } else if (callOp.getName().equals("avg")) {
+        } else if (callOp.getName().equalsIgnoreCase("avg")) {
           schemaManager.aggCalls.add(SqlStdOperatorTable.AVG);
           columnList = columnList + "sum(" + inName + "), count(" + inName + ")";
         } else {
