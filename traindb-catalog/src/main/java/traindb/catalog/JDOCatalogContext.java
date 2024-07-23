@@ -338,7 +338,21 @@ public final class JDOCatalogContext implements CatalogContext {
     try {
       MModel mModel = getModel(modelName);
       mModel.setModelName(newModelName);
+
+      Collection<MTrainingStatus> mTrainingStatus =
+          getTrainingStatus(ImmutableMap.of("model_name", modelName));
+      for (MTrainingStatus st : mTrainingStatus) {
+        st.setModelName(newModelName);
+      }
+
+      Collection<MSynopsis> mSynopses = getAllSynopses(ImmutableMap.of("model_name", modelName));
+      for (MSynopsis mSynopsis : mSynopses) {
+        mSynopsis.setModelName(newModelName);
+      }
+
       pm.makePersistent(mModel);
+      pm.makePersistentAll(mTrainingStatus);
+      pm.makePersistentAll(mSynopses);
     } catch (RuntimeException e) {
       throw new CatalogException("failed to rename model", e);
     }
