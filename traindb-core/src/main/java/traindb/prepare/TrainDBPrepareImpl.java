@@ -577,7 +577,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           try {
             queryEngine.insertTask();
           } catch (Exception e) {
-            throw new RuntimeException(
+            throw new RuntimeException(                                                                                                                                                       
                     "failed to run statement: " + query + "\nerror msg: " + e.getMessage());
           }
         }
@@ -633,7 +633,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     } else if (query.queryable != null) {
       x = context.getTypeFactory().createType(elementType);
       preparedResult =
-          preparingStmt.prepareQueryable(query.queryable, x);
+          preparingStmt.prepareQueryable(query.queryable, x);  
       statementType = getStatementType(preparedResult);
     } else {
       assert query.rel != null;
@@ -715,7 +715,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (sql.equals("rows")) {
       return executeIncrementalNext(context,commands);
     }
-
+    
     SqlParser parser = createParser(sql,  parserConfig);
     SqlNode sqlNode;
     try {
@@ -1027,10 +1027,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.BIGINT:
         case Types.FLOAT:
         case Types.DOUBLE:
           cnt = (int) res.getValue(columnIdx);
+          totalCnt = totalCnt + cnt;
+          break;
+        case Types.BIGINT:
+          cnt = ((Long) res.getValue(columnIdx)).intValue();
           totalCnt = totalCnt + cnt;
           break;
         default:
@@ -1089,7 +1092,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           intSum = (int) res.getValue(columnIdx);
           totalIntSum = totalIntSum + intSum;
 
-          intCnt = (int) res.getValue(columnIdx + 1);
+          intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
           totalIntCnt = totalIntCnt + intCnt;
           break;
         case Types.FLOAT:
