@@ -715,7 +715,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (sql.equals("rows")) {
       return executeIncrementalNext(context,commands);
     }
-    
+
     SqlParser parser = createParser(sql,  parserConfig);
     SqlNode sqlNode;
     try {
