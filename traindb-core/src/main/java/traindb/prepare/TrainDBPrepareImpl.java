@@ -103,6 +103,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcUtils;
+import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -690,7 +691,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
   <T> CalciteSignature<T> executeIncremental(
       Context context,
-      TrainDBSqlCommand commands) {
+      TrainDBSqlCommand commands) throws SQLException {
     final CalciteConnectionConfig config = context.config();
     SqlParser.Config parserConfig = parserConfig()
         .withQuotedCasing(config.quotedCasing())
@@ -836,13 +837,23 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           + "\nerror msg: incremental query can be executed on partitioned table only.");
     }
 
+    DatabaseMetaData databaseMetaData = conn.getMetaData();
+    String url = databaseMetaData.getURL();
+    String db_query = url.split(":")[1];
+
     String changeQuery;
     for (int k = 0; k < partitionList.size(); k++) {
-      changeQuery =
-          "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+      if (db_query.equals("postgresql")) {
+        changeQuery =
+            "select " + columnList + " from " + schemaName + "." + partitionList.get(k);
+      } else {
+        changeQuery =
+            "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+      }
 
       schemaManager.saveQuery.add(changeQuery);
     }
+
     List<List<Object>> totalRes = new ArrayList<>();
     List<String> header = new ArrayList<>();
     try {
@@ -1055,10 +1066,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.BIGINT:
         case Types.FLOAT:
         case Types.DOUBLE:
           sum = (int) res.getValue(columnIdx);
+          totalSum = totalSum + sum;
+          break;
+        case Types.BIGINT:
+          sum = ((Long) res.getValue(columnIdx)).intValue();
           totalSum = totalSum + sum;
           break;
         default:
@@ -1079,6 +1093,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     double totalDoubleCnt = 0;
     double doubleCnt = 0;
     double doubleSum = 0;
+    Object value = null;
 
     int type = res.getColumnType(columnIdx);
 
@@ -1088,11 +1103,22 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.BIGINT:
           intSum = (int) res.getValue(columnIdx);
           totalIntSum = totalIntSum + intSum;
 
-          Object value = res.getValue(columnIdx + 1);
+          value = res.getValue(columnIdx + 1);
+          if (value instanceof Long) {
+            intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
+          } else {
+            intCnt = (int) res.getValue(columnIdx + 1);
+          }
+          totalIntCnt = totalIntCnt + intCnt;
+          break;
+        case Types.BIGINT:
+          intSum = ((Long) res.getValue(columnIdx)).intValue();
+          totalIntSum = totalIntSum + intSum;
+
+          value = res.getValue(columnIdx + 1);
           if (value instanceof Long) {
             intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
           } else {
