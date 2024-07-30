@@ -35,6 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -122,6 +126,7 @@ import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 import traindb.sql.calcite.TrainDBSqlSelect;
 import traindb.sql.fun.TrainDBAggregateOperatorTable;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
+import traindb.task.IncrementalScanTask;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
@@ -854,6 +859,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       schemaManager.saveQuery.add(changeQuery);
     }
 
+    if(schemaManager.getFutures() == null) {
+      schemaManager.setFutures(new ArrayList<>());
+    }
+
     List<List<Object>> totalRes = new ArrayList<>();
     List<String> header = new ArrayList<>();
     try {
@@ -883,6 +892,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
           SqlAggFunction agg = schemaManager.aggCalls.get(j);
           header.add(agg.getName());
+          schemaManager.header.add(agg.getName());
         }
 
         TrainDBListResultSet res
@@ -905,7 +915,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
                 break;
               case MIN:
                 executeIncrementalMin(res, j, r);
-                break;
+                break; 
               case MAX:
                 executeIncrementalMax(res, j, r);
                 break;
@@ -915,7 +925,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           }
           totalRes.add(r);
         }
-
+        
+        ExecutorService executor = Executors.newFixedThreadPool(4);
+        for (int idx = 1; idx < schemaManager.saveQuery.size(); idx++) {
+          IncrementalScanTask task = new IncrementalScanTask(context, commands, ++schemaManager.saveQueryIdx);
+          schemaManager.getFutures().add(executor.submit(task));
+        }
+        
         JdbcUtils.close(extConn, stmt, rs);
         schemaManager.saveQueryIdx++;
     } catch (SQLException e) {
@@ -927,7 +943,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     return convertResultToSignature(context, sql,
         new TrainDBListResultSet(header, totalRes));
   }
-  
+    
   <T> CalciteSignature<T> executeIncrementalNext(
       Context context,
       TrainDBSqlCommand commands) {
@@ -941,89 +957,54 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     String sql = incrementalQuery.getStatement();
 
     List<List<Object>> totalRes = new ArrayList<>();
-    List<String> header = new ArrayList<>();
+    List<Future<List<List<Object>>>> futures = schemaManager.getFutures();
 
-    int currentIdx = schemaManager.saveQueryIdx;
-    if (currentIdx <= 0) {
-      throw new RuntimeException(
-          "failed to run statement: " + sql
-              + "\nerror msg: incremental query can be executed on partitioned table only.");
-    }
-
-    if (schemaManager.saveQuery.size() <= currentIdx) {
-      return convertResultToSignature(context, sql,
-          new TrainDBListResultSet(schemaManager.header, totalRes));
-    }
-
-    try {
-      String currentIncrementalQuery = schemaManager.saveQuery.get(currentIdx);
-      Connection extConn = conn.getDataSourceConnection();
-      Statement stmt = extConn.createStatement();
-      ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
-
-      int columnCount = rs.getMetaData().getColumnCount();
-      ResultSetMetaData md = rs.getMetaData();
-
-      while (rs.next()) {
-        List<Object> r = new ArrayList<>();
-        for (int j = 1; j <= columnCount; j++) {
-          int type = md.getColumnType(j);
-          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
-          if (sqlTypeName == DECIMAL) {
-            r.add(rs.getInt(j));
-          } else {
-            r.add(rs.getObject(j));
-          }
-        }
-        schemaManager.totalRes.add(r);
+    if (futures.size() > 0) {
+      try {
+      List<List<Object>> result = futures.remove(0).get();
+      for (List<Object> r : result)
+        schemaManager.totalRes.add(r); 
+      } catch ( InterruptedException | ExecutionException e) {
+        e.printStackTrace();
       }
 
-      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
-        SqlAggFunction agg = schemaManager.aggCalls.get(j);
-        header.add(agg.getName());
-      }
-
-      TrainDBListResultSet res
-          = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+      TrainDBListResultSet res = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
       if (res.getRowCount() > 0) {
         List<Object> r = new ArrayList<>();
         int aggIdx = 0;
         for (int j = 0; j < res.getColumnCount(); j++, aggIdx++) {
           SqlAggFunction agg = schemaManager.aggCalls.get(aggIdx);
-          switch (agg.getKind()) {
-            case COUNT:
-              executeIncrementalCount(res, j, r);
-              break;
-            case SUM:
-              executeIncrementalSum(res, j, r);
-              break;
-            case AVG:
-              executeIncrementalAvg(res, j, r);
-              j++;
-              break;
-            case MIN:
-              executeIncrementalMin(res, j, r);
-              break;
-            case MAX:
-              executeIncrementalMax(res, j, r);
-              break;
-            default:
-              break;
+          try {
+            switch (agg.getKind()) {
+              case COUNT:
+                executeIncrementalCount(res, j, r);
+                break;
+              case SUM:
+                executeIncrementalSum(res, j, r);
+                break;
+              case AVG:
+                executeIncrementalAvg(res, j, r);
+                j++;
+                break;
+              case MIN:
+                executeIncrementalMin(res, j, r);
+                break;
+              case MAX:
+                executeIncrementalMax(res, j, r);
+                break;
+              default:
+                break;
+            }
+          } catch (TrainDBException e) {
+            e.printStackTrace();
           }
         }
         totalRes.add(r);
       }
-
-      JdbcUtils.close(extConn, stmt, rs);
-      schemaManager.saveQueryIdx++;
-    } catch (SQLException e) {
-      throw new RuntimeException(e);
-    } catch (TrainDBException e) {
-      e.printStackTrace();
     }
 
     return convertResultToSignature(context, sql,
-        new TrainDBListResultSet(header, totalRes));
+        new TrainDBListResultSet(schemaManager.header, totalRes));
   }
 
   public static void executeIncrementalCount(TrainDBListResultSet res, int columnIdx, List<Object> r)

@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -60,6 +61,17 @@ public final class SchemaManager extends AbstractService {
   public List<List<Object>> totalRes;
   public List<String> header;
   public List<SqlAggFunction> aggCalls;
+
+  // for parallel incremental query
+  private List<Future<List<List<Object>>>> futures;
+
+  public List<Future<List<List<Object>>>> getFutures() {
+    return futures;
+  }
+
+  public void setFutures(List<Future<List<List<Object>>>> futures) {
+    this.futures = futures;
+  }
 
   private SchemaManager(CatalogStore catalogStore) {
     super(SchemaManager.class.getName());
