@@ -719,7 +719,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     String sql = incrementalQuery.getStatement();
 
     if (sql.equals("rows")) {
-      return executeIncrementalNext(context,commands);
+      return executeIncrementalNextParallel(context, commands);
+      //return executeIncrementalNext(context,commands);
     }
 
     SqlParser parser = createParser(sql,  parserConfig);
@@ -943,13 +944,108 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     return convertResultToSignature(context, sql,
         new TrainDBListResultSet(header, totalRes));
   }
-    
+  
   <T> CalciteSignature<T> executeIncrementalNext(
       Context context,
       TrainDBSqlCommand commands) {
 
-    TrainDBConnectionImpl conn =
-        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+    TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+    SchemaManager schemaManager = conn.getSchemaManager();
+
+    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalQuery.getStatement();
+
+    List<List<Object>> totalRes = new ArrayList<>();
+    List<String> header = new ArrayList<>();
+
+    int currentIdx = schemaManager.saveQueryIdx;
+    if (currentIdx <= 0) {
+      throw new RuntimeException(
+          "failed to run statement: " + sql
+              + "\nerror msg: incremental query can be executed on partitioned table only.");
+    }
+
+    if (schemaManager.saveQuery.size() <= currentIdx) {
+      return convertResultToSignature(context, sql,
+          new TrainDBListResultSet(schemaManager.header, totalRes));
+    }
+
+    try {
+      String currentIncrementalQuery = schemaManager.saveQuery.get(currentIdx);
+      Connection extConn = conn.getDataSourceConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
+
+      int columnCount = rs.getMetaData().getColumnCount();
+      ResultSetMetaData md = rs.getMetaData();
+
+      while (rs.next()) {
+        List<Object> r = new ArrayList<>();
+        for (int j = 1; j <= columnCount; j++) {
+          int type = md.getColumnType(j);
+          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
+          if (sqlTypeName == DECIMAL) {
+            r.add(rs.getInt(j));
+          } else {
+            r.add(rs.getObject(j));
+          }
+        }
+        schemaManager.totalRes.add(r);
+      }
+
+      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
+        SqlAggFunction agg = schemaManager.aggCalls.get(j);
+        header.add(agg.getName());
+      }
+
+      TrainDBListResultSet res = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+      if (res.getRowCount() > 0) {
+        List<Object> r = new ArrayList<>();
+        int aggIdx = 0;
+        for (int j = 0; j < res.getColumnCount(); j++, aggIdx++) {
+          SqlAggFunction agg = schemaManager.aggCalls.get(aggIdx);
+          switch (agg.getKind()) {
+            case COUNT:
+              executeIncrementalCount(res, j, r);
+              break;
+            case SUM:
+              executeIncrementalSum(res, j, r);
+              break;
+            case AVG:
+              executeIncrementalAvg(res, j, r);
+              j++;
+              break;
+            case MIN:
+              executeIncrementalMin(res, j, r);
+              break;
+            case MAX:
+              executeIncrementalMax(res, j, r);
+              break;
+            default:
+              break;
+          }
+        }
+        totalRes.add(r);
+      }
+
+      JdbcUtils.close(extConn, stmt, rs);
+      schemaManager.saveQueryIdx++;
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    } catch (TrainDBException e) {
+      e.printStackTrace();
+    }
+
+    return convertResultToSignature(context, sql,
+        new TrainDBListResultSet(header, totalRes));
+  }
+
+  <T> CalciteSignature<T> executeIncrementalNextParallel(
+      Context context,
+      TrainDBSqlCommand commands) {
+
+    TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
     SchemaManager schemaManager = conn.getSchemaManager();
 
@@ -961,10 +1057,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     if (futures.size() > 0) {
       try {
-      List<List<Object>> result = futures.remove(0).get();
-      for (List<Object> r : result)
-        schemaManager.totalRes.add(r); 
-      } catch ( InterruptedException | ExecutionException e) {
+        List<List<Object>> result = futures.remove(0).get();
+        for (List<Object> r : result)
+          schemaManager.totalRes.add(r);
+      } catch (InterruptedException | ExecutionException e) {
         e.printStackTrace();
       }
 
