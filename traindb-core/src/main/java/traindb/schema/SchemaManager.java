@@ -63,7 +63,16 @@ public final class SchemaManager extends AbstractService {
   public List<SqlAggFunction> aggCalls;
 
   // for parallel incremental query
+  private boolean isParallel;
   private List<Future<List<List<Object>>>> futures;
+
+  public void setParallel(boolean p) {
+    isParallel = p;
+  }
+
+  public boolean isParallel() {
+    return isParallel;
+  }
 
   public List<Future<List<List<Object>>>> getFutures() {
     return futures;
@@ -85,6 +94,8 @@ public final class SchemaManager extends AbstractService {
     totalRes = new ArrayList<>();
     header = new ArrayList<>();
     aggCalls = new ArrayList<>();
+
+    isParallel = false;
   }
 
   @Override

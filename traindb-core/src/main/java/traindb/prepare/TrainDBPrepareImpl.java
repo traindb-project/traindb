@@ -118,6 +118,7 @@ import traindb.planner.TrainDBPlanner;
 import traindb.schema.SchemaManager;
 import traindb.schema.TrainDBPartition;
 import traindb.schema.TrainDBSchema;
+import traindb.sql.TrainDBIncrementalParallelQuery;
 import traindb.sql.TrainDBIncrementalQuery;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
@@ -570,7 +571,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           // INSERT QUERY LOGS
           queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
 
-          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY) {
+          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY 
+            ||commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_PARALLEL_QUERY) {
             return executeIncremental(context, commands.get(0));
           }
 
@@ -709,18 +711,27 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (parserFactory != null) {
       parserConfig = parserConfig.withParserFactory(parserFactory);
     }
-
+    
     TrainDBConnectionImpl conn =
         (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
     SchemaManager schemaManager = conn.getSchemaManager();
 
-    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
-    String sql = incrementalQuery.getStatement();
+    String sql = null;
+    if ( commands instanceof TrainDBIncrementalParallelQuery) {
+      sql = ((TrainDBIncrementalParallelQuery) commands).getStatement();
+      schemaManager.setParallel(true);
+    } else {
+      sql = ((TrainDBIncrementalQuery) commands).getStatement();
+      schemaManager.setParallel(true);
+    }
+    
 
     if (sql.equals("rows")) {
-      return executeIncrementalNextParallel(context, commands);
-      //return executeIncrementalNext(context,commands);
+      if (schemaManager.isParallel()) 
+        return executeIncrementalNextParallel(context, commands);
+      else
+        return executeIncrementalNext(context,commands);
     }
 
     SqlParser parser = createParser(sql,  parserConfig);
@@ -927,10 +938,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           totalRes.add(r);
         }
         
-        ExecutorService executor = Executors.newFixedThreadPool(4);
-        for (int idx = 1; idx < schemaManager.saveQuery.size(); idx++) {
-          IncrementalScanTask task = new IncrementalScanTask(context, commands, ++schemaManager.saveQueryIdx);
-          schemaManager.getFutures().add(executor.submit(task));
+        if (schemaManager.isParallel()) {
+          ExecutorService executor = Executors.newFixedThreadPool(4);
+          for (int idx = 1; idx < schemaManager.saveQuery.size(); idx++) {
+            IncrementalScanTask task = new IncrementalScanTask(context, commands, ++schemaManager.saveQueryIdx);
+            schemaManager.getFutures().add(executor.submit(task));
+          }
         }
         
         JdbcUtils.close(extConn, stmt, rs);
@@ -1049,8 +1062,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     SchemaManager schemaManager = conn.getSchemaManager();
 
-    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
-    String sql = incrementalQuery.getStatement();
+    TrainDBIncrementalQuery incrementalParallelQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalParallelQuery.getStatement();
 
     List<List<Object>> totalRes = new ArrayList<>();
     List<Future<List<List<Object>>>> futures = schemaManager.getFutures();

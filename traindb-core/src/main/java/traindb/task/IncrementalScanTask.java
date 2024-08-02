@@ -13,7 +13,6 @@ import java.util.concurrent.Callable;
 import org.apache.calcite.jdbc.CalcitePrepare.Context;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
-
 import traindb.adapter.jdbc.JdbcUtils;
 import traindb.jdbc.TrainDBConnectionImpl;
 import traindb.schema.SchemaManager;
@@ -22,71 +21,71 @@ import traindb.sql.TrainDBSqlCommand;
 
 public class IncrementalScanTask implements Callable<List<List<Object>>> {
 
-    Context context;
-    TrainDBSqlCommand commands;
-    int queryIdx;
+  Context context;
+  TrainDBSqlCommand commands;
+  int queryIdx;
 
-    public IncrementalScanTask(Context context, TrainDBSqlCommand commands, int queryIdx) {
-      this.context = context;
-      this.commands = commands;
-      this.queryIdx = queryIdx;
-    }
-
-    @Override
-    public List<List<Object>> call() {
-      TrainDBConnectionImpl conn =
-          (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
-
-      SchemaManager schemaManager = conn.getSchemaManager();
-
-      TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
-      String sql = incrementalQuery.getStatement();
-
-      List<List<Object>> totalRes = new ArrayList<>();
-      List<String> header = new ArrayList<>();
-
-      if (queryIdx <= 0) {
-        throw new RuntimeException(
-            "failed to run statement: " + sql
-                + "\nerror msg: incremental query can be executed on partitioned table only.");
-      }
-
-      if (schemaManager.saveQuery.size() <= queryIdx) {
-        return null;
-      }
-
-      try {
-        String currentIncrementalQuery = schemaManager.saveQuery.get(queryIdx);
-        Connection extConn = conn.getDataSourceConnection();
-        Statement stmt = extConn.createStatement();
-        ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
-  
-        int columnCount = rs.getMetaData().getColumnCount();
-        ResultSetMetaData md = rs.getMetaData();
-  
-        while (rs.next()) {
-          List<Object> r = new ArrayList<>();
-          for (int j = 1; j <= columnCount; j++) {
-            int type = md.getColumnType(j);
-            SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
-            if (sqlTypeName == DECIMAL) {
-              r.add(rs.getInt(j));
-            } else {
-              r.add(rs.getObject(j));
-            }
-          }
-          totalRes.add(r);
-        }
-  
-        for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
-          SqlAggFunction agg = schemaManager.aggCalls.get(j);
-          header.add(agg.getName());
-        }
-        JdbcUtils.close(extConn, stmt, rs);
-      } catch (SQLException e) {
-        throw new RuntimeException(e);
-      } 
-
-      return totalRes;
-    }
+  public IncrementalScanTask(Context context, TrainDBSqlCommand commands, int queryIdx) {
+    this.context = context;
+    this.commands = commands;
+    this.queryIdx = queryIdx;
   }
+
+  @Override
+  public List<List<Object>> call() {
+    TrainDBConnectionImpl conn = 
+                (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+    SchemaManager schemaManager = conn.getSchemaManager();
+
+    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalQuery.getStatement();
+
+    List<List<Object>> totalRes = new ArrayList<>();
+    List<String> header = new ArrayList<>();
+
+    if (queryIdx <= 0) {
+      throw new RuntimeException(
+          "failed to run statement: " + sql
+              + "\nerror msg: incremental query can be executed on partitioned table only.");
+    }
+
+    if (schemaManager.saveQuery.size() <= queryIdx) {
+      return null;
+    }
+
+    try {
+      String currentIncrementalQuery = schemaManager.saveQuery.get(queryIdx);
+      Connection extConn = conn.getDataSourceConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
+
+      int columnCount = rs.getMetaData().getColumnCount();
+      ResultSetMetaData md = rs.getMetaData();
+
+      while (rs.next()) {
+        List<Object> r = new ArrayList<>();
+        for (int j = 1; j <= columnCount; j++) {
+          int type = md.getColumnType(j);
+          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
+          if (sqlTypeName == DECIMAL) {
+            r.add(rs.getInt(j));
+          } else {
+            r.add(rs.getObject(j));
+          }
+        }
+        totalRes.add(r);
+      }
+
+      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
+        SqlAggFunction agg = schemaManager.aggCalls.get(j);
+        header.add(agg.getName());
+      }
+      JdbcUtils.close(extConn, stmt, rs);
+    } catch (SQLException e) {
+      throw new RuntimeException(e);
+    }
+
+    return totalRes;
+  }
+}
