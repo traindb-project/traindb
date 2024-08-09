@@ -246,7 +246,7 @@ public class TrainDBSpatialOperatorTable extends ReflectiveSqlOperatorTable {
       new SqlFunction(
           "st_intersects",
           SqlKind.OTHER_FUNCTION,
-          ReturnTypes.explicit(SqlTypeName.GEOMETRY),
+          ReturnTypes.INTEGER,
           null,
           OperandTypes.family(SqlTypeFamily.GEO, SqlTypeFamily.GEO),
           SqlFunctionCategory.SYSTEM);
