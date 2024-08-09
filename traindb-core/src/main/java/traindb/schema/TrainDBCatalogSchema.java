@@ -29,6 +29,7 @@ import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MTable;
 import traindb.catalog.pm.MTableExt;
 import traindb.common.TrainDBLogger;
+import traindb.sql.TrainDBSqlUtil;
 
 public class TrainDBCatalogSchema extends TrainDBSchema {
   private static TrainDBLogger LOG = TrainDBLogger.getLogger(TrainDBCatalogSchema.class);
@@ -76,7 +77,7 @@ public class TrainDBCatalogSchema extends TrainDBSchema {
       RelDataType sqlType =
           sqlType(typeFactory, mColumn.getColumnType(),
               mColumn.getPrecision(), mColumn.getScale(), mColumn.isNullable(),
-              SqlTypeName.getNameForJdbcType(mColumn.getColumnType()).getName());
+              TrainDBSqlUtil.getSqlTypeNameForJdbcType(mColumn.getColumnType()).getName());
 
       builder.add(mColumn.getColumnName(), sqlType);
     }

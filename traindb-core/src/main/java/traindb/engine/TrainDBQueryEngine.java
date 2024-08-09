@@ -78,6 +78,7 @@ import traindb.schema.TrainDBSchema;
 import traindb.schema.TrainDBTable;
 import traindb.sql.TrainDBSqlCommand;
 import traindb.sql.TrainDBSqlRunner;
+import traindb.sql.TrainDBSqlUtil;
 import traindb.task.TaskTracer;
 import traindb.util.ZipUtils;
 
@@ -405,7 +406,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           throw new TrainDBException("cannot find base column information");
         }
         sb.append(columnName).append(" ");
-        SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(mColumn.getColumnType());
+        SqlTypeName sqlTypeName = TrainDBSqlUtil.getSqlTypeNameForJdbcType(mColumn.getColumnType());
         switch (sqlTypeName) {
           case CHAR:
           case VARCHAR:
@@ -521,7 +522,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     sb.append(synopsisName);
     sb.append(" VALUES (");
     for (String columnName : columns) {
-      sb.append("?,");
+      MColumn mColumn = mTable.getColumn(columnName);
+      SqlTypeName sqlTypeName = TrainDBSqlUtil.getSqlTypeNameForJdbcType(mColumn.getColumnType());
+      if (sqlTypeName == SqlTypeName.GEOMETRY) {
+        sb.append("ST_GEOMFROMTEXT(?,0),");
+      } else {
+        sb.append("?,");
+      }
     }
     sb.deleteCharAt(sb.lastIndexOf(","));
     sb.append(")");
@@ -542,7 +549,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
           if (mColumn == null) {
             throw new TrainDBException("cannot find base column information");
           }
-          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(mColumn.getColumnType());
+          SqlTypeName sqlTypeName =
+              TrainDBSqlUtil.getSqlTypeNameForJdbcType(mColumn.getColumnType());
           switch (sqlTypeName) {
             case INTEGER:
             case TINYINT:
@@ -564,6 +572,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
               break;
             case CHAR:
             case VARCHAR:
+            case GEOMETRY:
               pstmt.setString(i, row[i - 1]);
               break;
             case DATE:
