@@ -130,6 +130,7 @@ public final class TrainDBSql {
         runner.bypassDdlStmt(bypassDdlStmt.getStatement());
         break;
       case INCREMENTAL_QUERY:
+      case INCREMENTAL_PARALLEL_QUERY:
         break;
       case SHOW_QUERY_LOGS:
         TrainDBSqlShowCommand showQueryLogs = (TrainDBSqlShowCommand) command;
@@ -500,6 +501,16 @@ public final class TrainDBSql {
       LOG.debug("INCREMENTAL : stmt=" + stmt);
       commands.add(new TrainDBIncrementalQuery(stmt));
     }
+
+    @Override
+    public void exitIncrementalParallelQuery(TrainDBSqlParser.IncrementalParallelQueryContext ctx) {
+      int start = ctx.ddlString().getStart().getStartIndex();
+      int stop = ctx.getStop().getStopIndex();
+      String stmt = ctx.getStart().getInputStream().getText(new Interval(start, stop));
+      LOG.debug("INCREMENTAL PARALLEL : stmt=" + stmt);
+      commands.add(new TrainDBIncrementalParallelQuery(stmt));
+    }
+      
 
     private Object getOptionValueObject(TrainDBSqlParser.OptionValueContext ctx,
                                         boolean convertPattern) {

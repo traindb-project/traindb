@@ -18,6 +18,7 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.Future;
 import java.util.concurrent.locks.Lock;
 import java.util.concurrent.locks.ReadWriteLock;
 import java.util.concurrent.locks.ReentrantReadWriteLock;
@@ -61,6 +62,26 @@ public final class SchemaManager extends AbstractService {
   public List<String> header;
   public List<SqlAggFunction> aggCalls;
 
+  // for parallel incremental query
+  private boolean isParallel;
+  private List<Future<List<List<Object>>>> futures;
+
+  public void setParallel(boolean p) {
+    isParallel = p;
+  }
+
+  public boolean isParallel() {
+    return isParallel;
+  }
+
+  public List<Future<List<List<Object>>>> getFutures() {
+    return futures;
+  }
+
+  public void setFutures(List<Future<List<List<Object>>>> futures) {
+    this.futures = futures;
+  }
+
   private SchemaManager(CatalogStore catalogStore) {
     super(SchemaManager.class.getName());
     this.catalogStore = catalogStore;
@@ -73,6 +94,8 @@ public final class SchemaManager extends AbstractService {
     totalRes = new ArrayList<>();
     header = new ArrayList<>();
     aggCalls = new ArrayList<>();
+
+    isParallel = false;
   }
 
   @Override

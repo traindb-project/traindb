@@ -48,6 +48,7 @@ traindbStmts
     | exportSynopsis
     | importSynopsis
     | analyzeSynopsis
+    | incrementalParallelQuery
     | incrementalQuery
     ;
 
@@ -270,6 +271,10 @@ incrementalQuery
     : K_INCREMENTAL ddlString
     ;
 
+incrementalParallelQuery
+    : K_INCREMENTAL K_PARALLEL ddlString
+    ;
+
 schemaName
     : IDENTIFIER
     ;
@@ -353,6 +358,7 @@ K_OPTIONS : O P T I O N S ;
 K_SAMPLE : S A M P L E ;
 K_PERCENT : P E R C E N T ;
 K_PARTITIONS : P A R T I T I O N S ;
+K_PARALLEL : P A R A L L E L ;
 K_QUERYLOGS : Q U E R Y L O G S ;
 K_REMOTE : R E M O T E ;
 K_RENAME : R E N A M E ;

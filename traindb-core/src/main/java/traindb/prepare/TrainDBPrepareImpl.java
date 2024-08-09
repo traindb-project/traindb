@@ -35,6 +35,10 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.StringTokenizer;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
@@ -103,6 +107,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcUtils;
+import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -113,6 +118,7 @@ import traindb.planner.TrainDBPlanner;
 import traindb.schema.SchemaManager;
 import traindb.schema.TrainDBPartition;
 import traindb.schema.TrainDBSchema;
+import traindb.sql.TrainDBIncrementalParallelQuery;
 import traindb.sql.TrainDBIncrementalQuery;
 import traindb.sql.TrainDBSql;
 import traindb.sql.TrainDBSqlCommand;
@@ -121,6 +127,7 @@ import traindb.sql.calcite.TrainDBSqlCalciteParserImpl;
 import traindb.sql.calcite.TrainDBSqlSelect;
 import traindb.sql.fun.TrainDBAggregateOperatorTable;
 import traindb.sql.fun.TrainDBSpatialOperatorTable;
+import traindb.task.IncrementalScanTask;
 
 public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
@@ -564,7 +571,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           // INSERT QUERY LOGS
           queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
 
-          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY) {
+          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY 
+            ||commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_PARALLEL_QUERY) {
             return executeIncremental(context, commands.get(0));
           }
 
@@ -690,7 +698,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
   <T> CalciteSignature<T> executeIncremental(
       Context context,
-      TrainDBSqlCommand commands) {
+      TrainDBSqlCommand commands) throws SQLException {
     final CalciteConnectionConfig config = context.config();
     SqlParser.Config parserConfig = parserConfig()
         .withQuotedCasing(config.quotedCasing())
@@ -703,17 +711,27 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     if (parserFactory != null) {
       parserConfig = parserConfig.withParserFactory(parserFactory);
     }
-
+    
     TrainDBConnectionImpl conn =
         (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
     SchemaManager schemaManager = conn.getSchemaManager();
 
-    TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
-    String sql = incrementalQuery.getStatement();
+    String sql = null;
+    if ( commands instanceof TrainDBIncrementalParallelQuery) {
+      sql = ((TrainDBIncrementalParallelQuery) commands).getStatement();
+      schemaManager.setParallel(true);
+    } else {
+      sql = ((TrainDBIncrementalQuery) commands).getStatement();
+      schemaManager.setParallel(true);
+    }
+    
 
     if (sql.equals("rows")) {
-      return executeIncrementalNext(context,commands);
+      if (schemaManager.isParallel()) 
+        return executeIncrementalNextParallel(context, commands);
+      else
+        return executeIncrementalNext(context,commands);
     }
 
     SqlParser parser = createParser(sql,  parserConfig);
@@ -836,13 +854,27 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           + "\nerror msg: incremental query can be executed on partitioned table only.");
     }
 
+    DatabaseMetaData databaseMetaData = conn.getMetaData();
+    String url = databaseMetaData.getURL();
+    String db_query = url.split(":")[1];
+
     String changeQuery;
     for (int k = 0; k < partitionList.size(); k++) {
-      changeQuery =
-          "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+      if (db_query.equals("postgresql")) {
+        changeQuery =
+            "select " + columnList + " from " + schemaName + "." + partitionList.get(k);
+      } else {
+        changeQuery =
+            "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";
+      }
 
       schemaManager.saveQuery.add(changeQuery);
     }
+
+    if(schemaManager.getFutures() == null) {
+      schemaManager.setFutures(new ArrayList<>());
+    }
+
     List<List<Object>> totalRes = new ArrayList<>();
     List<String> header = new ArrayList<>();
     try {
@@ -872,6 +904,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
           SqlAggFunction agg = schemaManager.aggCalls.get(j);
           header.add(agg.getName());
+          schemaManager.header.add(agg.getName());
         }
 
         TrainDBListResultSet res
@@ -894,7 +927,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
                 break;
               case MIN:
                 executeIncrementalMin(res, j, r);
-                break;
+                break; 
               case MAX:
                 executeIncrementalMax(res, j, r);
                 break;
@@ -904,7 +937,15 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           }
           totalRes.add(r);
         }
-
+        
+        if (schemaManager.isParallel()) {
+          ExecutorService executor = Executors.newFixedThreadPool(4);
+          for (int idx = 1; idx < schemaManager.saveQuery.size(); idx++) {
+            IncrementalScanTask task = new IncrementalScanTask(context, commands, ++schemaManager.saveQueryIdx);
+            schemaManager.getFutures().add(executor.submit(task));
+          }
+        }
+        
         JdbcUtils.close(extConn, stmt, rs);
         schemaManager.saveQueryIdx++;
     } catch (SQLException e) {
@@ -921,8 +962,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       Context context,
       TrainDBSqlCommand commands) {
 
-    TrainDBConnectionImpl conn =
-        (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+    TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
     SchemaManager schemaManager = conn.getSchemaManager();
 
@@ -972,8 +1012,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         header.add(agg.getName());
       }
 
-      TrainDBListResultSet res
-          = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+      TrainDBListResultSet res = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
       if (res.getRowCount() > 0) {
         List<Object> r = new ArrayList<>();
         int aggIdx = 0;
@@ -1013,6 +1052,68 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     return convertResultToSignature(context, sql,
         new TrainDBListResultSet(header, totalRes));
+  }
+
+  <T> CalciteSignature<T> executeIncrementalNextParallel(
+      Context context,
+      TrainDBSqlCommand commands) {
+
+    TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+    SchemaManager schemaManager = conn.getSchemaManager();
+
+    TrainDBIncrementalQuery incrementalParallelQuery = (TrainDBIncrementalQuery) commands;
+    String sql = incrementalParallelQuery.getStatement();
+
+    List<List<Object>> totalRes = new ArrayList<>();
+    List<Future<List<List<Object>>>> futures = schemaManager.getFutures();
+
+    if (futures.size() > 0) {
+      try {
+        List<List<Object>> result = futures.remove(0).get();
+        for (List<Object> r : result)
+          schemaManager.totalRes.add(r);
+      } catch (InterruptedException | ExecutionException e) {
+        e.printStackTrace();
+      }
+
+      TrainDBListResultSet res = new TrainDBListResultSet(schemaManager.header, schemaManager.totalRes);
+      if (res.getRowCount() > 0) {
+        List<Object> r = new ArrayList<>();
+        int aggIdx = 0;
+        for (int j = 0; j < res.getColumnCount(); j++, aggIdx++) {
+          SqlAggFunction agg = schemaManager.aggCalls.get(aggIdx);
+          try {
+            switch (agg.getKind()) {
+              case COUNT:
+                executeIncrementalCount(res, j, r);
+                break;
+              case SUM:
+                executeIncrementalSum(res, j, r);
+                break;
+              case AVG:
+                executeIncrementalAvg(res, j, r);
+                j++;
+                break;
+              case MIN:
+                executeIncrementalMin(res, j, r);
+                break;
+              case MAX:
+                executeIncrementalMax(res, j, r);
+                break;
+              default:
+                break;
+            }
+          } catch (TrainDBException e) {
+            e.printStackTrace();
+          }
+        }
+        totalRes.add(r);
+      }
+    }
+
+    return convertResultToSignature(context, sql,
+        new TrainDBListResultSet(schemaManager.header, totalRes));
   }
 
   public static void executeIncrementalCount(TrainDBListResultSet res, int columnIdx, List<Object> r)
@@ -1055,10 +1156,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.BIGINT:
         case Types.FLOAT:
         case Types.DOUBLE:
           sum = (int) res.getValue(columnIdx);
+          totalSum = totalSum + sum;
+          break;
+        case Types.BIGINT:
+          sum = ((Long) res.getValue(columnIdx)).intValue();
           totalSum = totalSum + sum;
           break;
         default:
@@ -1079,6 +1183,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     double totalDoubleCnt = 0;
     double doubleCnt = 0;
     double doubleSum = 0;
+    Object value = null;
 
     int type = res.getColumnType(columnIdx);
 
@@ -1088,11 +1193,22 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.BIGINT:
           intSum = (int) res.getValue(columnIdx);
           totalIntSum = totalIntSum + intSum;
 
-          Object value = res.getValue(columnIdx + 1);
+          value = res.getValue(columnIdx + 1);
+          if (value instanceof Long) {
+            intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
+          } else {
+            intCnt = (int) res.getValue(columnIdx + 1);
+          }
+          totalIntCnt = totalIntCnt + intCnt;
+          break;
+        case Types.BIGINT:
+          intSum = ((Long) res.getValue(columnIdx)).intValue();
+          totalIntSum = totalIntSum + intSum;
+
+          value = res.getValue(columnIdx + 1);
           if (value instanceof Long) {
             intCnt = ((Long) res.getValue(columnIdx + 1)).intValue();
           } else {
