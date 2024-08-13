@@ -31,11 +31,20 @@ public class TrainDBPartition {
   private final String name;
   private final TrainDBSchema schema;
   private final List<String> partitionNameMap;
+  private final String colmun;
 
   public TrainDBPartition(String name, TrainDBSchema schema, List<String> partitionNameMap) {
     this.name = name;
     this.schema = schema;
     this.partitionNameMap = partitionNameMap;
+    this.colmun = null;
+  }
+
+  public TrainDBPartition(String name, TrainDBSchema schema, List<String> partitionNameMap, String column) {
+    this.name = name;
+    this.schema = schema;
+    this.partitionNameMap = partitionNameMap;
+    this.colmun = column;
   }
 
   public final String getName() {
@@ -48,5 +57,9 @@ public class TrainDBPartition {
 
   public final List<String> getPartitionNameMap() {
     return partitionNameMap;
+  }
+
+  public final String getColumn() {
+    return colmun;
   }
 }

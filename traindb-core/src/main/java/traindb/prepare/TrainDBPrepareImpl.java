@@ -723,7 +723,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       schemaManager.setParallel(true);
     } else {
       sql = ((TrainDBIncrementalQuery) commands).getStatement();
-      schemaManager.setParallel(true);
+      schemaManager.setParallel(false);
     }
     
 
@@ -829,7 +829,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       tblname = st.nextToken();
     }
 
+    DatabaseMetaData databaseMetaData = conn.getMetaData();
+    String url = databaseMetaData.getURL();
+    String db_query = url.split(":")[1];
+
     List<String> partitionList = null;
+    String partitionKey = null;
     for (Schema schema : schemaManager.getJdbcDataSource().getSubSchemaMap().values()) {
       TrainDBSchema traindbSchema = (TrainDBSchema) schema;
 
@@ -839,10 +844,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
       Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
+      
 
       for (Map.Entry<String,TrainDBPartition> tempEntry : entries) {
         if (tempEntry.getKey().equals(tblname)) {
           partitionList = tempEntry.getValue().getPartitionNameMap();
+          if(db_query.equals("bigquery"))
+            partitionKey = tempEntry.getValue().getColumn();
           break;
         }
       }
@@ -854,15 +862,17 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           + "\nerror msg: incremental query can be executed on partitioned table only.");
     }
 
-    DatabaseMetaData databaseMetaData = conn.getMetaData();
-    String url = databaseMetaData.getURL();
-    String db_query = url.split(":")[1];
-
     String changeQuery;
     for (int k = 0; k < partitionList.size(); k++) {
       if (db_query.equals("postgresql")) {
         changeQuery =
             "select " + columnList + " from " + schemaName + "." + partitionList.get(k);
+      } else if (db_query.equals("bigquery")) {
+        changeQuery = 
+            "select " + columnList + "from " + schemaName + "." + tblname + 
+            " where " + partitionKey + " >= " + partitionList.get(k);
+        if (k < partitionList.size()-1)
+          changeQuery += " and " + partitionKey + " < " + partitionList.get(k+1);
       } else {
         changeQuery =
             "select " + columnList + " from " + tblname + " partition(" + partitionList.get(k) + ")";

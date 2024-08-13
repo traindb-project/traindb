@@ -178,6 +178,13 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
             + "WHERE nmsp_parent.nspname = '" + getName() + "'";
       } else if (db_query.equals("tibero")) {
         sql = "SELECT owner, table_name, partition_name  FROM ALL_TAB_PARTITIONS WHERE  owner = '"+ getName() + "'";
+      } else if (db_query.equals("bigquery")) {
+        String schema = getName();
+        if (schema.equals("public"))
+          return;
+        sql = "select A.TABLE_SCHEMA, A.TABLE_NAME, A.PARTITION_ID, B.COLUMN_NAME " +
+              "from test.INFORMATION_SCHEMA.COLUMNS B, " + getName() + ".INFORMATION_SCHEMA.PARTITIONS A " + 
+              "where B.is_partitioning_column = 'YES' order by PARTITION_ID";
       } else {
         return;
       }
@@ -186,6 +193,7 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       String schemaName = null;
       String tableName = null;
       String partitionName = null;
+      String columnName = null;
 
       Statement vstmt = connection.createStatement();
 
@@ -194,6 +202,9 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
         schemaName = resultSet.getString(1);
         tableName = resultSet.getString(2);
         partitionName = resultSet.getString(3);
+        if(db_query.equals("bigquery")) {
+          columnName = resultSet.getString(4);
+        }
 
         if (oldTableName == null) {
           partitionList.add(partitionName);
@@ -202,7 +213,13 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
           if (oldTableName.compareTo(tableName) == 0) {
             partitionList.add(partitionName);
           } else {
-            TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
+            TrainDBPartition partitionDef = null;
+            if (db_query.equals("bigquery")) {
+              partitionList.remove("__UNPARTITIONED__");
+              partitionDef = new TrainDBPartition(schemaName, this, partitionList, columnName);
+            } else {
+              partitionDef = new TrainDBPartition(schemaName, this, partitionList, null);
+            }
             builder.put(oldTableName, partitionDef);
             partitionList = new ArrayList<>();
             partitionList.add(partitionName);
@@ -212,7 +229,13 @@ public class TrainDBJdbcSchema extends TrainDBSchema {
       }
 
       if (oldTableName != null) {
-        TrainDBPartition partitionDef = new TrainDBPartition(schemaName, this, partitionList);
+        TrainDBPartition partitionDef = null;
+        if (db_query.equals("bigquery")) {
+          partitionList.remove("__UNPARTITIONED__");
+          partitionDef = new TrainDBPartition(schemaName, this, partitionList, columnName);
+        } else { 
+          partitionDef = new TrainDBPartition(schemaName, this, partitionList, null);
+        }
         builder.put(tableName, partitionDef);
       }
     } catch (SQLException e) {
