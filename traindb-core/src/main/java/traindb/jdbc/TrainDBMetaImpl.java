@@ -25,6 +25,7 @@ import org.apache.calcite.avatica.MetaImpl;
 import org.apache.calcite.avatica.NoSuchStatementException;
 import org.apache.calcite.avatica.QueryState;
 import org.apache.calcite.avatica.remote.TypedValue;
+import org.apache.calcite.config.CalciteSystemProperty;
 import org.apache.calcite.jdbc.CalciteConnection;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalcitePrepare.Context;
@@ -633,6 +634,15 @@ public class TrainDBMetaImpl extends MetaImpl {
         final CalciteServerStatement statement =
             calciteConnection.server.getStatement(h);
         final Context context = statement.createPrepareContext();
+        if (TrainDBWhatIfQueryTransformer.containsWhatIfToClause(sql)) {
+          if (CalciteSystemProperty.DEBUG.value()) {
+            System.out.println("Input sql = [" + sql + "]");
+          }
+          sql = TrainDBWhatIfQueryTransformer.transformQuery(sql);
+          if (CalciteSystemProperty.DEBUG.value()) {
+            System.out.println("Converted sql = [" + sql + "]");
+          }
+        }
         final CalcitePrepare.Query<Object> query = toQuery(context, sql);
         signature = calciteConnection.parseQuery(query, context, maxRowCount);
         statement.setSignature(signature);
