@@ -61,7 +61,8 @@ dropModeltype
     ;
 
 trainModel
-    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName K_ON tableName '(' columnNameList ')'
+    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName
+      ( K_FROM | K_ON ) tableName '(' columnNameList ')' joinTableListOpt* joinTableConditionListOpt?
       trainSampleClause? trainModelOptionsClause?
     ;
 
@@ -115,6 +116,26 @@ modeltypeClassName
 
 modeltypeUri
     : STRING_LITERAL
+    ;
+
+joinTableListOpt
+    : K_JOIN tableName '(' columnNameList ')'
+    ;
+
+joinTableConditionListOpt
+    : K_ON tableConditionList
+    ;
+
+tableConditionList
+    : tableConditionOr (K_AND tableConditionOr)*
+    ;
+
+tableConditionOr
+    : tableCondtionNot (K_OR tableCondtionNot)*
+    ;
+
+tableCondtionNot
+    : K_NOT? predicate
     ;
 
 trainSampleClause
@@ -315,6 +336,52 @@ ddlString
     : ( . | WHITESPACES )+?
     ;
 
+comparisonOperator
+    : '=' | '>' | '<' | '<' '=' | '>' '=' | '<' '>' | '!' '=' | '!' '>' | '!' '<'
+    ;
+
+predicate
+    : '(' tableConditionList ')'
+    | expression comparisonOperator expression
+    | expression K_NOT? (K_LIKE | K_RLIKE) expression (K_ESCAPE expression)?
+    | expression K_IS nullConstant
+    ;
+
+expression
+    : K_NULL
+    | STRING_LITERAL
+    | NUMERIC_LITERAL
+    | K_TRUE
+    | K_FALSE
+    | fullColumnName
+    | '(' expression ')'
+    | expression op=('*' | '/' | '%') expression
+    | op=('+' | '-') expression
+    | expression op=('+' | '-' | '&' | '^' | '|' | '#' | '||' | '<<' | '>>'  ) expression
+    | expression comparisonOperator expression
+    | K_NOT expression
+    | expression K_IS nullConstant
+    | date
+    ;
+
+fullColumnName
+    : (tableName '.')? columnName
+    ;
+
+nullConstant
+    : K_NOT? K_NULL
+    ;
+
+date
+    : K_DATE constant
+    ;
+
+constant
+    : STRING_LITERAL
+    | BINARY_STRING_LITERAL
+    | NUMERIC_LITERAL
+    ;
+
 error
     : UNEXPECTED_CHAR
         {
@@ -337,7 +404,9 @@ K_DESCRIBE : D E S C R I B E ;
 K_DISABLE : D I S A B L E ;
 K_DROP : D R O P ;
 K_ENABLE : E N A B L E ;
+K_ESCAPE : E S C A P E ;
 K_EXPORT : E X P O R T ;
+K_FALSE : F A L S E ;
 K_FILE : F I L E ;
 K_FOR : F O R ;
 K_FROM : F R O M ;
@@ -346,15 +415,21 @@ K_IMPORT : I M P O R T ;
 K_IN : I N ;
 K_INCREMENTAL : I N C R E M E N T A L ;
 K_INFERENCE : I N F E R E N C E ;
+K_IS : I S ;
+K_JOIN : J O I N ;
 K_LIKE : L I K E ;
+K_RLIKE : R L I K E ;
 K_LIMIT : L I M I T ;
 K_LOCAL : L O C A L ;
 K_MODEL : M O D E L ;
 K_MODELS : M O D E L S ;
 K_MODELTYPE : M O D E L T Y P E ;
 K_MODELTYPES : M O D E L T Y P E S ;
+K_NOT : N O T ;
+K_NULL : N U L L ;
 K_ON : O N ;
 K_OPTIONS : O P T I O N S ;
+K_OR : O R ;
 K_SAMPLE : S A M P L E ;
 K_PERCENT : P E R C E N T ;
 K_PARTITIONS : P A R T I T I O N S ;
@@ -373,6 +448,7 @@ K_TASKS : T A S K S ;
 K_TO : T O ;
 K_TRAIN : T R A I N ;
 K_TRAININGS : T R A I N I N G S;
+K_TRUE : T R U E ;
 K_USE : U S E ;
 K_WHERE : W H E R E ;
 

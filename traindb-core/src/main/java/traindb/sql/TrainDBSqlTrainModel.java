@@ -20,20 +20,23 @@ import java.util.Map;
 class TrainDBSqlTrainModel extends TrainDBSqlCommand {
   private final String modeltypeName;
   private final String modelName;
-  private final String schemaName;
-  private final String tableName;
-  private final List<String> columnNames;
+  private final List<String> schemaNames;
+  private final List<String> tableNames;
+  private final List<List<String>> columnNames;
+  private final String joinCondition;
   private final float samplePercent;
   private final Map<String, Object> trainOptions;
 
-  TrainDBSqlTrainModel(String modeltypeName, String modelName, String schemaName, String tableName,
-                       List<String> columnNames, float samplePercent,
+  TrainDBSqlTrainModel(String modeltypeName, String modelName, List<String> schemaNames,
+                       List<String> tableNames, List<List<String>> columnNames,
+                       String joinCondition, float samplePercent,
                        Map<String, Object> trainOptions) {
     this.modeltypeName = modeltypeName;
     this.modelName = modelName;
-    this.schemaName = schemaName;
-    this.tableName = tableName;
+    this.schemaNames = schemaNames;
+    this.tableNames = tableNames;
     this.columnNames = columnNames;
+    this.joinCondition = joinCondition;
     this.samplePercent = samplePercent;
     this.trainOptions = trainOptions;
   }
@@ -46,16 +49,20 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
     return modelName;
   }
 
-  String getSchemaName() {
-    return schemaName;
+  List<String> getSchemaNames() {
+    return schemaNames;
   }
 
-  String getTableName() {
-    return tableName;
+  List<String> getTableNames() {
+    return tableNames;
   }
 
-  List<String> getColumnNames() {
+  List<List<String>> getColumnNames() {
     return columnNames;
+  }
+
+  String getJoinCondition() {
+    return joinCondition;
   }
 
   float getSamplePercent() {
