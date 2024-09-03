@@ -115,11 +115,8 @@ public final class JDOCatalogContext implements CatalogContext {
     }
   }
 
-  @Override
-  public MModel trainModel(
-      String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
-      @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+  private MTable addTable(String schemaName, String tableName, List<String> columnNames,
+                          RelDataType relDataType, String tableType) throws CatalogException {
     MTable mTable;
     try {
       MSchema mSchema = getSchema(schemaName);
@@ -130,11 +127,11 @@ public final class JDOCatalogContext implements CatalogContext {
 
       mTable = getTable(schemaName, tableName);
       if (mTable == null) {
-        mTable = new MTable(tableName, "TABLE", mSchema);
+        mTable = new MTable(tableName, tableType, mSchema);
         pm.makePersistent(mTable);
 
-        List<RelDataTypeField> fields = dataType.getFieldList();
-        for (int i = 0; i < dataType.getFieldCount(); i++) {
+        List<RelDataTypeField> fields = relDataType.getFieldList();
+        for (int i = 0; i < relDataType.getFieldCount(); i++) {
           RelDataTypeField field = fields.get(i);
           MColumn mColumn = new MColumn(field.getName(),
               field.getType().getSqlTypeName().getJdbcOrdinal(),
@@ -146,7 +143,19 @@ public final class JDOCatalogContext implements CatalogContext {
           pm.makePersistent(mColumn);
         }
       }
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to add table '" + schemaName + "." + tableName + "'", e);
+    }
+    return mTable;
+  }
 
+  @Override
+  public MModel trainModel(
+      String modeltypeName, String modelName, String schemaName, String tableName,
+      List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
+      @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+    MTable mTable = addTable(schemaName, tableName, columnNames, dataType, "TABLE");
+    try {
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
           mModeltype, modelName, schemaName, tableName, columnNames,
