@@ -29,6 +29,7 @@ import java.util.Map;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.interpreter.Interpreters;
@@ -372,6 +373,15 @@ public class TrainDBPreparingStmt extends Prepare
       } finally {
         CatalogReader.THREAD_LOCAL.remove();
       }
+      
+      EnumerableRelImplementor relImplementor =
+          new EnumerableRelImplementor(root.rel.getCluster().getRexBuilder(),
+              null);
+
+      final EnumerableRel.Prefer prefer;
+      prefer = EnumerableRel.Prefer.CUSTOM;
+
+      EnumerableRel.Result result2 =enumerable.implement(relImplementor, prefer);
     }
 
     if (timingTracer != null) {

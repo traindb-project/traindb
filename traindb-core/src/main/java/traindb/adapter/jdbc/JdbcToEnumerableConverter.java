@@ -106,6 +106,13 @@ public class JdbcToEnumerableConverter
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
     }
+
+    final JdbcImplementor jdbcImplementor =
+        new JdbcImplementor(jdbcConvention.dialect,
+            (JavaTypeFactory) getCluster().getTypeFactory());
+
+    JdbcImplementor.Result r1 = child.implement(jdbcImplementor);
+
     Hook.QUERY_PLAN.run(sql);
     final Expression sql_ =
         builder0.append("sql", Expressions.constant(sql));
