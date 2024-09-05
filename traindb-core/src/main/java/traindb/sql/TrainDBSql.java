@@ -312,7 +312,9 @@ public final class TrainDBSql {
 
       String joinCondition = "";
       if (ctx.joinTableConditionListOpt() != null) {
-        joinCondition = ctx.joinTableConditionListOpt().tableConditionList().getText();
+        int start = ctx.joinTableConditionListOpt().tableConditionList().start.getStartIndex();
+        int stop = ctx.joinTableConditionListOpt().tableConditionList().stop.getStopIndex();
+        joinCondition = ctx.start.getInputStream().getText(new Interval(start, stop));
       }
 
       float samplePercent = 100;
