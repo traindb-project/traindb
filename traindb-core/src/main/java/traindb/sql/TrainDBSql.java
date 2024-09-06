@@ -79,8 +79,8 @@ public final class TrainDBSql {
         TrainDBSqlTrainModel trainModel = (TrainDBSqlTrainModel) command;
         runner.trainModel(
             trainModel.getModeltypeName(), trainModel.getModelName(),
-            trainModel.getSchemaNames().get(0), trainModel.getTableNames().get(0),
-            trainModel.getColumnNames().get(0), trainModel.getSamplePercent(),
+            trainModel.getSchemaNames(), trainModel.getTableNames(), trainModel.getColumnNames(),
+            trainModel.getJoinCondition(), trainModel.getSamplePercent(),
             trainModel.getTrainOptions());
         break;
       case DROP_MODEL:

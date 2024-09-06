@@ -21,6 +21,7 @@ import java.util.Collection;
 import java.util.Comparator;
 import java.util.List;
 import java.util.Map;
+import java.util.UUID;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
@@ -30,6 +31,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import traindb.catalog.pm.MColumn;
+import traindb.catalog.pm.MJoin;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
@@ -150,11 +152,88 @@ public final class JDOCatalogContext implements CatalogContext {
   }
 
   @Override
+  public MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
+                                List<List<String>> columnNames, List<RelDataType> dataTypes,
+                                String joinQuery) throws CatalogException {
+    List<Long> srcTableIds = new ArrayList<>();
+    for (int i = 0; i < tableNames.size(); i++) {
+      MTable table = addTable(schemaNames.get(i), tableNames.get(i), columnNames.get(i),
+          dataTypes.get(i), "TABLE");
+      srcTableIds.add(table.getId());
+    }
+
+    UUID joinTableId = UUID.randomUUID();
+    String joinTableName = "__JOIN_" + joinTableId;
+    try {
+      // use first table's schema as join table's schema
+      MTable joinTable =  new MTable(joinTableName, "JOIN", getSchema(schemaNames.get(0)));
+      pm.makePersistent(joinTable);
+      MTableExt joinTableExt = new MTableExt(joinTableName, "JOIN", joinQuery, joinTable);
+      pm.makePersistent(joinTableExt);
+
+      for (int i = 0; i < tableNames.size(); i++) {
+        List<String> colnames = columnNames.get(i);
+        RelDataType relDataType = dataTypes.get(i);
+        for (String colname : colnames) {
+          RelDataTypeField field = relDataType.getField(colname, true, false);
+          MColumn mColumn = new MColumn(field.getName(),
+              field.getType().getSqlTypeName().getJdbcOrdinal(),
+              field.getType().getPrecision(),
+              field.getType().getScale(),
+              field.getType().isNullable(),
+              joinTable);
+
+          pm.makePersistent(mColumn);
+        }
+      }
+
+      for (int i = 0; i < tableNames.size(); i++) {
+        MJoin join = new MJoin(joinTable.getId(), srcTableIds.get(i), columnNames.get(i));
+        pm.makePersistent(join);
+      }
+
+      return joinTable;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create join table", e);
+    }
+  }
+
+  @Override
+  public void dropJoinTable(String schemaName, String joinTableName) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+
+      MTable joinTable = getTable(schemaName, joinTableName);
+      if (joinTable == null) {
+        return;
+      }
+
+      Query query = pm.newQuery(MJoin.class);
+      setFilterPatterns(query, ImmutableMap.of("join_table_id", joinTable.getId()));
+      Collection<MJoin> mJoins = (List<MJoin>) query.execute();
+      pm.deletePersistentAll(mJoins);
+      pm.deletePersistent(joinTable);
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to drop join table '" + joinTableName + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
   public MModel trainModel(
       String modeltypeName, String modelName, String schemaName, String tableName,
       List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
       @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
-    MTable mTable = addTable(schemaName, tableName, columnNames, dataType, "TABLE");
+    MTable mTable = getTable(schemaName, tableName);
+    if (mTable == null) {
+      mTable = addTable(schemaName, tableName, columnNames, dataType, "TABLE");
+    }
     try {
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
@@ -194,6 +273,7 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.deletePersistent(mTable);
         tx.commit();
       }
+      dropJoinTable(baseSchema, baseTable);
 
       Collection<MModel> baseSchemaModels = getModels(ImmutableMap.of("schema_name", baseSchema));
       if (baseSchemaModels == null || baseSchemaModels.size() == 0) {
