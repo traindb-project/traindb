@@ -59,6 +59,8 @@ import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import traindb.engine.TrainDBListResultSet;
+
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
  */
@@ -106,13 +108,7 @@ public class JdbcToEnumerableConverter
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
     }
-
-    final JdbcImplementor jdbcImplementor =
-        new JdbcImplementor(jdbcConvention.dialect,
-            (JavaTypeFactory) getCluster().getTypeFactory());
-
-    JdbcImplementor.Result r1 = child.implement(jdbcImplementor);
-
+    
     Hook.QUERY_PLAN.run(sql);
     final Expression sql_ =
         builder0.append("sql", Expressions.constant(sql));
@@ -211,6 +207,31 @@ public class JdbcToEnumerableConverter
     builder0.add(
         Expressions.return_(null, enumerable));
     return implementor.result(physType, builder0.toBlock());
+  }
+
+  public TrainDBListResultSet execute(EnumerableRelImplementor implementor, Prefer pref,
+      org.apache.calcite.jdbc.CalcitePrepare.Context context) {
+    final BlockBuilder builder0 = new BlockBuilder(false);
+    final JdbcRel child = (JdbcRel) getInput();
+    final PhysType physType = PhysTypeImpl.of(
+        implementor.getTypeFactory(), getRowType(),
+        pref.prefer(JavaRowFormat.CUSTOM));
+    final JdbcConvention jdbcConvention = (JdbcConvention) requireNonNull(child.getConvention(),
+        () -> "child.getConvention() is null for " + child);
+    SqlString sqlString = generateSql(jdbcConvention.dialect);
+    String sql = sqlString.getSql();
+    if (CalciteSystemProperty.DEBUG.value()) {
+      System.out.println("[" + sql + "]");
+    }
+    if (child instanceof JdbcTableScan) {
+      final JdbcImplementor jdbcImplementor = new JdbcImplementor(jdbcConvention.dialect,
+          (JavaTypeFactory) getCluster().getTypeFactory());
+
+      TrainDBListResultSet r1 = ((traindb.adapter.jdbc.JdbcTableScan) child).execute(context, sql);
+
+      return r1;
+    }
+    return null;
   }
 
   private static List<ConstantExpression> toIndexesTableExpression(SqlString sqlString) {

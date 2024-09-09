@@ -30,6 +30,7 @@ import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
 import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.jdbc.JdbcToEnumerableConverter;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.interpreter.Interpreters;
@@ -75,6 +76,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.common.TrainDBLogger;
+import traindb.engine.TrainDBListResultSet;
 import traindb.planner.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
 
@@ -381,7 +383,8 @@ public class TrainDBPreparingStmt extends Prepare
       final EnumerableRel.Prefer prefer;
       prefer = EnumerableRel.Prefer.CUSTOM;
 
-      EnumerableRel.Result result2 =enumerable.implement(relImplementor, prefer);
+      TrainDBListResultSet result2 = ((traindb.adapter.jdbc.JdbcToEnumerableConverter)enumerable).execute(relImplementor, prefer, context);
+
     }
 
     if (timingTracer != null) {
