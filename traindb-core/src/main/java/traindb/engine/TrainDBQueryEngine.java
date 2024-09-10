@@ -612,7 +612,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       sb.append(schemaNames.get(i)).append(".").append(tableNames.get(i)).append(",");
     }
     sb.deleteCharAt(sb.lastIndexOf(","));
-    if (whereCondition != null) {
+    if (whereCondition != null && !whereCondition.isEmpty()) {
       sb.append(" WHERE ").append(whereCondition);
     }
     String sql = sb.toString();
