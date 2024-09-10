@@ -504,6 +504,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     SqlDialect dialect = schemaManager.getDialect();
     if (importSynopsis
+        || mTable.getTableType().equals("JOIN")
         || (dialect instanceof TrainDBSqlDialect
             && !((TrainDBSqlDialect) dialect).supportCreateTableAsSelect())) {
       sb.append("(");
@@ -829,6 +830,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         catalogContext.createExternalTable(synopsisName, "csv", synPath.toString());
         conn.refreshRootSchema();
         T_tracer.closeTaskTime("SUCCESS");
+        T_tracer.endTaskTracer();
         return;
       }
 
@@ -840,6 +842,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       loadSynopsisIntoTable(synopsisName, mModel.getSchemaName(), mModel.getColumnNames(),
           mModel.getTable(), outputPath);
       T_tracer.closeTaskTime("SUCCESS");
+      T_tracer.endTaskTracer();
     } catch (Exception e) {
       try {
         dropSynopsisTable(synopsisName);
@@ -854,8 +857,6 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
       throw new TrainDBException(msg);
     }
-    T_tracer.closeTaskTime("SUCCESS");
-    T_tracer.endTaskTracer();
   }
 
   private void dropSynopsisTable(String synopsisName) throws Exception {
