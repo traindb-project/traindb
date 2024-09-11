@@ -598,7 +598,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType = getStatementType(sqlNode.getKind());
       } catch (SqlParseException e) {
         throw new RuntimeException(
-            "parse failed: " + e.getMessage(), e);
+            "parse failed: " + e.getMessage(), e);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
       }
 
       // INSERT QUERY LOGS
@@ -620,6 +620,16 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             ImmutableList.of(), Meta.CursorFactory.OBJECT,
             null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
+      }
+
+      if(sqlNode.getKind().belongsTo(SqlKind.QUERY))
+      //if (sqlNode.getKind().belongsTo(SqlKind.JOIN)) 
+      {
+        try {
+          return executeJoin(context, query.sql);
+        } catch (SQLException e) {
+          throw new RuntimeException(e);
+        }
       }
 
       final SqlValidator validator =
@@ -693,6 +703,52 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         maxRowCount,
         bindable,
         statementType);
+  }
+
+  @SuppressWarnings({ "checkstyle:Indentation", "checkstyle:WhitespaceAfter" })
+  <T> CalciteSignature<T> executeJoin(
+      Context context,
+      String sql) throws SQLException {
+    TrainDBListResultSet res = null;
+    try {
+      TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
+
+      List<List<Object>> totalRes = new ArrayList<>();
+      List<String> header = new ArrayList<>();
+
+      SchemaManager schemaManager = conn.getSchemaManager();
+      Connection extConn = conn.getDataSourceConnection();
+      Statement stmt = extConn.createStatement();
+      ResultSet rs = stmt.executeQuery(sql);
+
+      int columnCount = rs.getMetaData().getColumnCount();
+      ResultSetMetaData md = rs.getMetaData();
+
+      while (rs.next()) {
+        List<Object> r = new ArrayList<>();
+        for (int j = 1; j <= columnCount; j++) {
+          int type = md.getColumnType(j);
+          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
+          if (sqlTypeName == DECIMAL) {
+            r.add(rs.getInt(j));
+          } else {
+            r.add(rs.getObject(j));
+          }
+        }
+        totalRes.add(r);
+      }
+
+      for (int i = 1; i <= columnCount; i++) {
+        header.add(md.getColumnName(i));
+      }
+
+      res = new TrainDBListResultSet(header, totalRes);
+
+    } catch (SQLException e) {
+
+    }
+
+    return convertResultToSignature(context, sql, res);
   }
 
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})

@@ -376,6 +376,7 @@ public class TrainDBPreparingStmt extends Prepare
         CatalogReader.THREAD_LOCAL.remove();
       }
       
+      /*
       EnumerableRelImplementor relImplementor =
           new EnumerableRelImplementor(root.rel.getCluster().getRexBuilder(),
               null);
@@ -384,7 +385,7 @@ public class TrainDBPreparingStmt extends Prepare
       prefer = EnumerableRel.Prefer.CUSTOM;
 
       TrainDBListResultSet result2 = ((traindb.adapter.jdbc.JdbcToEnumerableConverter)enumerable).execute(relImplementor, prefer, context);
-
+      */
     }
 
     if (timingTracer != null) {
