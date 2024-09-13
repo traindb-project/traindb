@@ -19,8 +19,11 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
 import java.util.UUID;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
@@ -154,7 +157,7 @@ public final class JDOCatalogContext implements CatalogContext {
   @Override
   public MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
                                 List<List<String>> columnNames, List<RelDataType> dataTypes,
-                                String joinQuery) throws CatalogException {
+                                String joinCondition) throws CatalogException {
     List<Long> srcTableIds = new ArrayList<>();
     for (int i = 0; i < tableNames.size(); i++) {
       MTable table = addTable(schemaNames.get(i), tableNames.get(i), columnNames.get(i),
@@ -168,7 +171,7 @@ public final class JDOCatalogContext implements CatalogContext {
       // use first table's schema as join table's schema
       MTable joinTable =  new MTable(joinTableName, "JOIN", getSchema(schemaNames.get(0)));
       pm.makePersistent(joinTable);
-      MTableExt joinTableExt = new MTableExt(joinTableName, "JOIN", joinQuery, joinTable);
+      MTableExt joinTableExt = new MTableExt(joinTableName, "JOIN", joinCondition, joinTable);
       pm.makePersistent(joinTableExt);
 
       for (int i = 0; i < tableNames.size(); i++) {
@@ -235,6 +238,15 @@ public final class JDOCatalogContext implements CatalogContext {
       mTable = addTable(schemaName, tableName, columnNames, dataType, "TABLE");
     }
     try {
+
+      Set<String> columnNameSet = new HashSet<>();
+      Iterator<String> iter = columnNames.iterator();
+      while (iter.hasNext()) {
+        String colname = iter.next();
+        if (!columnNameSet.add(colname)) {
+          iter.remove();
+        }
+      }
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
           mModeltype, modelName, schemaName, tableName, columnNames,

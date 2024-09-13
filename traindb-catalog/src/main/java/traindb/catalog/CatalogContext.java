@@ -143,11 +143,12 @@ public interface CatalogContext {
   void deleteTasks(Integer cnt) throws CatalogException;
 
   /* Join */
-  public MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
-                                List<List<String>> columnNames, List<RelDataType> dataTypes,
-                                String joinQuery) throws CatalogException;
+  MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
+                         List<List<String>> columnNames, List<RelDataType> dataTypes,
+                         String joinCondition) throws CatalogException;
 
-  public void dropJoinTable(String schemaName, String joinTableName) throws CatalogException;
+  void dropJoinTable(String schemaName, String joinTableName) throws CatalogException;
+
 
   /* Common */
   void close();

@@ -345,6 +345,19 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       List<String> colnames = columnNames.get(i);
       RelDataType relDataType = relDataTypes.get(i);
       for (int j = 0; j < colnames.size(); j++) {
+        // remove redundant join columns with the same names
+        // (we assume that there are no other columns with the same names)
+        String colname = colnames.get(j);
+        int k;
+        for (k = 0; k < i; k++) {
+          if (columnNames.get(k).contains(colname)) {
+            break;
+          }
+        }
+        if (k != i) {
+          continue;
+        }
+
         RelDataTypeField field = relDataType.getField(colnames.get(j), true, false);
         if (field.getType().getSqlTypeName() == SqlTypeName.GEOMETRY) {
           sb.append("ST_ASTEXT(").append(tableName).append(".").append(colnames.get(j))
@@ -422,10 +435,10 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     RelDataType rowType;
     MTable joinTable = null;
     if (tableNames.size() > 1) {  // JOIN TABLE
+      joinTable = catalogContext.createJoinTable(
+          schemaNames, tableNames, columnNames, rowTypes, joinCondition);
       sql = buildJoinQuery(
           schemaNames, tableNames, columnNames, samplePercent, rowTypes, joinCondition);
-      joinTable =
-          catalogContext.createJoinTable(schemaNames, tableNames, columnNames, rowTypes, sql);
       tableName = joinTable.getTableName();
       tableMetadata = buildJoinTableMetadata(
           joinTable.getTableName(), schemaNames, tableNames, columnNames, trainOptions, rowTypes);
