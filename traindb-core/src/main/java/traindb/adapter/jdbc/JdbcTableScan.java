@@ -105,9 +105,8 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
         totalRes.add(r);
       }
 
-      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
-        SqlAggFunction agg = schemaManager.aggCalls.get(j);
-        header.add(agg.getName());
+      for (int j = 1; j <= columnCount; j++) {
+        header.add(md.getColumnName(j));
       }
 
       res = new TrainDBListResultSet(header, totalRes);

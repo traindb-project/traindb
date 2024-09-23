@@ -20,6 +20,9 @@ import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+
+import edu.umd.cs.findbugs.annotations.OverrideMustInvoke;
+
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -182,6 +185,13 @@ public class TrainDBPreparingStmt extends Prepare
   @Override
   protected Program getProgram() {
     return ((TrainDBPlanner) planner).getProgram();
+  }
+  
+  @Override
+  public RelRoot optimize(RelRoot root,
+  final List<Materialization> materializations,
+  final List<CalciteSchema.LatticeEntry> lattices) {
+    return super.optimize(root, materializations, lattices);
   }
 
   @Override
