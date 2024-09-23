@@ -377,11 +377,18 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       sb.append(",");
     }
     sb.deleteCharAt(sb.lastIndexOf(","));
-    if (joinCondition != null) {
-      sb.append(" WHERE ").append(joinCondition);
-    }
+    String sampleClause = "";
     if (samplePercent > 0 && samplePercent < 100) {
-      sb.append(getTableSampleClause(samplePercent));
+      sampleClause = getTableSampleClause(samplePercent);
+      sb.append(sampleClause);
+    }
+    if (joinCondition != null) {
+      if (sampleClause.startsWith(" WHERE")) {
+        sb.append(" AND ");
+      } else {
+        sb.append(" WHERE ");
+      }
+      sb.append(joinCondition);
     }
 
     return sb.toString();
