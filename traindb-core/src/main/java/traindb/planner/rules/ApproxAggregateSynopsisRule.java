@@ -278,8 +278,8 @@ public class ApproxAggregateSynopsisRule
         relBuilder.aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build());
       }
 
-      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
-          aggregate, scan.getTable(), synopsisTable.getRowCount());
+      double scaleFactor = scan.getTable().getRowCount() / synopsisTable.getRowCount();
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(aggregate, scaleFactor);
       relBuilder.project(aggProjects, aggregate.getRowType().getFieldNames());
 
       call.transformTo(relBuilder.build());

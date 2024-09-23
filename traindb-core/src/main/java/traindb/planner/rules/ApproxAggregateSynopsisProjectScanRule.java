@@ -104,8 +104,8 @@ public class ApproxAggregateSynopsisProjectScanRule
           (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, scan.getTable());
       TableScan newScan = planner.createSynopsisTableScan(bestSynopsis, synopsisTable, scan);
 
-      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
-          aggregate, scan.getTable(), synopsisTable.getRowCount());
+      double scaleFactor = scan.getTable().getRowCount() / synopsisTable.getRowCount();
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(aggregate, scaleFactor);
 
       RelNode node = relBuilder.push(newScan)
           .project(newProjects, project.getRowType().getFieldNames())
