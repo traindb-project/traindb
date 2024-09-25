@@ -149,6 +149,9 @@ public interface CatalogContext {
 
   void dropJoinTable(String schemaName, String joinTableName) throws CatalogException;
 
+  Collection<MSynopsis> getJoinSynopses(
+      List<Long> baseTableIds, Map<Long, List<String>> columnNames, String joinCondition)
+      throws CatalogException;
 
   /* Common */
   void close();

@@ -36,8 +36,16 @@ public final class MJoin {
     this.columns = columns;
   }
 
+  public long getJoinTableId() {
+    return join_table_id;
+  }
+
   public List<String> getColumnNames() {
     return columns;
+  }
+
+  public boolean containsColumnNames(List<String> columnNames) {
+    return this.columns.containsAll(columnNames);
   }
 
 }

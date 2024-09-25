@@ -25,6 +25,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
@@ -226,6 +227,54 @@ public final class JDOCatalogContext implements CatalogContext {
         tx.rollback();
       }
     }
+  }
+
+  @Override
+  public Collection<MSynopsis> getJoinSynopses(
+      List<Long> baseTableIds, Map<Long, List<String>> columnNames, String joinCondition)
+      throws CatalogException {
+    try {
+      List<Long> joinTableIds = null;
+      for (Long tid : baseTableIds) {
+        Query query = pm.newQuery(MJoin.class);
+        setFilterPatterns(query, ImmutableMap.of("src_table_id", tid));
+        List<MJoin> mJoins = (List<MJoin>) query.execute();
+        List<Long> ids = mJoins.stream()
+            .filter(obj -> obj.containsColumnNames(columnNames.get(tid)))
+            .map(MJoin::getJoinTableId).collect(Collectors.toList());
+        if (joinTableIds == null) {
+          joinTableIds = ids;
+        } else {
+          joinTableIds.retainAll(ids);
+        }
+      }
+      if (joinTableIds == null) {
+        return null;
+      }
+
+      List<MSynopsis> joinSynopses = new ArrayList<>();
+      for (Long joinTableId : joinTableIds) {
+        Collection<MTable> joinTable = getTables(ImmutableMap.of("id", joinTableId));
+        for (MTable jt : joinTable) {
+          Collection<MTableExt> tableExts = jt.getTableExts();
+          if (tableExts == null || tableExts.isEmpty()) {
+            continue;
+          }
+          for (MTableExt tableExt : tableExts) {
+            if (tableExt.getExternalTableUri().contains(joinCondition)) {
+              Collection<MSynopsis> synopses =
+                  getAllSynopses(jt.getSchema().getSchemaName(), jt.getTableName());
+              joinSynopses.addAll(synopses);
+              break;
+            }
+          }
+        }
+      }
+      return joinSynopses;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopses", e);
+    }
+
   }
 
   @Override
