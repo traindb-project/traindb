@@ -18,8 +18,10 @@ import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import org.apache.calcite.adapter.file.CsvEnumerator;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.plan.Context;
@@ -66,6 +68,7 @@ import traindb.catalog.CatalogContext;
 import traindb.catalog.CatalogException;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MSynopsis;
+import traindb.catalog.pm.MTable;
 import traindb.common.TrainDBConfiguration;
 import traindb.planner.caqp.CaqpExecutionTimePolicy;
 import traindb.planner.caqp.CaqpExecutionTimePolicyType;
@@ -153,6 +156,38 @@ public class TrainDBPlanner extends VolcanoPlanner {
 
   public CatalogContext getCatalogContext() {
     return catalogContext;
+  }
+
+  public Collection<MSynopsis> getAvailableJoinSynopses(
+      List<TableScan> scans, Map<TableScan, List<String>> requiredScanColumnMap, String condition) {
+
+    List<Long> scanTableIds = new ArrayList<>();
+    Map<Long, List<String>> scanTableColumns = new HashMap<>();
+    for (TableScan scan : scans) {
+      String baseSchema = scan.getTable().getQualifiedName().get(1);
+      String baseTable = scan.getTable().getQualifiedName().get(2);
+      MTable mTable = catalogContext.getTable(baseSchema, baseTable);
+      if (mTable == null) {
+        return null;
+      }
+      Long tid = mTable.getId();
+      scanTableIds.add(tid);
+      scanTableColumns.put(tid, requiredScanColumnMap.get(scan));
+    }
+    try {
+      Collection<MSynopsis> synopses =
+          catalogContext.getJoinSynopses(scanTableIds, scanTableColumns, condition);
+      List<MSynopsis> availableSynopses = new ArrayList<>();
+      for (MSynopsis synopsis : synopses) {
+        if (!synopsis.isEnabled()) {
+          continue;
+        }
+        availableSynopses.add(synopsis);
+      }
+      return availableSynopses;
+    } catch (CatalogException e) {
+    }
+    return null;
   }
 
   public Collection<MSynopsis> getAvailableSynopses(List<String> qualifiedBaseTableName,

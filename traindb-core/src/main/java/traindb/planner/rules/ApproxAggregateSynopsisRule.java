@@ -17,8 +17,10 @@ package traindb.planner.rules;
 import com.google.common.collect.ImmutableList;
 import java.util.ArrayList;
 import java.util.Collection;
+import java.util.HashMap;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import org.apache.calcite.plan.RelOptRuleCall;
 import org.apache.calcite.plan.RelRule;
@@ -37,6 +39,7 @@ import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexLiteral;
 import org.apache.calcite.rex.RexNode;
 import org.apache.calcite.rex.RexUtil;
+import org.apache.calcite.sql.SqlOperator;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.util.mapping.Mappings;
 import org.immutables.value.Value;
@@ -133,6 +136,40 @@ public class ApproxAggregateSynopsisRule
     return requiredColumnIndex;
   }
 
+  private String getConditionString(RelNode node, List<TableScan> scans) {
+    String condStr = "";
+    if (node instanceof Join) {
+      Join join = (Join) node;
+      RexNode joinCondition = join.getCondition();
+      if (joinCondition instanceof RexCall) {
+        List<RexNode> operands = ((RexCall) joinCondition).getOperands();
+        List<Integer> inputRefIndex = getRexInputRefIndex(operands);
+        SqlOperator operator = ((RexCall) joinCondition).getOperator();
+        int li;
+        int ri;
+        if (inputRefIndex.get(0) < inputRefIndex.get(1)) {
+          li = inputRefIndex.get(0);
+          ri = inputRefIndex.get(1) - join.getLeft().getRowType().getFieldCount();
+        } else {
+          li = inputRefIndex.get(1);
+          ri = inputRefIndex.get(0) - join.getLeft().getRowType().getFieldCount();
+        }
+
+        StringBuilder sb = new StringBuilder();
+        sb.append(scans.get(0).getTable().getQualifiedName().get(2));
+        sb.append(".");
+        sb.append(join.getLeft().getRowType().getFieldNames().get(li));
+        sb.append(" ").append(operator).append(" ");
+        sb.append(scans.get(1).getTable().getQualifiedName().get(2));
+        sb.append(".");
+        sb.append(join.getRight().getRowType().getFieldNames().get(ri));
+        condStr = sb.toString();
+      }
+    }
+
+    return condStr;
+  }
+
   private Mappings.TargetMapping createMapping(List<String> fromColumns, List<String> toColumns) {
     List<Integer> targets = new ArrayList<>();
     for (int i = 0; i < fromColumns.size(); i++) {
@@ -152,24 +189,52 @@ public class ApproxAggregateSynopsisRule
 
     final Aggregate aggregate = call.rel(0);
     List<TableScan> tableScans = ApproxAggregateUtil.findAllTableScans(aggregate);
+    Map<Join, List<TableScan>> joinScanMap = new HashMap<>();
+    Map<Join, List<Filter>> joinFilterMap = new HashMap<>();
+    Map<TableScan, List<String>> requiredScanColumnMap = new HashMap<>();
     for (TableScan scan : tableScans) {
       if (!isApplicable(aggregate, scan)) {
         continue;
       }
 
+      // build required column information for each table scan
       Set<Integer> requiredColumnIndex = new HashSet<>();
+      List<Filter> filterList = new ArrayList<>();
       int start = 0;
       int end = scan.getRowType().getFieldCount();
-      RelNode node, parent;
+      boolean projected = false;
+      RelNode node;
+      RelNode parent;
       for (node = scan, parent = ApproxAggregateUtil.getParent(aggregate, scan);
            node != aggregate;
            node = parent, parent = ApproxAggregateUtil.getParent(aggregate, node)) {
         if (parent instanceof Join) {
-          RelNode left = ((Join) parent).getLeft();
+          Join parentJoin = (Join) parent;
+          List<TableScan> joinScans = joinScanMap.get(parentJoin);
+          if (joinScans == null) {
+            joinScans = new ArrayList<>();
+            joinScans.add(scan);
+            joinScanMap.put(parentJoin, joinScans);
+          } else {
+            joinScans.add(scan);
+          }
+          if (!filterList.isEmpty()) {
+            List<Filter> joinFilters = joinFilterMap.get(parentJoin);
+            if (joinFilters == null) {
+              joinFilterMap.put(parentJoin, filterList);
+            } else {
+              joinFilters.addAll(filterList);
+            }
+          }
+          if (projected) {
+            continue;
+          }
+
+          RelNode left = parentJoin.getLeft();
           if (left instanceof RelSubset) {
             left = ((RelSubset) left).getBestOrOriginal();
           }
-          RelNode right = ((Join) parent).getRight();
+          RelNode right = parentJoin.getRight();
           if (right instanceof RelSubset) {
             right = ((RelSubset) right).getBestOrOriginal();
           }
@@ -177,15 +242,123 @@ public class ApproxAggregateSynopsisRule
             start = left.getRowType().getFieldCount();
             end = left.getRowType().getFieldCount() + right.getRowType().getFieldCount();
           }
+        } else if (parent instanceof Filter) {
+          filterList.add((Filter) parent);
         }
+
+        if (projected) {
+          continue;
+        }
+
         requiredColumnIndex.addAll(getRequiredColumnIndex(parent, start, end));
         if (parent instanceof Project) {
-          break;
+          projected = true;
         }
       }
+
       List<String> inputColumns = scan.getRowType().getFieldNames();
       List<String> requiredColumnNames =
           ApproxAggregateUtil.getSublistByIndex(inputColumns, new ArrayList(requiredColumnIndex));
+      requiredScanColumnMap.put(scan, requiredColumnNames);
+    }
+
+    // try join synopses first
+    for (Map.Entry<Join, List<TableScan>> entry : joinScanMap.entrySet()) {
+      Join join = entry.getKey();
+      List<TableScan> joinScans = entry.getValue();
+      String condStr = getConditionString(join, joinScans);
+      Collection<MSynopsis> candidateJoinSynopses =
+          planner.getAvailableJoinSynopses(joinScans, requiredScanColumnMap, condStr);
+      if (candidateJoinSynopses == null || candidateJoinSynopses.isEmpty()) {
+        continue;
+      }
+      List<String> requiredJoinColumnNames = new ArrayList<>();
+      for (TableScan joinScan : joinScans) {
+        requiredJoinColumnNames.addAll(requiredScanColumnMap.get(joinScan));
+      }
+
+      TableScan baseScan = joinScans.get(0);
+      MSynopsis bestSynopsis = planner.getBestSynopsis(
+          candidateJoinSynopses, baseScan, aggregate.getHints(), requiredJoinColumnNames);
+
+      RelOptTableImpl synopsisTable =
+          (RelOptTableImpl) planner.getSynopsisTable(bestSynopsis, baseScan.getTable());
+      if (synopsisTable == null) {
+        return;
+      }
+      TableScan newScan = planner.createSynopsisTableScan(bestSynopsis, synopsisTable, baseScan);
+      relBuilder.push(newScan);
+
+      List<String> synopsisColumns = bestSynopsis.getColumnNames();
+      List<String> inputColumns = new ArrayList<>();
+      inputColumns.addAll(join.getLeft().getRowType().getFieldNames());
+      inputColumns.addAll(join.getRight().getRowType().getFieldNames());
+      final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
+      List<Filter> joinFilters = joinFilterMap.get(join);
+      if (joinFilters != null) {
+        for (Filter f : joinFilters) {
+          relBuilder.filter(f.getCondition());
+        }
+      }
+      relBuilder.project(relBuilder.fields(mapping), join.getRowType().getFieldNames(), true);
+
+      RelNode child;
+      RelNode node;
+      for (child = join, node = ApproxAggregateUtil.getParent(aggregate, join);
+           node != aggregate; child = node, node = ApproxAggregateUtil.getParent(aggregate, node)) {
+        if (node instanceof Filter) {
+          Filter filter = (Filter) node;
+          relBuilder.filter(filter.getCondition());
+        } else if (node instanceof Join) {
+          Join oj = (Join) node;
+          RexNode newCondition;
+          newCondition = oj.getCondition();
+          RelNode left = oj.getLeft();
+          RelNode right = oj.getRight();
+          if (left instanceof RelSubset
+              && ((RelSubset) left).getBestOrOriginal() == child) {
+            final Join newJoin =
+                oj.copy(oj.getTraitSet(), newCondition, relBuilder.peek(), oj.getRight(),
+                    oj.getJoinType(), oj.isSemiJoinDone());
+            relBuilder.clear();
+            relBuilder.push(newJoin);
+          } else if (right instanceof RelSubset
+              && ((RelSubset) right).getBestOrOriginal() == child) {
+            final Join newJoin =
+                oj.copy(oj.getTraitSet(), newCondition, oj.getLeft(), relBuilder.peek(),
+                    oj.getJoinType(), oj.isSemiJoinDone());
+            relBuilder.clear();
+            relBuilder.push(newJoin);
+          } else {
+            return;
+          }
+        } else if (node instanceof Project) {
+          Project project = (Project) node;
+          relBuilder.project(project.getProjects(), project.getRowType().getFieldNames());
+        } else {
+          break; /* cannot apply this rule */
+        }
+      }
+
+      if (node != aggregate) {
+        continue;
+      }
+      relBuilder.aggregate(relBuilder.groupKey(aggregate.getGroupSet()),
+          aggregate.getAggCallList());
+
+      double scaleFactor = 1.0 / bestSynopsis.getRatio();
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(aggregate, scaleFactor);
+      relBuilder.project(aggProjects, aggregate.getRowType().getFieldNames());
+
+      call.transformTo(relBuilder.build());
+      return;
+    }
+
+    // apply synopses on single tables
+    for (Map.Entry<TableScan, List<String>> entry : requiredScanColumnMap.entrySet()) {
+      TableScan scan = entry.getKey();
+      List<String> requiredColumnNames = entry.getValue();
+      List<String> inputColumns = scan.getRowType().getFieldNames();
 
       List<String> qualifiedTableName = scan.getTable().getQualifiedName();
       Collection<MSynopsis> candidateSynopses =
@@ -212,6 +385,7 @@ public class ApproxAggregateSynopsisRule
 
       boolean projected = false;
       RelNode child;
+      RelNode node;
       for (child = scan, node = ApproxAggregateUtil.getParent(aggregate, scan);
            node != aggregate; child = node, node = ApproxAggregateUtil.getParent(aggregate, node)) {
         if (node instanceof Filter) {
@@ -278,8 +452,8 @@ public class ApproxAggregateSynopsisRule
         relBuilder.aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build());
       }
 
-      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(
-          aggregate, scan.getTable(), synopsisTable.getRowCount());
+      double scaleFactor = scan.getTable().getRowCount() / synopsisTable.getRowCount();
+      List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(aggregate, scaleFactor);
       relBuilder.project(aggProjects, aggregate.getRowType().getFieldNames());
 
       call.transformTo(relBuilder.build());
