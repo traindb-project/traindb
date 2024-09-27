@@ -266,6 +266,9 @@ public class ApproxAggregateSynopsisRule
     for (Map.Entry<Join, List<TableScan>> entry : joinScanMap.entrySet()) {
       Join join = entry.getKey();
       List<TableScan> joinScans = entry.getValue();
+      if (joinScans.size() < 2) {
+        continue;
+      }
       String condStr = getConditionString(join, joinScans);
       Collection<MSynopsis> candidateJoinSynopses =
           planner.getAvailableJoinSynopses(joinScans, requiredScanColumnMap, condStr);
