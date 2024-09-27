@@ -159,7 +159,8 @@ public class TrainDBPlanner extends VolcanoPlanner {
   }
 
   public Collection<MSynopsis> getAvailableJoinSynopses(
-      List<TableScan> scans, Map<TableScan, List<String>> requiredScanColumnMap, String condition) {
+      List<TableScan> scans, Map<TableScan, List<String>> requiredScanColumnMap,
+      List<String> equivConditions) {
 
     List<Long> scanTableIds = new ArrayList<>();
     Map<Long, List<String>> scanTableColumns = new HashMap<>();
@@ -175,14 +176,17 @@ public class TrainDBPlanner extends VolcanoPlanner {
       scanTableColumns.put(tid, requiredScanColumnMap.get(scan));
     }
     try {
-      Collection<MSynopsis> synopses =
-          catalogContext.getJoinSynopses(scanTableIds, scanTableColumns, condition);
       List<MSynopsis> availableSynopses = new ArrayList<>();
-      for (MSynopsis synopsis : synopses) {
-        if (!synopsis.isEnabled()) {
-          continue;
+      for (String condition : equivConditions) {
+        Collection<MSynopsis> synopses =
+            catalogContext.getJoinSynopses(scanTableIds, scanTableColumns, condition);
+
+        for (MSynopsis synopsis : synopses) {
+          if (!synopsis.isEnabled()) {
+            continue;
+          }
+          availableSynopses.add(synopsis);
         }
-        availableSynopses.add(synopsis);
       }
       return availableSynopses;
     } catch (CatalogException e) {

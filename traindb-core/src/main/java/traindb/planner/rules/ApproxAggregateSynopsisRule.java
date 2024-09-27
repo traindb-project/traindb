@@ -136,8 +136,8 @@ public class ApproxAggregateSynopsisRule
     return requiredColumnIndex;
   }
 
-  private String getConditionString(RelNode node, List<TableScan> scans) {
-    String condStr = "";
+  private List<String> getConditionString(RelNode node, List<TableScan> scans) {
+    List<String> equivConditions = new ArrayList<>();
     if (node instanceof Join) {
       Join join = (Join) node;
       RexNode joinCondition = join.getCondition();
@@ -155,19 +155,38 @@ public class ApproxAggregateSynopsisRule
           ri = inputRefIndex.get(0) - join.getLeft().getRowType().getFieldCount();
         }
 
+        String lc = scans.get(0).getTable().getQualifiedName().get(2)
+            + "." + join.getLeft().getRowType().getFieldNames().get(li);
+        String rc = scans.get(1).getTable().getQualifiedName().get(2)
+            + "." + join.getRight().getRowType().getFieldNames().get(ri);
+
         StringBuilder sb = new StringBuilder();
-        sb.append(scans.get(0).getTable().getQualifiedName().get(2));
-        sb.append(".");
-        sb.append(join.getLeft().getRowType().getFieldNames().get(li));
-        sb.append(" ").append(operator).append(" ");
-        sb.append(scans.get(1).getTable().getQualifiedName().get(2));
-        sb.append(".");
-        sb.append(join.getRight().getRowType().getFieldNames().get(ri));
-        condStr = sb.toString();
+        sb.append(lc).append(" ").append(operator).append(" ").append(rc);
+        equivConditions.add(sb.toString());
+
+        sb.setLength(0);
+        sb.append(rc).append(" ").append(swapOperator(operator.toString())).append(" ").append(lc);
+        equivConditions.add(sb.toString());
       }
     }
 
-    return condStr;
+    return equivConditions;
+  }
+
+  private String swapOperator(String operator) {
+    if (operator.equals(">")) {
+      return "<";
+    }
+    if (operator.equals("<")) {
+      return ">";
+    }
+    if (operator.equals(">=")) {
+      return "<=";
+    }
+    if (operator.equals("<=")) {
+      return ">=";
+    }
+    return operator;
   }
 
   private Mappings.TargetMapping createMapping(List<String> fromColumns, List<String> toColumns) {
@@ -269,7 +288,7 @@ public class ApproxAggregateSynopsisRule
       if (joinScans.size() < 2) {
         continue;
       }
-      String condStr = getConditionString(join, joinScans);
+      List<String> condStr = getConditionString(join, joinScans);
       Collection<MSynopsis> candidateJoinSynopses =
           planner.getAvailableJoinSynopses(joinScans, requiredScanColumnMap, condStr);
       if (candidateJoinSynopses == null || candidateJoinSynopses.isEmpty()) {
