@@ -296,13 +296,21 @@ public class ApproxAggregateSynopsisRule
       List<String> inputColumns = new ArrayList<>();
       inputColumns.addAll(join.getLeft().getRowType().getFieldNames());
       inputColumns.addAll(join.getRight().getRowType().getFieldNames());
-      final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
+      if (inputColumns.size() > synopsisColumns.size()) {
+        continue;
+      }
+
       List<Filter> joinFilters = joinFilterMap.get(join);
       if (joinFilters != null) {
         for (Filter f : joinFilters) {
-          relBuilder.filter(f.getCondition());
+          final Mappings.TargetMapping filterInputMapping =
+              createMapping(f.getInput().getRowType().getFieldNames(), synopsisColumns);
+          final RexNode newCondition = RexUtil.apply(filterInputMapping, f.getCondition());
+          relBuilder.filter(newCondition);
         }
       }
+
+      final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
       relBuilder.project(relBuilder.fields(mapping), join.getRowType().getFieldNames(), true);
 
       RelNode child;
