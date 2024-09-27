@@ -194,7 +194,7 @@ public class ApproxAggregateSynopsisRule
     for (int i = 0; i < fromColumns.size(); i++) {
       targets.add(toColumns.indexOf(fromColumns.get(i)));
     }
-    return Mappings.source(targets, targets.size());
+    return Mappings.source(targets, toColumns.size());
   }
 
   //~ Methods ----------------------------------------------------------------
