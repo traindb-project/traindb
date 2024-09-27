@@ -59,6 +59,7 @@ import org.apache.calcite.sql.util.SqlString;
 import org.apache.calcite.util.BuiltInMethod;
 import org.checkerframework.checker.nullness.qual.Nullable;
 
+import traindb.adapter.jdbc.JdbcRules.JdbcJoin;
 import traindb.engine.TrainDBListResultSet;
 
 /**
@@ -108,7 +109,7 @@ public class JdbcToEnumerableConverter
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
     }
-    
+     
     Hook.QUERY_PLAN.run(sql);
     final Expression sql_ =
         builder0.append("sql", Expressions.constant(sql));
@@ -223,15 +224,13 @@ public class JdbcToEnumerableConverter
     if (CalciteSystemProperty.DEBUG.value()) {
       System.out.println("[" + sql + "]");
     }
-    if (child instanceof JdbcTableScan) {
-      final JdbcImplementor jdbcImplementor = new JdbcImplementor(jdbcConvention.dialect,
-          (JavaTypeFactory) getCluster().getTypeFactory());
+    
+    final JdbcImplementor jdbcImplementor = new JdbcImplementor(jdbcConvention.dialect,
+        (JavaTypeFactory) getCluster().getTypeFactory());
 
-      TrainDBListResultSet r1 = ((traindb.adapter.jdbc.JdbcTableScan) child).execute(context, sql);
+    TrainDBListResultSet r1 = child.execute(context, sql);
 
-      return r1;
-    }
-    return null;
+    return r1;
   }
 
   private static List<ConstantExpression> toIndexesTableExpression(SqlString sqlString) {

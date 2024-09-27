@@ -18,6 +18,7 @@ package traindb.adapter.jdbc;
 
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 
+import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -26,7 +27,9 @@ import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
 import org.apache.calcite.sql.SqlAggFunction;
+import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
 
 import com.google.common.collect.ImmutableList;
 
@@ -83,6 +86,16 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       List<List<Object>> totalRes = new ArrayList<>();
       List<String> header = new ArrayList<>();
 
+      /*
+      final JdbcConvention jdbcConvention = (JdbcConvention) requireNonNull(getConvention(),
+        () -> "child.getConvention() is null for " + this);
+      SqlDialect dialect = jdbcConvention.dialect;
+      final JdbcImplementor jdbcImplementor = new JdbcImplementor(dialect,
+          (JavaTypeFactory) getCluster().getTypeFactory());
+      final SqlImplementor.Result result = jdbcImplementor.visitInput(this, 0);
+      String query = result.asStatement().toSqlString(dialect).getSql();
+      */
+      
       SchemaManager schemaManager = conn.getSchemaManager();
       Connection extConn = conn.getDataSourceConnection();
       Statement stmt = extConn.createStatement();
@@ -112,7 +125,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       res = new TrainDBListResultSet(header, totalRes);
 
     } catch (SQLException e) {
-
+      e.printStackTrace();
     }
 
     return res;
