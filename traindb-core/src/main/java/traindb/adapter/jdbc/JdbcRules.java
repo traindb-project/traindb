@@ -64,6 +64,7 @@ import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlFunction;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -424,18 +425,41 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       TrainDBListResultSet leftResult = null;
       TrainDBListResultSet rightResult = null;
-      if (left instanceof JdbcTableScan) {
-        leftResult = ((JdbcTableScan) left).execute(context, sql);
-      } 
 
-      if (right instanceof JdbcTableScan) {
-        rightResult = ((JdbcTableScan) right).execute(context, sql);
+      leftResult = ((JdbcTableScan) left).execute(context);
+      rightResult = ((JdbcTableScan) right).execute(context);
+
+      // TODO: merge 2 resultSet
+      List<List<Object>> joinResult = new ArrayList<List<Object>>();
+      List<String> header = new ArrayList<String>();
+      
+      for (int i=0 ; i < leftResult.getColumnCount() ; i++) {
+        header.add(leftResult.getColumnName(i));
+      }
+      for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
+        header.add(rightResult.getColumnName(i));
       }
 
-      return null;
+      while(leftResult.next()) {
+        ArrayList<Object> r = new ArrayList<>();
+        for (int i=0 ; i < leftResult.getColumnCount() ; i++) {
+          r.add(leftResult.getValue(i));
+        }
+        while(rightResult.next()) {
+          @SuppressWarnings("unchecked")
+          ArrayList<Object> inner = (ArrayList<Object>) r.clone();
+          for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
+            inner.add(rightResult.getValue(i));
+          }
+          joinResult.add(inner);
+        }
+        rightResult.rewind();
+      }
+
+      return new TrainDBListResultSet(header, joinResult);
     }
   }
 
@@ -490,7 +514,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -584,7 +608,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -649,7 +673,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -757,7 +781,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -845,7 +869,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -907,7 +931,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -967,7 +991,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -1021,7 +1045,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -1113,7 +1137,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
@@ -1158,7 +1182,7 @@ public class JdbcRules {
     }
 
     @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
       throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }

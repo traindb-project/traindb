@@ -78,7 +78,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
         ImmutableList.of(JdbcImplementor.Clause.FROM), this, null);
   }
 
-  public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql) {
+  public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
     TrainDBListResultSet res = null;
     try {
       TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
@@ -86,15 +86,8 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       List<List<Object>> totalRes = new ArrayList<>();
       List<String> header = new ArrayList<>();
 
-      /*
-      final JdbcConvention jdbcConvention = (JdbcConvention) requireNonNull(getConvention(),
-        () -> "child.getConvention() is null for " + this);
-      SqlDialect dialect = jdbcConvention.dialect;
-      final JdbcImplementor jdbcImplementor = new JdbcImplementor(dialect,
-          (JavaTypeFactory) getCluster().getTypeFactory());
-      final SqlImplementor.Result result = jdbcImplementor.visitInput(this, 0);
-      String query = result.asStatement().toSqlString(dialect).getSql();
-      */
+      SqlString query = jdbcTable.generateSql();
+      String sql = query.getSql();
       
       SchemaManager schemaManager = conn.getSchemaManager();
       Connection extConn = conn.getDataSourceConnection();

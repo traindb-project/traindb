@@ -25,5 +25,5 @@ import traindb.engine.TrainDBListResultSet;
  */
 public interface JdbcRel extends RelNode {
   JdbcImplementor.Result implement(JdbcImplementor implementor);
-  TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context, String sql);
+  TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context);
 }

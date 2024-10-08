@@ -228,9 +228,9 @@ public class JdbcToEnumerableConverter
     final JdbcImplementor jdbcImplementor = new JdbcImplementor(jdbcConvention.dialect,
         (JavaTypeFactory) getCluster().getTypeFactory());
 
-    TrainDBListResultSet r1 = child.execute(context, sql);
+    TrainDBListResultSet res = child.execute(context);
 
-    return r1;
+    return res;
   }
 
   private static List<ConstantExpression> toIndexesTableExpression(SqlString sqlString) {
