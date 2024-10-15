@@ -167,6 +167,8 @@ public class ApproxAggregateSynopsisRule
         sb.setLength(0);
         sb.append(rc).append(" ").append(swapOperator(operator.toString())).append(" ").append(lc);
         equivConditions.add(sb.toString());
+      } else if (joinCondition instanceof RexLiteral) {
+        equivConditions.add("");
       }
     }
 
