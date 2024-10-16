@@ -429,37 +429,66 @@ public class JdbcRules {
       TrainDBListResultSet leftResult = null;
       TrainDBListResultSet rightResult = null;
 
-      leftResult = ((JdbcTableScan) left).execute(context);
-      rightResult = ((JdbcTableScan) right).execute(context);
+      leftResult = ((JdbcRel) left).execute(context);
+      rightResult = ((JdbcRel) right).execute(context);
 
-      // TODO: merge 2 resultSet
       List<List<Object>> joinResult = new ArrayList<List<Object>>();
       List<String> header = new ArrayList<String>();
       
-      for (int i=0 ; i < leftResult.getColumnCount() ; i++) {
+      for (int i=0 ; i < leftResult.getColumnCount()  ; i++) {
         header.add(leftResult.getColumnName(i));
       }
       for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
         header.add(rightResult.getColumnName(i));
-      }
+      }                    
+
+      List<RexNode> operands = ((RexCall)condition).getOperands();
+      int leftIdx = ((RexInputRef)operands.get(0)).getIndex();
+      int rightIdx = ((RexInputRef)operands.get(1)).getIndex() - leftResult.getColumnCount();
 
       while(leftResult.next()) {
         ArrayList<Object> r = new ArrayList<>();
+        Object leftValue = leftResult.getValue(leftIdx);
+
         for (int i=0 ; i < leftResult.getColumnCount() ; i++) {
           r.add(leftResult.getValue(i));
         }
+
         while(rightResult.next()) {
-          @SuppressWarnings("unchecked")
-          ArrayList<Object> inner = (ArrayList<Object>) r.clone();
-          for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
-            inner.add(rightResult.getValue(i));
+          Object rightValue = rightResult.getValue(rightIdx);
+
+          if (checkJoinCondition(leftValue, rightValue)) {
+            @SuppressWarnings("unchecked")
+            ArrayList<Object> inner = (ArrayList<Object>) r.clone( );
+
+            for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
+              inner.add(rightResult.getValue(i));
+            }
+
+            joinResult.add(inner);
           }
-          joinResult.add(inner);
         }
+
         rightResult.rewind();
       }
 
       return new TrainDBListResultSet(header, joinResult);
+    }
+
+    public boolean checkJoinCondition(Object lValue, Object rValue) {
+      SqlOperator op = ((RexCall)condition).getOperator();
+      switch(op.getKind()) {
+        case EQUALS:
+          return lValue.equals(rValue);
+        case IS_NOT_DISTINCT_FROM:
+        case NOT_EQUALS:
+        case GREATER_THAN:
+        case GREATER_THAN_OR_EQUAL:
+        case LESS_THAN:
+        case LESS_THAN_OR_EQUAL:
+        default:
+        throw new UnsupportedOperationException("Unimplemented");
+      }
     }
   }
 
@@ -609,8 +638,33 @@ public class JdbcRules {
 
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      TrainDBListResultSet result = ((JdbcRel)input).execute(context);
+      
+      List<List<Object>> projectedResult = new ArrayList<>();
+      List<String> header = new ArrayList<>();
+      
+      for (int i = 0; i < exps.size(); i++) {
+        final RexNode exp = exps.get(i);
+        if (exp instanceof RexInputRef) {
+          header.add(i, result.getColumnName(((RexInputRef) exp).getIndex()));
+        } else {
+          return null; // not a simple projection
+        }
+      }
+
+      while(result.next()) {
+        final List<Object> fields = new ArrayList<>(exps.size());
+        for (int i = 0; i < exps.size(); i++) {
+          final RexNode exp = exps.get(i);
+          if (exp instanceof RexInputRef) {
+            fields.add(i, result.getValue(((RexInputRef) exp).getIndex()));
+          } else {
+            return null; // not a simple projection
+          }
+        }
+        projectedResult.add(fields);
+      }
+      return new TrainDBListResultSet(header, projectedResult);
     }
   }
 
