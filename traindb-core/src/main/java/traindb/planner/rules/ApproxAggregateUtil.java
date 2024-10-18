@@ -53,7 +53,10 @@ public class ApproxAggregateUtil {
       "VARIANCE",
       "COVAR_POP",
       "COVAR_SAMP",
-      "CORR"
+      "CORR",
+      "MAX",
+      "MIN",
+      "MODE"
   );
 
   private static final List<String> scalingAggregateFuncList = Arrays.asList(
