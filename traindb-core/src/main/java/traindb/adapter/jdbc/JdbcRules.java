@@ -81,7 +81,9 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -432,6 +434,10 @@ public class JdbcRules {
       leftResult = ((JdbcRel) left).execute(context);
       rightResult = ((JdbcRel) right).execute(context);
 
+      return hashJoin(leftResult, rightResult, leftResult.getRowCount() < rightResult.getRowCount());
+    }
+
+    public TrainDBListResultSet nestedJoin(TrainDBListResultSet leftResult, TrainDBListResultSet rightResult) {
       List<List<Object>> joinResult = new ArrayList<List<Object>>();
       List<String> header = new ArrayList<String>();
       
@@ -440,7 +446,7 @@ public class JdbcRules {
       }
       for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
         header.add(rightResult.getColumnName(i));
-      }                    
+      }
 
       List<RexNode> operands = ((RexCall)condition).getOperands();
       int leftIdx = ((RexInputRef)operands.get(0)).getIndex();
@@ -470,6 +476,63 @@ public class JdbcRules {
         }
 
         rightResult.rewind();
+      }
+
+      return new TrainDBListResultSet(header, joinResult);
+    }
+
+    public TrainDBListResultSet hashJoin(TrainDBListResultSet leftResult, 
+                                         TrainDBListResultSet rightResult, boolean isLeftSmaller) {
+      List<List<Object>> joinResult = new ArrayList<List<Object>>();
+      List<String> header = new ArrayList<String>();
+
+      // 작은 쪽을 항상 해시 테이블로 만들기
+      TrainDBListResultSet buildResult = isLeftSmaller ? leftResult : rightResult;
+      TrainDBListResultSet probeResult = isLeftSmaller ? rightResult : leftResult;
+      
+      for (int i=0 ; i < leftResult.getColumnCount()  ; i++) {
+        header.add(leftResult.getColumnName(i));
+      }
+      for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
+        header.add(rightResult.getColumnName(i));
+      }
+
+      List<RexNode> operands = ((RexCall)condition).getOperands();
+      int buildIdx = ((RexInputRef)operands.get(0)).getIndex();
+      int probeIdx = ((RexInputRef)operands.get(1)).getIndex() - buildResult.getColumnCount();
+
+      HashMap<Object, List<Object>> hashTable = new HashMap<>();
+      while(buildResult.next()) {
+        ArrayList<Object> r = new ArrayList<>(buildResult.getColumnCount());
+        for (int i=0 ; i < buildResult.getColumnCount() ; i++) {
+          r.add(buildResult.getValue(i));
+        }
+        hashTable.put(buildResult.getValue(buildIdx), r);
+      }
+
+      while(probeResult.next()) {
+        Object probeValue = probeResult.getValue(probeIdx);
+
+        List<Object> matchingRow = hashTable.get(probeValue);
+
+        if (matchingRow != null) {
+          ArrayList<Object> joinRow = new ArrayList<>();
+          if (isLeftSmaller) {
+              // buildResult가 leftResult인 경우
+              joinRow.addAll(matchingRow);
+              for (int i = 0; i < probeResult.getColumnCount(); i++) {
+                  joinRow.add(probeResult.getValue(i));
+              }
+          } else {
+              // buildResult가 rightResult인 경우
+              for (int i = 0; i < probeResult.getColumnCount(); i++) {
+                  joinRow.add(probeResult.getValue(i));
+              }
+              joinRow.addAll(matchingRow);
+          }
+
+          joinResult.add(joinRow);
+        }
       }
 
       return new TrainDBListResultSet(header, joinResult);
