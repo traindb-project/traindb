@@ -63,7 +63,12 @@ import org.apache.calcite.rex.RexVisitorImpl;
 import org.apache.calcite.schema.ModifiableTable;
 import org.apache.calcite.sql.SqlDialect;
 import org.apache.calcite.sql.SqlFunction;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlOperator;
+import org.apache.calcite.sql.dialect.Db2SqlDialect;
+import org.apache.calcite.sql.dialect.MssqlSqlDialect;
+import org.apache.calcite.sql.dialect.OracleSqlDialect;
+import org.apache.calcite.sql.dialect.PostgresqlSqlDialect;
 import org.apache.calcite.sql.validate.SqlValidatorUtil;
 import org.apache.calcite.tools.RelBuilder;
 import org.apache.calcite.tools.RelBuilderFactory;
@@ -663,6 +668,14 @@ public class JdbcRules {
    * function. */
   private static boolean canImplement(AggregateCall aggregateCall,
       SqlDialect sqlDialect) {
+    if (aggregateCall.getAggregation().getKind() == SqlKind.PERCENTILE_DISC) {
+      if (sqlDialect instanceof PostgresqlSqlDialect
+          || sqlDialect instanceof Db2SqlDialect
+          || sqlDialect instanceof MssqlSqlDialect
+          || sqlDialect instanceof OracleSqlDialect) {
+        return true;
+      }
+    }
     return sqlDialect.supportsAggregateFunction(
         aggregateCall.getAggregation().getKind())
         && aggregateCall.distinctKeys == null;

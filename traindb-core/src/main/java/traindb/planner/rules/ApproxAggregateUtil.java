@@ -56,7 +56,8 @@ public class ApproxAggregateUtil {
       "CORR",
       "MAX",
       "MIN",
-      "MODE"
+      "MODE",
+      "PERCENTILE_DISC"
   );
 
   private static final List<String> scalingAggregateFuncList = Arrays.asList(

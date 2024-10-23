@@ -20,6 +20,7 @@ import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.sql.SqlAlienSystemTypeNameSpec;
 import org.apache.calcite.sql.SqlDataTypeSpec;
 import org.apache.calcite.sql.SqlDialect;
+import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlWriter;
 import org.apache.calcite.sql.parser.SqlParserPos;
@@ -47,6 +48,22 @@ public class TiberoSqlDialect extends TrainDBSqlDialect {
 
   public SqlDialect getDefaultSqlDialect() {
     return DEFAULT;
+  }
+
+  @Override
+  public boolean supportsAggregateFunction(SqlKind kind) {
+    switch (kind) {
+      case COUNT:
+      case SUM:
+      case SUM0:
+      case MIN:
+      case MAX:
+      case PERCENTILE_DISC:
+        return true;
+      default:
+        break;
+    }
+    return false;
   }
 
   @Override
