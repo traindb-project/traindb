@@ -27,7 +27,7 @@ public class SqlCorrAggFunction extends SqlAggFunction {
     super("corr",
         null,
         SqlKind.COVAR_POP, // XXX hack: put corr function into covar_pop
-        ReturnTypes.DOUBLE_NULLABLE,
+        ReturnTypes.COVAR_REGR_FUNCTION,
         null,
         OperandTypes.NUMERIC_NUMERIC,
         SqlFunctionCategory.NUMERIC,
