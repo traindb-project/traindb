@@ -119,11 +119,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : modeltype");
     if (catalogContext.modeltypeExists(name)) {
       String msg = "modeltype '" + name + "' already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     T_tracer.closeTaskTime("SUCCESS");
@@ -144,22 +140,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : modeltype");
     if (!catalogContext.modeltypeExists(name)) {
       String msg = "modeltype '" + name + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     Collection<MModel> mModels =
         catalogContext.getModels(ImmutableMap.of("modeltype.modeltype_name", name));
     if (mModels != null && mModels.size() > 0) {
       String msg = "modeltype '" + name + "' is being used for trained models";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -404,22 +392,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : modeltype");
     if (!catalogContext.modeltypeExists(modeltypeName)) {
       String msg = "modeltype '" + modeltypeName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("find : model");
     if (catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -484,10 +464,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       }
 
       String msg = "failed to train model " + modelName;
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new TrainDBException(msg);
+      throwException(new TrainDBException(msg));
     }
   }
 
@@ -498,11 +475,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -782,22 +755,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
     T_tracer.openTaskTime("find : model(" + modelName + ")");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -872,10 +837,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       catalogContext.dropSynopsis(synopsisName);
 
       String msg = "failed to create synopsis " + synopsisName;
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new TrainDBException(msg);
+      throwException(new TrainDBException(msg));
     }
   }
 
@@ -904,11 +866,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1326,11 +1284,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1384,11 +1338,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1414,21 +1364,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     String modeltypeName = (String) ((JSONObject) json.get("modeltype")).get("modeltypeName");
     if (!catalogContext.modeltypeExists(modeltypeName)) {
       String msg = "modeltype '" + modeltypeName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
     if (!mModeltype.getClassName().equals(jsonModeltype.get("className"))) {
       String msg = "the class name of the modeltype '" + modelName + "' is different";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1453,20 +1395,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     if (catalogContext.modelExists(newModelName)) {
       String msg = "model '" + newModelName + "'  already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1490,11 +1424,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     T_tracer.openTaskTime("enable model");
@@ -1511,11 +1441,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : model");
     if (!catalogContext.modelExists(modelName)) {
       String msg = "model '" + modelName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     T_tracer.openTaskTime("disable model");
@@ -1533,11 +1459,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1604,11 +1526,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1687,10 +1605,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       }
 
       String msg = "failed to import synopsis " + synopsisName;
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new TrainDBException(msg);
+      throwException(new TrainDBException(msg));
     }
 
 
@@ -1706,20 +1621,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     if (catalogContext.synopsisExists(newSynopsisName)) {
       String msg = "synopsis '" + newSynopsisName + "'  already exists";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1738,11 +1645,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     T_tracer.openTaskTime("enable synopsis");
@@ -1759,11 +1662,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
 
     T_tracer.openTaskTime("disable synopsis");
@@ -1780,11 +1679,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     T_tracer.openTaskTime("find : synopsis");
     if (!catalogContext.synopsisExists(synopsisName)) {
       String msg = "synopsis '" + synopsisName + "' does not exist";
-
-      T_tracer.closeTaskTime(msg);
-      T_tracer.endTaskTracer();
-
-      throw new CatalogException(msg);
+      throwException(new CatalogException(msg));
     }
     T_tracer.closeTaskTime("SUCCESS");
 
@@ -1880,6 +1775,14 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   private Path getLocalSynopsisPath(String synopsisName) {
     return Paths.get(conn.cfg.getTrainDBPrefixPath(), "synopses", synopsisName,
         synopsisName + ".csv");
+  }
+
+  private void throwException(Exception ex) throws Exception {
+    if (T_tracer.isOpened()) {
+      T_tracer.closeTaskTime(ex.getMessage());
+    }
+    T_tracer.endTaskTracer();
+    throw new CatalogException(ex);
   }
 
   @JsonIgnoreProperties(ignoreUnknown = true)
