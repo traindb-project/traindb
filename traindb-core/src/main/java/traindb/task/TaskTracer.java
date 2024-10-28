@@ -25,11 +25,13 @@ public class TaskTracer {
   int idx;
   List<MTask> taskStatus;
   private long lastNanoTime;
+  private boolean isOpened;
 
   public TaskTracer() {
     this.lastNanoTime = System.nanoTime();
     this.idx = 0;
     this.taskStatus = new ArrayList<MTask>();
+    this.isOpened = false;
   }
 
   public static String getExecutionTime(long elapsed) {
@@ -89,6 +91,7 @@ public class TaskTracer {
 
     MTask newTask = new MTask("", this.idx, event, taskStatus);
     this.taskStatus.add(newTask);
+    this.isOpened = true;
 
     //printStatus( newTask, "open task" );
   }
@@ -101,8 +104,13 @@ public class TaskTracer {
     MTask currTask = this.taskStatus.get(this.idx);
     currTask.setTime(taskTime);
     currTask.setStatus(event);
+    this.isOpened = false;
 
     //printStatus( currTask, "end task" );
+  }
+
+  public boolean isOpened() {
+    return isOpened;
   }
 
   public void printStatus(MTask currTask, String msg) {
