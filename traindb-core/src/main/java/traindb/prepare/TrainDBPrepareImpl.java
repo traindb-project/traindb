@@ -96,8 +96,7 @@ import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
 import org.apache.calcite.sql.SqlExplain;
-import org.apache.calcite.sql.SqlExplainFormat;
-import org.apache.calcite.sql.SqlExplainLevel;
+import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
 import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
@@ -123,7 +122,6 @@ import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcUtils;
-import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -637,14 +635,21 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
       }
-      
-      if(sqlNode.getKind().belongsTo(SqlKind.QUERY))
+      if (sqlNode.getKind() == SqlKind.SELECT) 
       {
-        try {
-          return executeJoin(context, catalogReader, sqlNode, sqlNode, 
-                            preparingStmt, prefer);
-        } catch (SQLException e) {
-          throw new RuntimeException(e);
+        TrainDBSqlSelect select = (TrainDBSqlSelect) sqlNode;
+        SqlNodeList hints = select.getHints();
+        SqlHint hint = null;
+        if (hints.size() > 0)
+          hint = (SqlHint) hints.get(0);
+        
+        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) && select.getFrom() instanceof SqlJoin) {
+          try {
+            return executeJoin(context, catalogReader, sqlNode, sqlNode, 
+                              preparingStmt, prefer);
+          } catch (SQLException e) {
+            throw new RuntimeException(e);
+          }
         }
       }
       
@@ -721,7 +726,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType);
   }
 
-  @SuppressWarnings({ "checkstyle:Indentation", "checkstyle:WhitespaceAfter" })
   <T> CalciteSignature<T> executeJoin(
       Context context,
       TrainDBCatalogReader catalogReader,
@@ -741,7 +745,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     final SqlValidator validator =
     createSqlValidator(context, catalogReader);
 
-    SqlToRelConverter sqlToRelConverter = preparingStmt.getSqlToRelConverter(validator, catalogReader, configHolder.get());
+    SqlToRelConverter sqlToRelConverter = 
+        preparingStmt.getSqlToRelConverter(validator, catalogReader, configHolder.get());
     
     SqlExplain sqlExplain = null;
     if (sql.getKind() == SqlKind.EXPLAIN) {
@@ -771,7 +776,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       root = root.withRel(preparingStmt.decorrelate(sqlToRelConverter, sql, root.rel));
     }
 
-    root = preparingStmt.optimize(root, preparingStmt.getMaterializations(), preparingStmt.getLattices());
+    root = preparingStmt.optimize(root, preparingStmt.getMaterializations(), 
+                                  preparingStmt.getLattices());
 
     // For transformation from DML -> DML, use result of rewrite
     // (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT),
@@ -819,7 +825,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
       prefer = EnumerableRel.Prefer.CUSTOM;
 
-       result = ((traindb.adapter.jdbc.JdbcToEnumerableConverter)enumerable).execute(relImplementor, prefer, context);
+      result = ((traindb.adapter.jdbc.JdbcToEnumerableConverter)enumerable)
+          .execute(relImplementor, prefer, context);
 
     }
 
