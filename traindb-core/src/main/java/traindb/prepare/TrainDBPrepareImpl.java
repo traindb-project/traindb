@@ -643,10 +643,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         if (hints.size() > 0)
           hint = (SqlHint) hints.get(0);
         
-        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) && select.getFrom() instanceof SqlJoin) {
+        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) 
+              && select.getFrom() instanceof SqlJoin) {
           try {
-            return executeJoin(context, catalogReader, sqlNode, sqlNode, 
+            TrainDBListResultSet result = executeJoin(context, catalogReader, sqlNode, sqlNode, 
                               preparingStmt, prefer);
+            if ( result != null )
+              return convertResultToSignature(context, null, result);
           } catch (SQLException e) {
             throw new RuntimeException(e);
           }
@@ -726,7 +729,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType);
   }
 
-  <T> CalciteSignature<T> executeJoin(
+  TrainDBListResultSet executeJoin(
       Context context,
       TrainDBCatalogReader catalogReader,
       SqlNode sql,
@@ -830,7 +833,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     }
 
-    return convertResultToSignature(context, null, result);
+    return result;
   }
   
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
