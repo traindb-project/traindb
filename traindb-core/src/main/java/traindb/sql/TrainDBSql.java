@@ -79,8 +79,8 @@ public final class TrainDBSql {
         TrainDBSqlTrainModel trainModel = (TrainDBSqlTrainModel) command;
         runner.trainModel(
             trainModel.getModeltypeName(), trainModel.getModelName(),
-            trainModel.getSchemaName(), trainModel.getTableName(),
-            trainModel.getColumnNames(), trainModel.getSamplePercent(),
+            trainModel.getSchemaNames(), trainModel.getTableNames(), trainModel.getColumnNames(),
+            trainModel.getJoinCondition(), trainModel.getSamplePercent(),
             trainModel.getTrainOptions());
         break;
       case DROP_MODEL:
@@ -286,9 +286,35 @@ public final class TrainDBSql {
       String modelName = ctx.modelName().getText();
       String modeltypeName = ctx.modeltypeName().getText();
 
-      List<String> columnNames = new ArrayList<>();
+      List<String> schemaNames = new ArrayList<>();
+      List<String> tableNames = new ArrayList<>();
+      List<List<String>> columnNames = new ArrayList<>();
+
+      schemaNames.add(ctx.tableName().schemaName().getText());
+      tableNames.add(ctx.tableName().tableIdentifier.getText());
+      List<String> tableColumnNames = new ArrayList<>();
       for (TrainDBSqlParser.ColumnNameContext columnName : ctx.columnNameList().columnName()) {
-        columnNames.add(columnName.getText());
+        tableColumnNames.add(columnName.getText());
+      }
+      columnNames.add(tableColumnNames);
+
+      if (ctx.joinTableListOpt() != null) {
+        for (TrainDBSqlParser.JoinTableListOptContext jtl : ctx.joinTableListOpt()) {
+          schemaNames.add(jtl.tableName().schemaName().getText());
+          tableNames.add(jtl.tableName().tableIdentifier.getText());
+          List<String> joinTableColumnNames = new ArrayList<>();
+          for (TrainDBSqlParser.ColumnNameContext columnName : jtl.columnNameList().columnName()) {
+            joinTableColumnNames.add(columnName.getText());
+          }
+          columnNames.add(joinTableColumnNames);
+        }
+      }
+
+      String joinCondition = "";
+      if (ctx.joinTableConditionListOpt() != null) {
+        int start = ctx.joinTableConditionListOpt().tableConditionList().start.getStartIndex();
+        int stop = ctx.joinTableConditionListOpt().tableConditionList().stop.getStopIndex();
+        joinCondition = ctx.start.getInputStream().getText(new Interval(start, stop));
       }
 
       float samplePercent = 100;
@@ -306,11 +332,9 @@ public final class TrainDBSql {
       }
       LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
 
-      String schemaName = ctx.tableName().schemaName().getText();
-      String tableName = ctx.tableName().tableIdentifier.getText();
       commands.add(new TrainDBSqlTrainModel(
-          modeltypeName, modelName, schemaName, tableName, columnNames, samplePercent,
-          trainOptions));
+          modeltypeName, modelName, schemaNames, tableNames, columnNames, joinCondition,
+          samplePercent, trainOptions));
     }
 
     @Override

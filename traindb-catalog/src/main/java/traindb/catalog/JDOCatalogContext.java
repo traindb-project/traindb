@@ -19,8 +19,13 @@ import java.sql.Timestamp;
 import java.util.ArrayList;
 import java.util.Collection;
 import java.util.Comparator;
+import java.util.HashSet;
+import java.util.Iterator;
 import java.util.List;
 import java.util.Map;
+import java.util.Set;
+import java.util.UUID;
+import java.util.stream.Collectors;
 import javax.jdo.PersistenceManager;
 import javax.jdo.Query;
 import javax.jdo.Transaction;
@@ -30,6 +35,7 @@ import org.checkerframework.checker.nullness.qual.Nullable;
 import org.json.simple.JSONArray;
 import org.json.simple.JSONObject;
 import traindb.catalog.pm.MColumn;
+import traindb.catalog.pm.MJoin;
 import traindb.catalog.pm.MModel;
 import traindb.catalog.pm.MModeltype;
 import traindb.catalog.pm.MQueryLog;
@@ -115,11 +121,8 @@ public final class JDOCatalogContext implements CatalogContext {
     }
   }
 
-  @Override
-  public MModel trainModel(
-      String modeltypeName, String modelName, String schemaName, String tableName,
-      List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
-      @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+  private MTable addTable(String schemaName, String tableName, List<String> columnNames,
+                          RelDataType relDataType, String tableType) throws CatalogException {
     MTable mTable;
     try {
       MSchema mSchema = getSchema(schemaName);
@@ -130,11 +133,11 @@ public final class JDOCatalogContext implements CatalogContext {
 
       mTable = getTable(schemaName, tableName);
       if (mTable == null) {
-        mTable = new MTable(tableName, "TABLE", mSchema);
+        mTable = new MTable(tableName, tableType, mSchema);
         pm.makePersistent(mTable);
 
-        List<RelDataTypeField> fields = dataType.getFieldList();
-        for (int i = 0; i < dataType.getFieldCount(); i++) {
+        List<RelDataTypeField> fields = relDataType.getFieldList();
+        for (int i = 0; i < relDataType.getFieldCount(); i++) {
           RelDataTypeField field = fields.get(i);
           MColumn mColumn = new MColumn(field.getName(),
               field.getType().getSqlTypeName().getJdbcOrdinal(),
@@ -146,7 +149,153 @@ public final class JDOCatalogContext implements CatalogContext {
           pm.makePersistent(mColumn);
         }
       }
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to add table '" + schemaName + "." + tableName + "'", e);
+    }
+    return mTable;
+  }
 
+  @Override
+  public MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
+                                List<List<String>> columnNames, List<RelDataType> dataTypes,
+                                String joinCondition) throws CatalogException {
+    List<Long> srcTableIds = new ArrayList<>();
+    for (int i = 0; i < tableNames.size(); i++) {
+      MTable table = addTable(schemaNames.get(i), tableNames.get(i), columnNames.get(i),
+          dataTypes.get(i), "TABLE");
+      srcTableIds.add(table.getId());
+    }
+
+    UUID joinTableId = UUID.randomUUID();
+    String joinTableName = "__JOIN_" + joinTableId;
+    try {
+      // use first table's schema as join table's schema
+      MTable joinTable =  new MTable(joinTableName, "JOIN", getSchema(schemaNames.get(0)));
+      pm.makePersistent(joinTable);
+      MTableExt joinTableExt = new MTableExt(joinTableName, "JOIN", joinCondition, joinTable);
+      pm.makePersistent(joinTableExt);
+
+      for (int i = 0; i < tableNames.size(); i++) {
+        List<String> colnames = columnNames.get(i);
+        RelDataType relDataType = dataTypes.get(i);
+        for (String colname : colnames) {
+          RelDataTypeField field = relDataType.getField(colname, true, false);
+          MColumn mColumn = new MColumn(field.getName(),
+              field.getType().getSqlTypeName().getJdbcOrdinal(),
+              field.getType().getPrecision(),
+              field.getType().getScale(),
+              field.getType().isNullable(),
+              joinTable);
+
+          pm.makePersistent(mColumn);
+        }
+      }
+
+      for (int i = 0; i < tableNames.size(); i++) {
+        MJoin join = new MJoin(joinTable.getId(), srcTableIds.get(i), columnNames.get(i));
+        pm.makePersistent(join);
+      }
+
+      return joinTable;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to create join table", e);
+    }
+  }
+
+  @Override
+  public void dropJoinTable(String schemaName, String joinTableName) throws CatalogException {
+    Transaction tx = pm.currentTransaction();
+    try {
+      tx.begin();
+
+      MTable joinTable = getTable(schemaName, joinTableName);
+      if (joinTable == null) {
+        return;
+      }
+
+      Query query = pm.newQuery(MJoin.class);
+      setFilterPatterns(query, ImmutableMap.of("join_table_id", joinTable.getId()));
+      Collection<MJoin> mJoins = (List<MJoin>) query.execute();
+      pm.deletePersistentAll(mJoins);
+      pm.deletePersistent(joinTable);
+
+      tx.commit();
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to drop join table '" + joinTableName + "'", e);
+    } finally {
+      if (tx.isActive()) {
+        tx.rollback();
+      }
+    }
+  }
+
+  @Override
+  public Collection<MSynopsis> getJoinSynopses(
+      List<Long> baseTableIds, Map<Long, List<String>> columnNames, String joinCondition)
+      throws CatalogException {
+    try {
+      List<Long> joinTableIds = null;
+      for (Long tid : baseTableIds) {
+        Query query = pm.newQuery(MJoin.class);
+        setFilterPatterns(query, ImmutableMap.of("src_table_id", tid));
+        List<MJoin> mJoins = (List<MJoin>) query.execute();
+        List<Long> ids = mJoins.stream()
+            .filter(obj -> obj.containsColumnNames(columnNames.get(tid)))
+            .map(MJoin::getJoinTableId).collect(Collectors.toList());
+        if (joinTableIds == null) {
+          joinTableIds = ids;
+        } else {
+          joinTableIds.retainAll(ids);
+        }
+      }
+      if (joinTableIds == null) {
+        return null;
+      }
+
+      List<MSynopsis> joinSynopses = new ArrayList<>();
+      for (Long joinTableId : joinTableIds) {
+        Collection<MTable> joinTable = getTables(ImmutableMap.of("id", joinTableId));
+        for (MTable jt : joinTable) {
+          Collection<MTableExt> tableExts = jt.getTableExts();
+          if (tableExts == null || tableExts.isEmpty()) {
+            continue;
+          }
+          for (MTableExt tableExt : tableExts) {
+            if (tableExt.getExternalTableUri().contains(joinCondition)) {
+              Collection<MSynopsis> synopses =
+                  getAllSynopses(jt.getSchema().getSchemaName(), jt.getTableName());
+              joinSynopses.addAll(synopses);
+              break;
+            }
+          }
+        }
+      }
+      return joinSynopses;
+    } catch (RuntimeException e) {
+      throw new CatalogException("failed to get synopses", e);
+    }
+
+  }
+
+  @Override
+  public MModel trainModel(
+      String modeltypeName, String modelName, String schemaName, String tableName,
+      List<String> columnNames, RelDataType dataType, @Nullable Long baseTableRows,
+      @Nullable Long trainedRows, @Nullable String options) throws CatalogException {
+    MTable mTable = getTable(schemaName, tableName);
+    if (mTable == null) {
+      mTable = addTable(schemaName, tableName, columnNames, dataType, "TABLE");
+    }
+    try {
+
+      Set<String> columnNameSet = new HashSet<>();
+      Iterator<String> iter = columnNames.iterator();
+      while (iter.hasNext()) {
+        String colname = iter.next();
+        if (!columnNameSet.add(colname)) {
+          iter.remove();
+        }
+      }
       MModeltype mModeltype = getModeltype(modeltypeName);
       MModel mModel = new MModel(
           mModeltype, modelName, schemaName, tableName, columnNames,
@@ -185,6 +334,7 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.deletePersistent(mTable);
         tx.commit();
       }
+      dropJoinTable(baseSchema, baseTable);
 
       Collection<MModel> baseSchemaModels = getModels(ImmutableMap.of("schema_name", baseSchema));
       if (baseSchemaModels == null || baseSchemaModels.size() == 0) {

@@ -56,6 +56,10 @@ public final class MTable {
     this.schema = schema;
   }
 
+  public long getId() {
+    return id;
+  }
+
   public String getTableName() {
     return table_name;
   }

@@ -53,7 +53,11 @@ public class ApproxAggregateUtil {
       "VARIANCE",
       "COVAR_POP",
       "COVAR_SAMP",
-      "CORR"
+      "CORR",
+      "MAX",
+      "MIN",
+      "MODE",
+      "PERCENTILE_DISC"
   );
 
   private static final List<String> scalingAggregateFuncList = Arrays.asList(
@@ -152,9 +156,7 @@ public class ApproxAggregateUtil {
     return newGroupSet;
   }
 
-  public static List<RexNode> makeAggregateProjects(Aggregate aggregate,
-                                                    RelOptTable baseTable,
-                                                    double synopsisRowCount) {
+  public static List<RexNode> makeAggregateProjects(Aggregate aggregate, double scaleFactor) {
     final RexBuilder rexBuilder = aggregate.getCluster().getRexBuilder();
     List<RexNode> aggProjects = new ArrayList<>();
     for (int key : aggregate.getGroupSet()) {
@@ -163,7 +165,6 @@ public class ApproxAggregateUtil {
       aggProjects.add(rexBuilder.makeInputRef(rowTypeForKey, aggProjects.size()));
     }
 
-    double scaleFactor = baseTable.getRowCount() / synopsisRowCount;
     for (AggregateCall aggCall : aggregate.getAggCallList()) {
       RexNode expr;
       String aggFuncName = aggCall.getAggregation().getName();

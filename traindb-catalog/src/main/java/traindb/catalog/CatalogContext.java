@@ -142,6 +142,17 @@ public interface CatalogContext {
 
   void deleteTasks(Integer cnt) throws CatalogException;
 
+  /* Join */
+  MTable createJoinTable(List<String> schemaNames, List<String> tableNames,
+                         List<List<String>> columnNames, List<RelDataType> dataTypes,
+                         String joinCondition) throws CatalogException;
+
+  void dropJoinTable(String schemaName, String joinTableName) throws CatalogException;
+
+  Collection<MSynopsis> getJoinSynopses(
+      List<Long> baseTableIds, Map<Long, List<String>> columnNames, String joinCondition)
+      throws CatalogException;
+
   /* Common */
   void close();
 }

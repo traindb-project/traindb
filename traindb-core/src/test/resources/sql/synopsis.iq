@@ -237,6 +237,37 @@ JdbcToEnumerableConverter
         JdbcTableScan(table=[[jdbc, instacart_small, order_products_syn]])
 !plan
 
+# supported aggregate functions
+SELECT APPROXIMATE stddev(add_to_cart_order), variance(add_to_cart_order) FROM instacart_small.order_products;
+
+JdbcToEnumerableConverter
+  JdbcProject(EXPR$0=[CAST(POWER(/(-(CASE(=($1, 0), null:INTEGER, $0), /(*(CASE(=($1, 0), null:INTEGER, $2), CASE(=($1, 0), null:INTEGER, $2)), $1)), CASE(=($1, 1), null:BIGINT, -($1, 1))), 0.5:DECIMAL(2, 1))):INTEGER], EXPR$1=[CAST(/(-(CASE(=($1, 0), null:INTEGER, $0), /(*(CASE(=($1, 0), null:INTEGER, $2), CASE(=($1, 0), null:INTEGER, $2)), $1)), CASE(=($1, 1), null:BIGINT, -($1, 1)))):INTEGER])
+    JdbcAggregate(group=[{}], agg#0=[$SUM0($1)], agg#1=[COUNT()], agg#2=[$SUM0($0)])
+      JdbcProject(add_to_cart_order=[$1], $f2=[*($1, $1)])
+        JdbcTableScan(table=[[jdbc, instacart_small, order_products_syn]])
+!plan
+
+SELECT APPROXIMATE covar_pop(reordered, add_to_cart_order), corr(reordered, add_to_cart_order) FROM instacart_small.order_products;
+
+JdbcToEnumerableConverter
+  JdbcProject(EXPR$0=[CAST(/(-(CAST(*(1384.617:DECIMAL(7, 3), CASE(=($1, 0), null:INTEGER, $0))):INTEGER, /(*(CAST(*(1384.617:DECIMAL(7, 3), CASE(=($1, 0), null:INTEGER, $2))):INTEGER, CAST(*(1384.617:DECIMAL(7, 3), CASE(=($1, 0), null:INTEGER, $3))):INTEGER), CAST(*(1384.617:DECIMAL(7, 3), $1)):BIGINT NOT NULL)), CAST(*(1384.617:DECIMAL(7, 3), $1)):BIGINT NOT NULL)):INTEGER], EXPR$1=[CAST(/(CAST(/(-(CASE(=($1, 0), null:INTEGER, $6), /(*(CASE(=($1, 0), null:INTEGER, $2), CASE(=($1, 0), null:INTEGER, $3)), $1)), $1)):INTEGER, *(CAST(POWER(/(-(CASE(=($1, 0), null:INTEGER, $4), /(*(CASE(=($1, 0), null:INTEGER, $2), CASE(=($1, 0), null:INTEGER, $2)), $1)), $1), 0.5:DECIMAL(2, 1))):INTEGER, CAST(POWER(/(-(CASE(=($1, 0), null:INTEGER, $5), /(*(CASE(=($1, 0), null:INTEGER, $3), CASE(=($1, 0), null:INTEGER, $3)), $1)), $1), 0.5:DECIMAL(2, 1))):INTEGER))):INTEGER])
+    JdbcAggregate(group=[{}], agg#0=[$SUM0($2)], agg#1=[COUNT()], agg#2=[$SUM0($0)], agg#3=[$SUM0($1)], agg#4=[$SUM0($3)], agg#5=[$SUM0($4)], agg#6=[$SUM0($5)])
+      JdbcProject(reordered=[$0], add_to_cart_order=[$1], $f2=[*($0, $1)], $f3=[*($0, $0)], $f4=[*($1, $1)], $f5=[*($0, $1)])
+        JdbcTableScan(table=[[jdbc, instacart_small, order_products_syn]])
+!plan
+
+SELECT APPROXIMATE min(add_to_cart_order), max(add_to_cart_order), mode(add_to_cart_order) FROM instacart_small.order_products;
+
+EnumerableAggregate(group=[{}], EXPR$0=[MIN($1)], EXPR$1=[MAX($1)], EXPR$2=[MODE($1)])
+  JdbcToEnumerableConverter
+    JdbcTableScan(table=[[jdbc, instacart_small, order_products_syn]])
+!plan
+
+# percentile_disc function (supported in PostgreSQL, Tibero)
+#SELECT reordered, percentile_disc(add_to_cart_order) WITHIN GROUP (ORDER BY add_to_cart_order) FROM instacart_small.order_products GROUP BY reordered;
+
+
+# teardown
 DROP SYNOPSIS order_products_syn;
 (0 rows modified)
 
