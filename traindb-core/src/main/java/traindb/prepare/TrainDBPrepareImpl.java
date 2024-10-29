@@ -14,8 +14,6 @@
 
 package traindb.prepare;
 
-import static java.util.Objects.requireNonNull;
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -41,19 +39,14 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
-
-import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
-import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
-import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.interpreter.BindableConvention;
-import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Linq4j;
@@ -70,7 +63,6 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
-import org.apache.calcite.prepare.Prepare.CatalogReader;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -84,7 +76,6 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
-import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.Typed;
@@ -95,10 +86,7 @@ import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
-import org.apache.calcite.sql.SqlExplain;
-import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
-import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -111,17 +99,15 @@ import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.type.ExtraSqlTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
-import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
-import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
-import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcUtils;
+import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -612,7 +598,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType = getStatementType(sqlNode.getKind());
       } catch (SqlParseException e) {
         throw new RuntimeException(
-            "parse failed: " + e.getMessage(), e);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+            "parse failed: " + e.getMessage(), e);
       }
 
       // INSERT QUERY LOGS
@@ -635,24 +621,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
       }
-      if (sqlNode.getKind() == SqlKind.SELECT) 
-      {
-        TrainDBSqlSelect select = (TrainDBSqlSelect) sqlNode;
-        SqlNodeList hints = select.getHints();
-        SqlHint hint = null;
-        if (hints.size() > 0)
-          hint = (SqlHint) hints.get(0);
-        
-        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) && select.getFrom() instanceof SqlJoin) {
-          try {
-            return executeJoin(context, catalogReader, sqlNode, sqlNode, 
-                              preparingStmt, prefer);
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
-          }
-        }
-      }
-      
+
       final SqlValidator validator =
           createSqlValidator(context, catalogReader);
 
@@ -726,113 +695,6 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType);
   }
 
-  <T> CalciteSignature<T> executeJoin(
-      Context context,
-      TrainDBCatalogReader catalogReader,
-      SqlNode sql,
-      SqlNode sqlNodeOriginal, 
-      TrainDBPreparingStmt preparingStmt,
-      EnumerableRel.Prefer prefer) throws SQLException {
-
-    SqlToRelConverter.Config config = SqlToRelConverter.config()
-        .withExpand(castNonNull(preparingStmt.THREAD_EXPAND.get()))
-        .withInSubQueryThreshold(castNonNull(preparingStmt.THREAD_INSUBQUERY_THRESHOLD.get()))
-        .withHintStrategyTable(TrainDBHintStrategyTable.HINT_STRATEGY_TABLE)
-        .withExplain(sql.getKind() == SqlKind.EXPLAIN);
-    Holder<SqlToRelConverter.Config> configHolder = Holder.of(config);
-    Hook.SQL2REL_CONVERTER_CONFIG_BUILDER.run(configHolder);
-    
-    final SqlValidator validator =
-    createSqlValidator(context, catalogReader);
-
-    SqlToRelConverter sqlToRelConverter = 
-        preparingStmt.getSqlToRelConverter(validator, catalogReader, configHolder.get());
-    
-    SqlExplain sqlExplain = null;
-    if (sql.getKind() == SqlKind.EXPLAIN) {
-      sqlExplain = (SqlExplain)sql;
-      sql = sqlExplain.getExplicandum();
-      sqlToRelConverter.setDynamicParamCountInExplain(sqlExplain.getDynamicParamCount());
-    }
-
-    RelRoot root = sqlToRelConverter.convertQuery(sql, true, true);
-    Hook.CONVERTED.run(root.rel);
-
-    RelDataType resultType = validator.getValidatedNodeType(sql);
-    List<List<String>> fieldOrigins = validator.getFieldOrigins(sql);
-    assert fieldOrigins.size() == resultType.getFieldCount();
-
-    RelDataType parameterRowType = validator.getParameterRowType(sql);
-
-    // Display logical plans before view expansion, plugging in physical
-    // storage and decorrelation
-    Hook.REL_BUILDER_SIMPLIFY.addThread(Hook.propertyJ(false));
-
-    // Structured type flattening, view expansion, and plugging in physical storage.
-    root = root.withRel(preparingStmt.flattenTypes(root.rel, true));
-
-    if (context.config().forceDecorrelate()) {
-      // Sub-query decorrelation.
-      root = root.withRel(preparingStmt.decorrelate(sqlToRelConverter, sql, root.rel));
-    }
-
-    root = preparingStmt.optimize(root, preparingStmt.getMaterializations(), 
-                                  preparingStmt.getLattices());
-
-    // For transformation from DML -> DML, use result of rewrite
-    // (e.g. UPDATE -> MERGE).  For anything else (e.g. CALL -> SELECT),
-    // use original kind.
-    if (!root.kind.belongsTo(SqlKind.DML)) {
-      root = root.withKind(sqlNodeOriginal.getKind());
-    }
-
-    Hook.PLAN_BEFORE_IMPLEMENTATION.run(root);
-    resultType = root.rel.getRowType();
-    boolean isDml = root.kind.belongsTo(SqlKind.DML);
-    final Bindable bindable;
-    TrainDBListResultSet result = null;
-    if (preparingStmt.getResultConvention() == BindableConvention.INSTANCE) {
-      bindable = Interpreters.bindable(root.rel);
-    } else {
-      EnumerableRel enumerable = (EnumerableRel) root.rel;
-      if (!root.isRefTrivial()) {
-        final List<RexNode> projects = new ArrayList<>();
-        final RexBuilder rexBuilder = enumerable.getCluster().getRexBuilder();
-        for (int field : Pair.left(root.fields)) {
-          projects.add(rexBuilder.makeInputRef(enumerable, field));
-        }
-        RexProgram program = RexProgram.create(enumerable.getRowType(),
-            projects, null, root.validatedRowType, rexBuilder);
-        enumerable = EnumerableCalc.create(enumerable, program);
-      }
-
-      Map<String, Object> internalParameters = preparingStmt.getParameters();
-
-      try {
-        CatalogReader.THREAD_LOCAL.set(catalogReader);
-        final SqlConformance conformance = context.config().conformance();
-        internalParameters.put("_conformance", conformance);
-        bindable = EnumerableInterpretable.toBindable(internalParameters,
-            context.spark(), enumerable,
-            requireNonNull(prefer, "EnumerableRel.Prefer prefer"));
-      } finally {
-        CatalogReader.THREAD_LOCAL.remove();
-      }
-      
-      EnumerableRelImplementor relImplementor =
-          new EnumerableRelImplementor(root.rel.getCluster().getRexBuilder(),
-              null);
-
-      prefer = EnumerableRel.Prefer.CUSTOM;
-
-      result = ((traindb.adapter.jdbc.JdbcToEnumerableConverter)enumerable)
-          .execute(relImplementor, prefer, context);
-
-    }
-
-    return convertResultToSignature(context, null, result);
-  }
-  
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
   <T> CalciteSignature<T> executeIncremental(
       Context context,

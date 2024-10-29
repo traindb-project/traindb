@@ -16,9 +16,6 @@
  */
 package traindb.adapter.jdbc;
 
-import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
-
-import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.plan.Convention;
 import org.apache.calcite.plan.RelOptCluster;
 import org.apache.calcite.plan.RelOptTable;
@@ -26,23 +23,9 @@ import org.apache.calcite.plan.RelTraitSet;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.core.TableScan;
 import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlString;
 
 import com.google.common.collect.ImmutableList;
 
-import traindb.engine.TrainDBListResultSet;
-import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.SchemaManager;
-
-import java.sql.Connection;
-import java.sql.ResultSet;
-import java.sql.ResultSetMetaData;
-import java.sql.SQLException;
-import java.sql.Statement;
-import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
 
@@ -76,52 +59,6 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       JdbcImplementor implementor) {
     return implementor.result(jdbcTable.tableName(),
         ImmutableList.of(JdbcImplementor.Clause.FROM), this, null);
-  }
-
-  public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-    TrainDBListResultSet res = null;
-    try {
-      TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
-
-      List<List<Object>> totalRes = new ArrayList<>();
-      List<String> header = new ArrayList<>();
-
-      SqlString query = jdbcTable.generateSql();
-      String sql = query.getSql();
-      
-      SchemaManager schemaManager = conn.getSchemaManager();
-      Connection extConn = conn.getDataSourceConnection();
-      Statement stmt = extConn.createStatement();
-      ResultSet rs = stmt.executeQuery(sql);
-
-      int columnCount = rs.getMetaData().getColumnCount();
-      ResultSetMetaData md = rs.getMetaData();
-
-      while (rs.next()) {
-        List<Object> r = new ArrayList<>();
-        for (int j = 1; j <= columnCount; j++) {
-          int type = md.getColumnType(j);
-          SqlTypeName sqlTypeName = SqlTypeName.getNameForJdbcType(type);
-          if (sqlTypeName == DECIMAL) {
-            r.add(rs.getInt(j));
-          } else {
-            r.add(rs.getObject(j));
-          }
-        }
-        totalRes.add(r);
-      }
-
-      for (int j = 1; j <= columnCount; j++) {
-        header.add(md.getColumnName(j));
-      }
-
-      res = new TrainDBListResultSet(header, totalRes);
-
-    } catch (SQLException e) {
-      e.printStackTrace();
-    }
-
-    return res;
   }
 
   @Override public RelNode withHints(List<RelHint> hintList) {
