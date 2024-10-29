@@ -79,15 +79,11 @@ import org.apache.calcite.util.trace.CalciteTrace;
 import com.google.common.base.Preconditions;
 import com.google.common.collect.ImmutableList;
 
-import traindb.engine.TrainDBListResultSet;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
 
 import java.util.ArrayList;
-import java.util.HashMap;
 import java.util.List;
-import java.util.Map;
 import java.util.Set;
 import java.util.function.Consumer;
 
@@ -429,134 +425,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      TrainDBListResultSet leftResult = null;
-      TrainDBListResultSet rightResult = null;
-
-      leftResult = ((JdbcRel) left).execute(context);
-      rightResult = ((JdbcRel) right).execute(context);
-
-      return hashJoin(leftResult, rightResult, leftResult.getRowCount() < rightResult.getRowCount());
-    }
-
-    public TrainDBListResultSet nestedJoin(TrainDBListResultSet leftResult, TrainDBListResultSet rightResult) {
-      List<List<Object>> joinResult = new ArrayList<List<Object>>();
-      List<String> header = new ArrayList<String>();
-      
-      for (int i=0 ; i < leftResult.getColumnCount()  ; i++) {
-        header.add(leftResult.getColumnName(i));
-      }
-      for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
-        header.add(rightResult.getColumnName(i));
-      }
-
-      List<RexNode> operands = ((RexCall)condition).getOperands();
-      int leftIdx = ((RexInputRef)operands.get(0)).getIndex();
-      int rightIdx = ((RexInputRef)operands.get(1)).getIndex() - leftResult.getColumnCount();
-
-      while(leftResult.next()) {
-        ArrayList<Object> r = new ArrayList<>();
-        Object leftValue = leftResult.getValue(leftIdx);
-
-        for (int i=0 ; i < leftResult.getColumnCount() ; i++) {
-          r.add(leftResult.getValue(i));
-        }
-
-        while(rightResult.next()) {
-          Object rightValue = rightResult.getValue(rightIdx);
-
-          if (checkJoinCondition(leftValue, rightValue)) {
-            @SuppressWarnings("unchecked")
-            ArrayList<Object> inner = (ArrayList<Object>) r.clone( );
-
-            for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
-              inner.add(rightResult.getValue(i));
-            }
-
-            joinResult.add(inner);
-          }
-        }
-
-        rightResult.rewind();
-      }
-
-      return new TrainDBListResultSet(header, joinResult);
-    }
-
-    public TrainDBListResultSet hashJoin(TrainDBListResultSet leftResult, 
-                                         TrainDBListResultSet rightResult, boolean isLeftSmaller) {
-      List<List<Object>> joinResult = new ArrayList<List<Object>>();
-      List<String> header = new ArrayList<String>();
-
-      // 작은 쪽을 항상 해시 테이블로 만들기
-      TrainDBListResultSet buildResult = isLeftSmaller ? leftResult : rightResult;
-      TrainDBListResultSet probeResult = isLeftSmaller ? rightResult : leftResult;
-      
-      for (int i=0 ; i < leftResult.getColumnCount()  ; i++) {
-        header.add(leftResult.getColumnName(i));
-      }
-      for (int i=0 ; i < rightResult.getColumnCount() ; i++) {
-        header.add(rightResult.getColumnName(i));
-      }
-
-      List<RexNode> operands = ((RexCall)condition).getOperands();
-      int buildIdx = ((RexInputRef)operands.get(0)).getIndex();
-      int probeIdx = ((RexInputRef)operands.get(1)).getIndex() - buildResult.getColumnCount();
-
-      HashMap<Object, List<Object>> hashTable = new HashMap<>();
-      while(buildResult.next()) {
-        ArrayList<Object> r = new ArrayList<>(buildResult.getColumnCount());
-        for (int i=0 ; i < buildResult.getColumnCount() ; i++) {
-          r.add(buildResult.getValue(i));
-        }
-        hashTable.put(buildResult.getValue(buildIdx), r);
-      }
-
-      while(probeResult.next()) {
-        Object probeValue = probeResult.getValue(probeIdx);
-
-        List<Object> matchingRow = hashTable.get(probeValue);
-
-        if (matchingRow != null) {
-          ArrayList<Object> joinRow = new ArrayList<>();
-          if (isLeftSmaller) {
-              // buildResult가 leftResult인 경우
-              joinRow.addAll(matchingRow);
-              for (int i = 0; i < probeResult.getColumnCount(); i++) {
-                  joinRow.add(probeResult.getValue(i));
-              }
-          } else {
-              // buildResult가 rightResult인 경우
-              for (int i = 0; i < probeResult.getColumnCount(); i++) {
-                  joinRow.add(probeResult.getValue(i));
-              }
-              joinRow.addAll(matchingRow);
-          }
-
-          joinResult.add(joinRow);
-        }
-      }
-
-      return new TrainDBListResultSet(header, joinResult);
-    }
-
-    public boolean checkJoinCondition(Object lValue, Object rValue) {
-      SqlOperator op = ((RexCall)condition).getOperator();
-      switch(op.getKind()) {
-        case EQUALS:
-          return lValue.equals(rValue);
-        case IS_NOT_DISTINCT_FROM:
-        case NOT_EQUALS:
-        case GREATER_THAN:
-        case GREATER_THAN_OR_EQUAL:
-        case LESS_THAN:
-        case LESS_THAN_OR_EQUAL:
-        default:
-        throw new UnsupportedOperationException("Unimplemented");
-      }
-    }
   }
 
   /** Calc operator implemented in JDBC convention.
@@ -607,12 +475,6 @@ public class JdbcRules {
 
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
-    }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
   }
 
@@ -702,37 +564,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      TrainDBListResultSet result = ((JdbcRel)input).execute(context);
-      
-      List<List<Object>> projectedResult = new ArrayList<>();
-      List<String> header = new ArrayList<>();
-      
-      for (int i = 0; i < exps.size(); i++) {
-        final RexNode exp = exps.get(i);
-        if (exp instanceof RexInputRef) {
-          header.add(i, result.getColumnName(((RexInputRef) exp).getIndex()));
-        } else {
-          return null; // not a simple projection
-        }
-      }
-
-      while(result.next()) {
-        final List<Object> fields = new ArrayList<>(exps.size());
-        for (int i = 0; i < exps.size(); i++) {
-          final RexNode exp = exps.get(i);
-          if (exp instanceof RexInputRef) {
-            fields.add(i, result.getValue(((RexInputRef) exp).getIndex()));
-          } else {
-            return null; // not a simple projection
-          }
-        }
-        projectedResult.add(fields);
-      }
-      return new TrainDBListResultSet(header, projectedResult);
-    }
   }
 
   /**
@@ -791,12 +622,6 @@ public class JdbcRules {
 
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
-    }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
   }
 
@@ -908,12 +733,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
-    }
   }
 
   /**
@@ -996,12 +815,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
-    }
   }
 
   /**
@@ -1058,12 +871,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
-    }
   }
 
   /**
@@ -1118,12 +925,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
-    }
   }
 
   /**
@@ -1171,12 +972,6 @@ public class JdbcRules {
 
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
-    }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
   }
 
@@ -1264,12 +1059,6 @@ public class JdbcRules {
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
     }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
-    }
   }
 
   /** Rule that converts a values operator to JDBC. */
@@ -1308,12 +1097,6 @@ public class JdbcRules {
 
     @Override public JdbcImplementor.Result implement(JdbcImplementor implementor) {
       return implementor.implement(this);
-    }
-
-    @Override
-    public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
-      // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
     }
   }
 
