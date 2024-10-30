@@ -14,6 +14,8 @@
 
 package traindb.prepare;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
 import static org.apache.calcite.util.Static.RESOURCE;
 
@@ -39,14 +41,19 @@ import java.util.concurrent.ExecutionException;
 import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
 import java.util.concurrent.Future;
+
+import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableConvention;
+import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
 import org.apache.calcite.adapter.java.JavaTypeFactory;
 import org.apache.calcite.avatica.AvaticaParameter;
 import org.apache.calcite.avatica.ColumnMetaData;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.config.CalciteConnectionConfig;
 import org.apache.calcite.interpreter.BindableConvention;
+import org.apache.calcite.interpreter.Interpreters;
 import org.apache.calcite.jdbc.CalcitePrepare;
 import org.apache.calcite.jdbc.CalciteSchema;
 import org.apache.calcite.linq4j.Linq4j;
@@ -63,6 +70,7 @@ import org.apache.calcite.plan.RelOptUtil;
 import org.apache.calcite.plan.volcano.VolcanoPlanner;
 import org.apache.calcite.prepare.CalcitePrepareImpl;
 import org.apache.calcite.prepare.Prepare;
+import org.apache.calcite.prepare.Prepare.CatalogReader;
 import org.apache.calcite.rel.RelCollation;
 import org.apache.calcite.rel.RelNode;
 import org.apache.calcite.rel.RelRoot;
@@ -76,6 +84,7 @@ import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.rex.RexBuilder;
 import org.apache.calcite.rex.RexInputRef;
 import org.apache.calcite.rex.RexNode;
+import org.apache.calcite.rex.RexProgram;
 import org.apache.calcite.runtime.Bindable;
 import org.apache.calcite.runtime.Hook;
 import org.apache.calcite.runtime.Typed;
@@ -86,7 +95,10 @@ import org.apache.calcite.server.CalciteServerStatement;
 import org.apache.calcite.server.DdlExecutor;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.SqlBasicCall;
+import org.apache.calcite.sql.SqlExplain;
+import org.apache.calcite.sql.SqlHint;
 import org.apache.calcite.sql.SqlIdentifier;
+import org.apache.calcite.sql.SqlJoin;
 import org.apache.calcite.sql.SqlKind;
 import org.apache.calcite.sql.SqlNode;
 import org.apache.calcite.sql.SqlNodeList;
@@ -99,15 +111,17 @@ import org.apache.calcite.sql.parser.SqlParserImplFactory;
 import org.apache.calcite.sql.type.ExtraSqlTypes;
 import org.apache.calcite.sql.type.SqlTypeName;
 import org.apache.calcite.sql.util.SqlOperatorTables;
+import org.apache.calcite.sql.validate.SqlConformance;
 import org.apache.calcite.sql.validate.SqlValidator;
 import org.apache.calcite.sql2rel.SqlToRelConverter;
 import org.apache.calcite.tools.FrameworkConfig;
 import org.apache.calcite.tools.Frameworks;
+import org.apache.calcite.util.Holder;
 import org.apache.calcite.util.ImmutableIntList;
+import org.apache.calcite.util.Pair;
 import org.apache.calcite.util.Util;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.adapter.jdbc.JdbcUtils;
-import traindb.adapter.jdbc.TrainDBJdbcDataSource;
 import traindb.catalog.CatalogContext;
 import traindb.common.TrainDBException;
 import traindb.engine.TrainDBListResultSet;
@@ -598,7 +612,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType = getStatementType(sqlNode.getKind());
       } catch (SqlParseException e) {
         throw new RuntimeException(
-            "parse failed: " + e.getMessage(), e);
+            "parse failed: " + e.getMessage(), e);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
       }
 
       // INSERT QUERY LOGS
@@ -629,13 +643,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         if (hints.size() > 0)
           hint = (SqlHint) hints.get(0);
         
-        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) 
-              && select.getFrom() instanceof SqlJoin) {
+        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) && select.getFrom() instanceof SqlJoin) {
           try {
-            TrainDBListResultSet result = executeJoin(context, catalogReader, sqlNode, sqlNode, 
+            return executeJoin(context, catalogReader, sqlNode, sqlNode, 
                               preparingStmt, prefer);
-            if ( result != null )
-              return convertResultToSignature(context, null, result);
           } catch (SQLException e) {
             throw new RuntimeException(e);
           }
@@ -715,7 +726,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType);
   }
 
-  TrainDBListResultSet executeJoin(
+  <T> CalciteSignature<T> executeJoin(
       Context context,
       TrainDBCatalogReader catalogReader,
       SqlNode sql,
@@ -819,7 +830,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     }
 
-    return result;
+    return convertResultToSignature(context, null, result);
   }
   
   @SuppressWarnings({"checkstyle:Indentation", "checkstyle:WhitespaceAfter"})
