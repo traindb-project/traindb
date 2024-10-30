@@ -643,6 +643,7 @@ public class TrainDBMetaImpl extends MetaImpl {
             System.out.println("Converted sql = [" + sql + "]");
           }
         }
+
         final CalcitePrepare.Query<Object> query = toQuery(context, sql);
         signature = calciteConnection.parseQuery(query, context, maxRowCount);
         statement.setSignature(signature);

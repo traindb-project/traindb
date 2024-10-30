@@ -18,9 +18,12 @@ package traindb.adapter.jdbc;
 
 import org.apache.calcite.rel.RelNode;
 
+import traindb.engine.TrainDBListResultSet;
+
 /**
  * Relational expression that uses JDBC calling convention.
  */
 public interface JdbcRel extends RelNode {
   JdbcImplementor.Result implement(JdbcImplementor implementor);
+  TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context);
 }

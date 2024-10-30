@@ -20,6 +20,9 @@ import static org.apache.calcite.linq4j.Nullness.castNonNull;
 
 import com.google.common.base.Supplier;
 import com.google.common.collect.ImmutableList;
+
+import edu.umd.cs.findbugs.annotations.OverrideMustInvoke;
+
 import java.lang.reflect.Type;
 import java.util.ArrayList;
 import java.util.Collections;
@@ -29,6 +32,8 @@ import java.util.Map;
 import org.apache.calcite.adapter.enumerable.EnumerableCalc;
 import org.apache.calcite.adapter.enumerable.EnumerableInterpretable;
 import org.apache.calcite.adapter.enumerable.EnumerableRel;
+import org.apache.calcite.adapter.enumerable.EnumerableRelImplementor;
+import org.apache.calcite.adapter.jdbc.JdbcToEnumerableConverter;
 import org.apache.calcite.avatica.Meta;
 import org.apache.calcite.interpreter.BindableConvention;
 import org.apache.calcite.interpreter.Interpreters;
@@ -74,6 +79,7 @@ import org.apache.calcite.util.ImmutableIntList;
 import org.apache.calcite.util.Pair;
 import org.checkerframework.checker.nullness.qual.Nullable;
 import traindb.common.TrainDBLogger;
+import traindb.engine.TrainDBListResultSet;
 import traindb.planner.TrainDBPlanner;
 import traindb.sql.calcite.TrainDBHintStrategyTable;
 
@@ -179,6 +185,13 @@ public class TrainDBPreparingStmt extends Prepare
   @Override
   protected Program getProgram() {
     return ((TrainDBPlanner) planner).getProgram();
+  }
+
+  @Override
+  public RelRoot optimize(RelRoot root,
+                          final List<Materialization> materializations,
+                          final List<CalciteSchema.LatticeEntry> lattices) {
+    return super.optimize(root, materializations, lattices);
   }
 
   @Override
