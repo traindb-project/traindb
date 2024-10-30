@@ -612,7 +612,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         statementType = getStatementType(sqlNode.getKind());
       } catch (SqlParseException e) {
         throw new RuntimeException(
-            "parse failed: " + e.getMessage(), e);                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                                            
+            "parse failed: " + e.getMessage(), e);
       }
 
       // INSERT QUERY LOGS
@@ -635,8 +635,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
       }
-      if (sqlNode.getKind() == SqlKind.SELECT) 
-      {
+      if (sqlNode.getKind() == SqlKind.SELECT) {
         TrainDBSqlSelect select = (TrainDBSqlSelect) sqlNode;
         SqlNodeList hints = select.getHints();
         SqlHint hint = null;

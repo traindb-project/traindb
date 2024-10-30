@@ -186,11 +186,11 @@ public class TrainDBPreparingStmt extends Prepare
   protected Program getProgram() {
     return ((TrainDBPlanner) planner).getProgram();
   }
-  
+
   @Override
   public RelRoot optimize(RelRoot root,
-  final List<Materialization> materializations,
-  final List<CalciteSchema.LatticeEntry> lattices) {
+                          final List<Materialization> materializations,
+                          final List<CalciteSchema.LatticeEntry> lattices) {
     return super.optimize(root, materializations, lattices);
   }
 
