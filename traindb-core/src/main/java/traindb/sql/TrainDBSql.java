@@ -81,7 +81,7 @@ public final class TrainDBSql {
           runner.updateModel(
               trainModel.getExModelName(), trainModel.getModelName(),
               trainModel.getTableCondition(), trainModel.getSamplePercent(),
-              trainModel.getTrainOptions());
+              trainModel.getTrainOptions(), trainModel.isIncremental());
         } else {
           runner.trainModel(
               trainModel.getModeltypeName(), trainModel.getModelName(),
@@ -293,11 +293,15 @@ public final class TrainDBSql {
       String modelName = ctx.modelName().getText();
       String modeltypeName = null;
       String exModelName = null;
+      boolean incremental = false;
 
       if (ctx.trainModeltypeClause().K_MODELTYPE() != null) {
         modeltypeName = ctx.trainModeltypeClause().modeltypeName().getText();
       } else {
         exModelName = ctx.trainModeltypeClause().exModelName().getText();
+        if (ctx.trainModeltypeClause().K_UPDATE() != null) {
+          incremental = true;
+        }
       }
 
       List<String> schemaNames = new ArrayList<>();
@@ -348,14 +352,15 @@ public final class TrainDBSql {
         }
       }
       if (modeltypeName == null) {
-        LOG.debug("TRAIN MODEL: name=" + modelName + " update=" + exModelName);
+        LOG.debug("TRAIN MODEL: name=" + modelName + " update=" + exModelName
+            + " incremental=" + incremental);
       } else {
         LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
       }
 
       commands.add(new TrainDBSqlTrainModel(
           modeltypeName, modelName, schemaNames, tableNames, columnNames, tableCondition,
-          samplePercent, trainOptions, exModelName));
+          samplePercent, trainOptions, exModelName, incremental));
     }
 
     @Override

@@ -31,7 +31,8 @@ public interface TrainDBSqlRunner {
       throws Exception;
 
   void updateModel(String exModelName, String modelName, String tableCondition,
-                   float samplePercent, Map<String, Object> trainOptions) throws Exception;
+                   float samplePercent, Map<String, Object> trainOptions,
+                   boolean incremental) throws Exception;
 
   void dropModel(String modelName) throws Exception;
 

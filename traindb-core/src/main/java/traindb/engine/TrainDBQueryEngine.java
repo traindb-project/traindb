@@ -468,7 +468,8 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   @Override
   public void updateModel(String exModelName, String modelName, String tableCondition,
-                          float samplePercent, Map<String, Object> trainOptions) throws Exception {
+                          float samplePercent, Map<String, Object> trainOptions,
+                          boolean incremental) throws Exception {
     T_tracer.startTaskTracer("update model " + modelName);
 
     T_tracer.openTaskTime("find : existing model");
@@ -508,14 +509,22 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         Arrays.asList(rowType), tableCondition);
 
     Long updateRowCount = getTableRowCount(schemaNames, tableNames, tableCondition);
-    Long baseTableRows = exModel.getTableRows() + updateRowCount;
-    Long trainedRows = exModel.getTrainedRows() + (long) (updateRowCount * (samplePercent / 100.0));
+    Long baseTableRows = updateRowCount;
+    Long trainedRows = (long) (updateRowCount * (samplePercent / 100.0));
+    if (incremental) {
+      baseTableRows += exModel.getTableRows();
+      trainedRows += exModel.getTrainedRows();
+    }
 
     try {
       T_tracer.openTaskTime("train model");
       AbstractTrainDBModelRunner runner = createModelRunner(
           modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
-      runner.updateModel(tableMetadata, sql, exModelName);
+      if (incremental) {
+        runner.updateModel(tableMetadata, sql, exModelName);
+      } else {
+        runner.trainModel(tableMetadata, sql);
+      }
       T_tracer.closeTaskTime("SUCCESS");
 
       T_tracer.openTaskTime("insert model info");
@@ -526,8 +535,12 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
       T_tracer.endTaskTracer();
     } catch (Exception e) {
-      String msg = "failed to update model " + exModelName + " to " + modelName;
-      throwException(new TrainDBException(msg));
+      if (incremental) {
+        throwException(new TrainDBException(
+            "failed to update model " + exModelName + " to " + modelName));
+      } else {
+        throwException(new TrainDBException("failed to train model " + modelName));
+      }
     }
 
   }

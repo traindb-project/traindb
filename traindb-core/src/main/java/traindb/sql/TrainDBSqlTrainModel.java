@@ -27,11 +27,13 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
   private final float samplePercent;
   private final Map<String, Object> trainOptions;
   private final String exModelName;
+  private final boolean incremental;
 
   TrainDBSqlTrainModel(String modeltypeName, String modelName, List<String> schemaNames,
                        List<String> tableNames, List<List<String>> columnNames,
                        String tableCondition, float samplePercent,
-                       Map<String, Object> trainOptions, String exModelName) {
+                       Map<String, Object> trainOptions, String exModelName,
+                       boolean incremental) {
     this.modeltypeName = modeltypeName;
     this.modelName = modelName;
     this.schemaNames = schemaNames;
@@ -41,6 +43,7 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
     this.samplePercent = samplePercent;
     this.trainOptions = trainOptions;
     this.exModelName = exModelName;
+    this.incremental = incremental;
   }
 
   String getModeltypeName() {
@@ -77,6 +80,10 @@ class TrainDBSqlTrainModel extends TrainDBSqlCommand {
 
   Map<String, Object> getTrainOptions() {
     return trainOptions;
+  }
+
+  boolean isIncremental() {
+    return incremental;
   }
 
   @Override

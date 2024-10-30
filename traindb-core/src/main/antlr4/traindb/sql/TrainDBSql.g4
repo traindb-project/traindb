@@ -68,11 +68,12 @@ trainModel
 trainModeltypeClause
     : K_MODELTYPE modeltypeName
     | K_UPDATE exModelName
+    | K_LIKE exModelName
     ;
 
 trainDataClause
     : ( K_FROM | K_ON ) tableName '(' columnNameList ')' joinTableListOpt* tableConditionListClause?
-    | tableConditionListClause
+    | tableConditionListClause?
     ;
 
 dropModel
