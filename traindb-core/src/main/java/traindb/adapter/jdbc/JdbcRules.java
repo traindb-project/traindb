@@ -612,7 +612,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -796,7 +796,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -912,7 +912,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1000,7 +1000,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1062,7 +1062,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1122,7 +1122,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1176,7 +1176,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1268,7 +1268,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
@@ -1313,7 +1313,7 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      throw new UnsupportedOperationException("Unimplemented method 'execute'");
+      return null;
     }
   }
 
