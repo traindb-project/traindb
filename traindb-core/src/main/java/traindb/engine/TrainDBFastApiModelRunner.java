@@ -115,6 +115,47 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
+  public void updateModel(JSONObject tableMetadata, String trainingDataQuery, String exModelName)
+      throws Exception {
+    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
+    URL url = new URL(checkTrailingSlash(mModeltype.getUri())
+        + "modeltype/" + mModeltype.getClassName() + "/inclearn");
+    HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
+    httpConn.setRequestMethod("POST");
+    httpConn.setRequestProperty("Content-Type", "multipart/form-data; boundary=" + BOUNDARY);
+    httpConn.setDoOutput(true);
+
+    BasicDataSource ds = conn.getDataSource();
+    OutputStream outputStream = httpConn.getOutputStream();
+    DataOutputStream request = new DataOutputStream(outputStream);
+
+    addString(request, "modeltype_class", mModeltype.getClassName());
+    addString(request, "model_name", modelName);
+    addString(request, "jdbc_driver_class", ds.getDriverClassName());
+    addString(request, "db_url", ds.getUrl());
+    addString(request, "db_user", ds.getUsername());
+    addString(request, "db_pwd", ds.getPassword());
+    addString(request, "select_training_data_sql", trainingDataQuery);
+    addString(request, "ex_model_name", exModelName);
+    addMetadataFile(request, tableMetadata);
+    finishMultipartRequest(request);
+
+    if (httpConn.getResponseCode() != HttpURLConnection.HTTP_OK) {
+      throw new TrainDBException("failed to update model " + exModelName + " incrementally");
+    }
+
+    StringBuilder response = new StringBuilder();
+    try (BufferedReader reader = new BufferedReader(
+        new InputStreamReader(httpConn.getInputStream(), StandardCharsets.UTF_8))) {
+      String line;
+      while ((line = reader.readLine()) != null) {
+        response.append(line);
+      }
+    }
+    System.out.println(response);
+  }
+
+  @Override
   public void generateSynopsis(String outputPath, int rows) throws Exception {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
     URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/synopsis");

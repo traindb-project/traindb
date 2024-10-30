@@ -61,9 +61,18 @@ dropModeltype
     ;
 
 trainModel
-    : K_TRAIN K_MODEL modelName K_MODELTYPE modeltypeName
-      ( K_FROM | K_ON ) tableName '(' columnNameList ')' joinTableListOpt* joinTableConditionListOpt?
+    : K_TRAIN K_MODEL modelName trainModeltypeClause trainDataClause
       trainSampleClause? trainModelOptionsClause?
+    ;
+
+trainModeltypeClause
+    : K_MODELTYPE modeltypeName
+    | K_UPDATE exModelName
+    ;
+
+trainDataClause
+    : ( K_FROM | K_ON ) tableName '(' columnNameList ')' joinTableListOpt* tableConditionListClause?
+    | tableConditionListClause
     ;
 
 dropModel
@@ -122,7 +131,7 @@ joinTableListOpt
     : K_JOIN tableName '(' columnNameList ')'
     ;
 
-joinTableConditionListOpt
+tableConditionListClause
     : K_ON tableConditionList
     ;
 
@@ -243,6 +252,10 @@ showFilterOperator
     ;
 
 modelName
+    : IDENTIFIER
+    ;
+
+exModelName
     : IDENTIFIER
     ;
 
@@ -449,6 +462,7 @@ K_TO : T O ;
 K_TRAIN : T R A I N ;
 K_TRAININGS : T R A I N I N G S;
 K_TRUE : T R U E ;
+K_UPDATE : U P D A T E ;
 K_USE : U S E ;
 K_WHERE : W H E R E ;
 

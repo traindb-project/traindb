@@ -57,6 +57,9 @@ public abstract class AbstractTrainDBModelRunner {
 
   public abstract void renameModel(String newModelName) throws Exception;
 
+  public abstract void updateModel(JSONObject tableMetadata, String trainingDataQuery,
+                                   String exModelName) throws Exception;
+
   public String analyzeSynopsis(JSONObject tableMetadata, String originalDataQuery,
       String synopsisDataQuery, String synopsisName) throws Exception {
     throw new TrainDBException("analyzeSynopsis does not supported yet in this model runner");
@@ -67,8 +70,12 @@ public abstract class AbstractTrainDBModelRunner {
   }
 
   public Path getModelPath() {
+    return getModelPath(modelName);
+  }
+
+  public Path getModelPath(String name) {
     return Paths.get(TrainDBConfiguration.getTrainDBPrefixPath(), "models",
-        modeltypeName, modelName);
+        modeltypeName, name);
   }
 
   public static AbstractTrainDBModelRunner createModelRunner(

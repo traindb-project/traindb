@@ -77,11 +77,18 @@ public final class TrainDBSql {
         return runner.showModels(showModels.getWhereExpressionMap());
       case TRAIN_MODEL:
         TrainDBSqlTrainModel trainModel = (TrainDBSqlTrainModel) command;
-        runner.trainModel(
-            trainModel.getModeltypeName(), trainModel.getModelName(),
-            trainModel.getSchemaNames(), trainModel.getTableNames(), trainModel.getColumnNames(),
-            trainModel.getJoinCondition(), trainModel.getSamplePercent(),
-            trainModel.getTrainOptions());
+        if (trainModel.getExModelName() != null) {
+          runner.updateModel(
+              trainModel.getExModelName(), trainModel.getModelName(),
+              trainModel.getTableCondition(), trainModel.getSamplePercent(),
+              trainModel.getTrainOptions());
+        } else {
+          runner.trainModel(
+              trainModel.getModeltypeName(), trainModel.getModelName(),
+              trainModel.getSchemaNames(), trainModel.getTableNames(), trainModel.getColumnNames(),
+              trainModel.getTableCondition(), trainModel.getSamplePercent(),
+              trainModel.getTrainOptions());
+        }
         break;
       case DROP_MODEL:
         TrainDBSqlDropModel dropModel = (TrainDBSqlDropModel) command;
@@ -284,22 +291,32 @@ public final class TrainDBSql {
     @Override
     public void exitTrainModel(TrainDBSqlParser.TrainModelContext ctx) {
       String modelName = ctx.modelName().getText();
-      String modeltypeName = ctx.modeltypeName().getText();
+      String modeltypeName = null;
+      String exModelName = null;
+
+      if (ctx.trainModeltypeClause().K_MODELTYPE() != null) {
+        modeltypeName = ctx.trainModeltypeClause().modeltypeName().getText();
+      } else {
+        exModelName = ctx.trainModeltypeClause().exModelName().getText();
+      }
 
       List<String> schemaNames = new ArrayList<>();
       List<String> tableNames = new ArrayList<>();
       List<List<String>> columnNames = new ArrayList<>();
 
-      schemaNames.add(ctx.tableName().schemaName().getText());
-      tableNames.add(ctx.tableName().tableIdentifier.getText());
-      List<String> tableColumnNames = new ArrayList<>();
-      for (TrainDBSqlParser.ColumnNameContext columnName : ctx.columnNameList().columnName()) {
-        tableColumnNames.add(columnName.getText());
+      TrainDBSqlParser.TrainDataClauseContext dctx = ctx.trainDataClause();
+      if (dctx.tableName() != null) {
+        schemaNames.add(dctx.tableName().schemaName().getText());
+        tableNames.add(dctx.tableName().tableIdentifier.getText());
+        List<String> tableColumnNames = new ArrayList<>();
+        for (TrainDBSqlParser.ColumnNameContext columnName : dctx.columnNameList().columnName()) {
+          tableColumnNames.add(columnName.getText());
+        }
+        columnNames.add(tableColumnNames);
       }
-      columnNames.add(tableColumnNames);
 
-      if (ctx.joinTableListOpt() != null) {
-        for (TrainDBSqlParser.JoinTableListOptContext jtl : ctx.joinTableListOpt()) {
+      if (dctx.joinTableListOpt() != null) {
+        for (TrainDBSqlParser.JoinTableListOptContext jtl : dctx.joinTableListOpt()) {
           schemaNames.add(jtl.tableName().schemaName().getText());
           tableNames.add(jtl.tableName().tableIdentifier.getText());
           List<String> joinTableColumnNames = new ArrayList<>();
@@ -310,11 +327,11 @@ public final class TrainDBSql {
         }
       }
 
-      String joinCondition = "";
-      if (ctx.joinTableConditionListOpt() != null) {
-        int start = ctx.joinTableConditionListOpt().tableConditionList().start.getStartIndex();
-        int stop = ctx.joinTableConditionListOpt().tableConditionList().stop.getStopIndex();
-        joinCondition = ctx.start.getInputStream().getText(new Interval(start, stop));
+      String tableCondition = "";
+      if (dctx.tableConditionListClause() != null) {
+        int start = dctx.tableConditionListClause().tableConditionList().start.getStartIndex();
+        int stop = dctx.tableConditionListClause().tableConditionList().stop.getStopIndex();
+        tableCondition = ctx.start.getInputStream().getText(new Interval(start, stop));
       }
 
       float samplePercent = 100;
@@ -330,11 +347,15 @@ public final class TrainDBSql {
               getOptionValueObject(optionKeyValue.optionValue(), false));
         }
       }
-      LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
+      if (modeltypeName == null) {
+        LOG.debug("TRAIN MODEL: name=" + modelName + " update=" + exModelName);
+      } else {
+        LOG.debug("TRAIN MODEL: name=" + modelName + " type=" + modeltypeName);
+      }
 
       commands.add(new TrainDBSqlTrainModel(
-          modeltypeName, modelName, schemaNames, tableNames, columnNames, joinCondition,
-          samplePercent, trainOptions));
+          modeltypeName, modelName, schemaNames, tableNames, columnNames, tableCondition,
+          samplePercent, trainOptions, exModelName));
     }
 
     @Override

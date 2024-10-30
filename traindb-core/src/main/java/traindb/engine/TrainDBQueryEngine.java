@@ -46,9 +46,7 @@ import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.stream.Collectors;
-import org.apache.calcite.linq4j.tree.Types;
 import org.apache.calcite.rel.type.RelDataType;
-import org.apache.calcite.rel.type.RelDataTypeFactory;
 import org.apache.calcite.rel.type.RelDataTypeField;
 import org.apache.calcite.schema.Schema;
 import org.apache.calcite.sql.SqlDialect;
@@ -322,9 +320,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     return sb.toString();
   }
 
-  private String buildJoinQuery(List<String> schemaNames, List<String> tableNames,
-                                List<List<String>> columnNames, float samplePercent,
-                                List<RelDataType> relDataTypes, String joinCondition)
+  private String buildSelectQueryWithCondition(
+      List<String> schemaNames, List<String> tableNames, List<List<String>> columnNames,
+      float samplePercent, List<RelDataType> relDataTypes, String joinCondition)
       throws TrainDBException {
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
@@ -385,7 +383,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
   @Override
   public void trainModel(
       String modeltypeName, String modelName, List<String> schemaNames, List<String> tableNames,
-      List<List<String>> columnNames, String joinCondition, float samplePercent,
+      List<List<String>> columnNames, String tableCondition, float samplePercent,
       Map<String, Object> trainOptions) throws Exception {
     T_tracer.startTaskTracer("train model " + modelName);
 
@@ -423,9 +421,9 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     MTable joinTable = null;
     if (tableNames.size() > 1) {  // JOIN TABLE
       joinTable = catalogContext.createJoinTable(
-          schemaNames, tableNames, columnNames, rowTypes, joinCondition);
-      sql = buildJoinQuery(
-          schemaNames, tableNames, columnNames, samplePercent, rowTypes, joinCondition);
+          schemaNames, tableNames, columnNames, rowTypes, tableCondition);
+      sql = buildSelectQueryWithCondition(
+          schemaNames, tableNames, columnNames, samplePercent, rowTypes, tableCondition);
       tableName = joinTable.getTableName();
       tableMetadata = buildJoinTableMetadata(
           joinTable.getTableName(), schemaNames, tableNames, columnNames, trainOptions, rowTypes);
@@ -434,11 +432,11 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       tableName = tableNames.get(0);
       tableMetadata = buildTableMetadata(
           schemaNames.get(0), tableName, columnNames.get(0), trainOptions, rowTypes.get(0));
-      sql = buildSelectTrainingDataQuery(
-          schemaNames.get(0), tableName, columnNames.get(0), samplePercent, rowTypes.get(0));
+      sql = buildSelectQueryWithCondition(
+          schemaNames, tableNames, columnNames, samplePercent, rowTypes, tableCondition);
       rowType = rowTypes.get(0);
     }
-    Long baseTableRows = getTableRowCount(schemaNames, tableNames, joinCondition);
+    Long baseTableRows = getTableRowCount(schemaNames, tableNames, tableCondition);
     Long trainedRows = (long) (baseTableRows * (samplePercent / 100.0)); // FIXME: not exact
 
     try {
@@ -466,6 +464,72 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       String msg = "failed to train model " + modelName;
       throwException(new TrainDBException(msg));
     }
+  }
+
+  @Override
+  public void updateModel(String exModelName, String modelName, String tableCondition,
+                          float samplePercent, Map<String, Object> trainOptions) throws Exception {
+    T_tracer.startTaskTracer("update model " + modelName);
+
+    T_tracer.openTaskTime("find : existing model");
+    if (!catalogContext.modelExists(exModelName)) {
+      String msg = "model '" + exModelName + "' does not exist";
+      throwException(new CatalogException(msg));
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    T_tracer.openTaskTime("find : model");
+    if (catalogContext.modelExists(modelName)) {
+      String msg = "model '" + modelName + "' already exists";
+      throwException(new CatalogException(msg));
+    }
+    T_tracer.closeTaskTime("SUCCESS");
+
+    MModel exModel = catalogContext.getModel(exModelName);
+    String modeltypeName = exModel.getModeltype().getModeltypeName();
+    String schemaName = exModel.getSchemaName();
+    String tableName = exModel.getTableName();
+    List<String> columnNames = exModel.getColumnNames();
+
+    if (tableName.startsWith("__JOIN_")) {
+      throwException(new TrainDBException(
+          "Updating model trained on multiple tables does not supported yet."));
+    }
+
+    TrainDBTable table = schemaManager.getTable(schemaName, tableName);
+    RelDataType rowType = table.getRowType(conn.getTypeFactory());
+
+    JSONObject tableMetadata = buildTableMetadata(
+        schemaName, tableName, columnNames, trainOptions, rowType);
+    List<String> schemaNames = Arrays.asList(schemaName);
+    List<String> tableNames = Arrays.asList(tableName);
+    String sql = buildSelectQueryWithCondition(
+        schemaNames, tableNames, Arrays.asList(columnNames), samplePercent,
+        Arrays.asList(rowType), tableCondition);
+
+    Long updateRowCount = getTableRowCount(schemaNames, tableNames, tableCondition);
+    Long baseTableRows = exModel.getTableRows() + updateRowCount;
+    Long trainedRows = exModel.getTrainedRows() + (long) (updateRowCount * (samplePercent / 100.0));
+
+    try {
+      T_tracer.openTaskTime("train model");
+      AbstractTrainDBModelRunner runner = createModelRunner(
+          modeltypeName, modelName, catalogContext.getModeltype(modeltypeName).getLocation());
+      runner.updateModel(tableMetadata, sql, exModelName);
+      T_tracer.closeTaskTime("SUCCESS");
+
+      T_tracer.openTaskTime("insert model info");
+      JSONObject options = (JSONObject) tableMetadata.get("options");
+      catalogContext.trainModel(modeltypeName, modelName, schemaName, tableName,
+          columnNames, rowType, baseTableRows, trainedRows, options.toString());
+      T_tracer.closeTaskTime("SUCCESS");
+
+      T_tracer.endTaskTracer();
+    } catch (Exception e) {
+      String msg = "failed to update model " + exModelName + " to " + modelName;
+      throwException(new TrainDBException(msg));
+    }
+
   }
 
   @Override

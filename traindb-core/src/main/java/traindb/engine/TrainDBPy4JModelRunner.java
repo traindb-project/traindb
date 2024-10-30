@@ -100,6 +100,12 @@ public class TrainDBPy4JModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
+  public void updateModel(JSONObject tableMetadata, String trainingDataQuery, String exModelName)
+      throws Exception {
+    throw new TrainDBException("Not supported yet in Py4J model runner");
+  }
+
+  @Override
   public void generateSynopsis(String outputPath, int rows) throws Exception {
     String modelPath = getModelPath().toString();
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();

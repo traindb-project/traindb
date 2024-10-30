@@ -26,9 +26,12 @@ public interface TrainDBSqlRunner {
   void dropModeltype(String name) throws Exception;
 
   void trainModel(String modeltypeName, String modelName, List<String> schemaNames,
-                  List<String> tableNames, List<List<String>> columnNames, String joinCondition,
+                  List<String> tableNames, List<List<String>> columnNames, String tableCondition,
                   float samplePercent, Map<String, Object> trainOptions)
       throws Exception;
+
+  void updateModel(String exModelName, String modelName, String tableCondition,
+                   float samplePercent, Map<String, Object> trainOptions) throws Exception;
 
   void dropModel(String modelName) throws Exception;
 

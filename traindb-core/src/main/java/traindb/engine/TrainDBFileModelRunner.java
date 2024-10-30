@@ -80,6 +80,42 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
   }
 
   @Override
+  public void updateModel(JSONObject tableMetadata, String trainingDataQuery, String exModelName)
+      throws Exception {
+    // write metadata for model training scripts in python
+    Path modelPath = getModelPath();
+    Files.createDirectories(modelPath);
+    String outputPath = modelPath.toString();
+    String metadataFilename = Paths.get(outputPath, "metadata.json").toString();
+    FileWriter fileWriter = new FileWriter(metadataFilename);
+    fileWriter.write(tableMetadata.toJSONString());
+    fileWriter.flush();
+    fileWriter.close();
+
+    Connection extConn = conn.getDataSourceConnection();
+    Statement stmt = extConn.createStatement();
+    ResultSet trainingData = stmt.executeQuery(trainingDataQuery);
+    String dataFilename = Paths.get(outputPath, "data.csv").toString();
+    writeResultSetToCsv(trainingData, dataFilename);
+    JdbcUtils.close(extConn, stmt, trainingData);
+
+    MModeltype mModeltype = catalogContext.getModeltype(modeltypeName);
+    String exModelPath = getModelPath(exModelName).toString();
+
+    // train ML model
+    ProcessBuilder pb = new ProcessBuilder("python", getModelRunnerPath(), "incremental_learn",
+        mModeltype.getClassName(), TrainDBConfiguration.absoluteUri(mModeltype.getUri()),
+        dataFilename, metadataFilename, exModelPath, outputPath);
+    pb.inheritIO();
+    Process process = pb.start();
+    process.waitFor();
+
+    if (process.exitValue() != 0) {
+      throw new TrainDBException("failed to update model" + exModelName + " incrementally");
+    }
+  }
+
+  @Override
   public void generateSynopsis(String outputPath, int rows) throws Exception {
     String modelPath = getModelPath().toString();
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
