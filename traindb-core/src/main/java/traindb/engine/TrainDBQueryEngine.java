@@ -322,7 +322,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
   private String buildSelectQueryWithCondition(
       List<String> schemaNames, List<String> tableNames, List<List<String>> columnNames,
-      float samplePercent, List<RelDataType> relDataTypes, String joinCondition)
+      float samplePercent, List<RelDataType> relDataTypes, String tableCondition)
       throws TrainDBException {
     StringBuilder sb = new StringBuilder();
     sb.append("SELECT ");
@@ -368,13 +368,13 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
       sampleClause = getTableSampleClause(samplePercent);
       sb.append(sampleClause);
     }
-    if (joinCondition != null) {
+    if (tableCondition != null && !tableCondition.isEmpty()) {
       if (sampleClause.startsWith(" WHERE")) {
         sb.append(" AND ");
       } else {
         sb.append(" WHERE ");
       }
-      sb.append(joinCondition);
+      sb.append(tableCondition);
     }
 
     return sb.toString();
