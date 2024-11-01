@@ -33,17 +33,22 @@ public class TrainDBWhatIfQueryTransformer {
   );
 
   // Full query pattern
+  private static final String PRE_SELECT = "(.*)";
   private static final String SELECT_APPROXIMATE = "SELECT\\s+APPROXIMATE\\s+";
+  private static final String SELECT_COLUMNS = "(.*)";
   private static final String AGGREGATION_FUNCTION = "(count|sum|avg)";   // Aggregation functions: count, sum, avg
   private static final String COLUMN_EXPRESSION = "\\(([^)]+)\\)";        // Column or expression inside parentheses
   private static final String AS_CLAUSE = "(?:\\s+as\\s+(\\w+))?";        // Optional alias clause
   private static final String FROM_CLAUSE = "\\s+FROM\\s+(\\w+\\.\\w+)";  // Table name (schema.table)
   private static final String WHERE_CLAUSE = "(?:\\s+WHERE\\s+(.+?))?";   // Optional WHERE clause
+  private static final String GROUPBY_CLAUSE = "(\\s+GROUP\\s+BY\\s+\\w+(\\s*,\\s*\\w+)*)?";   // Optional GROUPBY clause
+  private static final String POST_SELECT = "(\\s+(.)*)?"; // Optional ORDER BY clause
 
   // Combine all parts to form the complete query pattern
   private static final Pattern QUERY_PATTERN = Pattern.compile(
-      SELECT_APPROXIMATE + AGGREGATION_FUNCTION + COLUMN_EXPRESSION +
-          AS_CLAUSE + FROM_CLAUSE + WHERE_CLAUSE + "\\s+" + WHATIF_CONDITION + "\\s+" + TO_MULTIPLIER,
+      PRE_SELECT + SELECT_APPROXIMATE + SELECT_COLUMNS + AGGREGATION_FUNCTION + COLUMN_EXPRESSION
+          + AS_CLAUSE + FROM_CLAUSE + WHERE_CLAUSE + "\\s+" + WHATIF_CONDITION + "\\s+"
+          + TO_MULTIPLIER + GROUPBY_CLAUSE + POST_SELECT,
       Pattern.CASE_INSENSITIVE
   );
 
@@ -82,28 +87,45 @@ public class TrainDBWhatIfQueryTransformer {
 
     if (whatIfToMatcher.find()) {
       // Extract components from the input query
-      String aggregationFunction = whatIfToMatcher.group(1).toLowerCase();  // Convert to lowercase for easier comparison
-      String columnExpression = whatIfToMatcher.group(2);     // The column or expression to aggregate
-      String alias = whatIfToMatcher.group(3);                // The alias for the result, if specified
-      String tableName = whatIfToMatcher.group(4);            // The name of the table to query
-      String whereCondition = whatIfToMatcher.group(5);       // The WHERE condition, if specified
-      String whatIfCondition = whatIfToMatcher.group(6);      // The WHATIF condition
-      String multiplier = whatIfToMatcher.group(7);           // The multiplier for the WHATIF clause
+      String preSelect = whatIfToMatcher.group(1);
+      String selectColumns = whatIfToMatcher.group(2);
+      String aggregationFunction = whatIfToMatcher.group(3).toLowerCase();  // Convert to lowercase for easier comparison
+      String columnExpression = whatIfToMatcher.group(4);     // The column or expression to aggregate
+      String alias = whatIfToMatcher.group(5);                // The alias for the result, if specified
+      String tableName = whatIfToMatcher.group(6);            // The name of the table to query
+      String whereCondition = whatIfToMatcher.group(7);       // The WHERE condition, if specified
+      String whatIfCondition = whatIfToMatcher.group(8);      // The WHATIF condition
+      String multiplier = whatIfToMatcher.group(9);           // The multiplier for the WHATIF clause
+      String groupby = whatIfToMatcher.group(10);
+      String postSelect = whatIfToMatcher.group(12);
+
+      if (groupby == null) {
+        groupby = "";
+      }
+      if (postSelect == null) {
+        postSelect = "";
+      }
 
       // Determine the "as" clause for the output query
       String asClause = (alias != null) ? " as " + alias : "";
 
       // Log debug information about the extracted query components
-      logDebugInfo(aggregationFunction, columnExpression, asClause, tableName, whereCondition, whatIfCondition, multiplier);
+      logDebugInfo(aggregationFunction, columnExpression, asClause, tableName, whereCondition,
+          whatIfCondition, multiplier);
 
       // Check if the aggregation function is supported
       if (!ALIAS_MAP.containsKey(aggregationFunction)) {
-        LOGGER.log(Level.WARNING, "Unsupported aggregation function: {0}. Only count, sum, and avg are supported.", aggregationFunction);
+        LOGGER.log(Level.WARNING,
+            "Unsupported aggregation function: {0}. Only count, sum, and avg are supported.",
+            aggregationFunction);
         return inputQuery;
       }
 
+      String transformedQuery = buildTransformedQuery(aggregationFunction, selectColumns,
+          columnExpression, asClause, tableName, whereCondition, whatIfCondition, multiplier,
+          groupby);
       // Build and return the transformed query
-      return buildTransformedQuery(aggregationFunction, columnExpression, asClause, tableName, whereCondition, whatIfCondition, multiplier);
+      return preSelect + transformedQuery + groupby + postSelect;
     }
 
     // If the query doesn't match the WHATIF ~ TO pattern, return the input unchanged
@@ -143,8 +165,11 @@ public class TrainDBWhatIfQueryTransformer {
    * @param multiplier The multiplier for the WHATIF clause
    * @return The transformed query string
    */
-  private static String buildTransformedQuery(String aggregationFunction, String columnExpression, String asClause,
-                                              String tableName, String whereCondition, String whatIfCondition, String multiplier) {
+  private static String buildTransformedQuery(String aggregationFunction, String selectColumns,
+                                              String columnExpression, String asClause,
+                                              String tableName, String whereCondition,
+                                              String whatIfCondition, String multiplier,
+                                              String groupby) {
     String baseCondition = whereCondition != null ? whereCondition : "";
     String whatIfWithBase = whereCondition != null ? " AND " + whatIfCondition : whatIfCondition;
     String notWhatIfWithBase = whereCondition != null ? " AND NOT (" + whatIfCondition + ")" : "NOT (" + whatIfCondition + ")";
@@ -158,12 +183,15 @@ public class TrainDBWhatIfQueryTransformer {
       case "count":
       case "sum":
         String alias = generateAlias(aggregationFunction);
-        innerSelect = String.format("SELECT APPROXIMATE %%s %s(%s) AS %s", aggregationFunction, columnExpression, alias);
-        outerSelect = String.format("SELECT SUM(%s)%s", alias, asClause);
+        innerSelect = String.format("SELECT APPROXIMATE %s %%s %s(%s) AS %s",
+            selectColumns, aggregationFunction, columnExpression, alias);
+        outerSelect = String.format("SELECT %s SUM(%s)%s", selectColumns, alias, asClause);
         break;
       case "avg":
-        innerSelect = String.format("SELECT APPROXIMATE %%s SUM(%s) AS sum_res, %%s COUNT(%s) AS cnt_res", columnExpression, columnExpression);
-        outerSelect = String.format("SELECT SUM(sum_res) / SUM(cnt_res)%s", asClause);
+        innerSelect = String.format("SELECT APPROXIMATE %s %%s SUM(%s) AS sum_res, %%s COUNT(%s) AS cnt_res",
+            selectColumns, columnExpression, columnExpression);
+        outerSelect = String.format("SELECT %s SUM(sum_res) / SUM(cnt_res)%s",
+            selectColumns, asClause);
         break;
       default:
         // This case should never be reached due to the check in transformQuery, but included for completeness
@@ -175,11 +203,11 @@ public class TrainDBWhatIfQueryTransformer {
         .append("\nFROM (\n")
         .append(String.format(innerSelect, multiplier + " *", multiplier + " *"))
         .append("\n    FROM ").append(tableName)
-        .append("\n    WHERE ").append(baseCondition).append(whatIfWithBase)
+        .append("\n    WHERE ").append(baseCondition).append(whatIfWithBase).append(groupby)
         .append("\n    UNION ALL\n")
         .append(String.format(innerSelect, "", ""))
         .append("\n    FROM ").append(tableName)
-        .append("\n    WHERE ").append(baseCondition).append(notWhatIfWithBase)
+        .append("\n    WHERE ").append(baseCondition).append(notWhatIfWithBase).append(groupby)
         .append("\n) as t");
 
     return queryBuilder.toString();
