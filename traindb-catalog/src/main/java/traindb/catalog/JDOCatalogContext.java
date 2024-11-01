@@ -254,6 +254,13 @@ public final class JDOCatalogContext implements CatalogContext {
 
       List<MSynopsis> joinSynopses = new ArrayList<>();
       for (Long joinTableId : joinTableIds) {
+        Query query = pm.newQuery(MJoin.class);
+        setFilterPatterns(query, ImmutableMap.of("join_table_id", joinTableId));
+        List<MJoin> mJoins = (List<MJoin>) query.execute();
+        if (baseTableIds.size() != mJoins.size()) {
+          continue;
+        }
+
         Collection<MTable> joinTable = getTables(ImmutableMap.of("id", joinTableId));
         for (MTable jt : joinTable) {
           Collection<MTableExt> tableExts = jt.getTableExts();
