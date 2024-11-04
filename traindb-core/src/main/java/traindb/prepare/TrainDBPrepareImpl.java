@@ -971,8 +971,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
     DatabaseMetaData databaseMetaData = conn.getMetaData();
     String url = databaseMetaData.getURL();
-    String db_query = url.split(":")[1];
-
+    String db_query = url.split(":")[1]; 
     List<String> partitionList = null;
     String partitionKey = null;
     for (Schema schema : schemaManager.getJdbcDataSource().getSubSchemaMap().values()) {
@@ -983,6 +982,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       }
 
       Map<String, TrainDBPartition> partitionMap = traindbSchema.getPartitionMap();
+      if ( partitionMap == null ) {
+        throw new RuntimeException(
+            "failed to run statement: " + sql
+            + "\nerror msg: incremental query can be executed on partitioned table only.");
+      }
       Set<Map.Entry<String, TrainDBPartition>> entries = partitionMap.entrySet();
       
 
