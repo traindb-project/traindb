@@ -93,6 +93,7 @@ import traindb.catalog.CatalogStore;
 import traindb.catalog.JDOCatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.schema.SchemaManager;
+import traindb.task.TaskCoordinator;
 
 /**
  * Implementation of JDBC connection
@@ -106,6 +107,7 @@ public abstract class TrainDBConnectionImpl
   public final TrainDBConfiguration cfg;
   public final JavaTypeFactory typeFactory;
   private SchemaManager schemaManager;
+  private TaskCoordinator taskCoordinator;
   private BasicDataSource dataSource;
   private boolean standalone;
 
@@ -138,6 +140,7 @@ public abstract class TrainDBConnectionImpl
     CatalogStore catalogStore = new JDOCatalogStore();
     catalogStore.start(cfg.getProps());
     this.schemaManager = SchemaManager.getInstance(catalogStore);
+    this.taskCoordinator = TaskCoordinator.getInstance();
     if (url == null) {  // traindb-only mode (no datasource)
       standalone = true;
       this.dataSource = null;
@@ -295,6 +298,10 @@ public abstract class TrainDBConnectionImpl
 
   public SchemaManager getSchemaManager() {
     return schemaManager;
+  }
+
+  public TaskCoordinator getTaskCoordinator() {
+    return taskCoordinator;
   }
 
   public boolean isStandalone() {

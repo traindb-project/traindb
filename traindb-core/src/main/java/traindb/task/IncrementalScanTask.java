@@ -36,7 +36,7 @@ public class IncrementalScanTask implements Callable<List<List<Object>>> {
     TrainDBConnectionImpl conn = 
                 (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
-    SchemaManager schemaManager = conn.getSchemaManager();
+    TaskCoordinator taskCoordinator = conn.getTaskCoordinator();
 
     TrainDBIncrementalQuery incrementalQuery = (TrainDBIncrementalQuery) commands;
     String sql = incrementalQuery.getStatement();
@@ -50,12 +50,12 @@ public class IncrementalScanTask implements Callable<List<List<Object>>> {
               + "\nerror msg: incremental query can be executed on partitioned table only.");
     }
 
-    if (schemaManager.saveQuery.size() <= queryIdx) {
+    if (taskCoordinator.saveQuery.size() <= queryIdx) {
       return null;
     }
 
     try {
-      String currentIncrementalQuery = schemaManager.saveQuery.get(queryIdx);
+      String currentIncrementalQuery = taskCoordinator.saveQuery.get(queryIdx);
       Connection extConn = conn.getDataSourceConnection();
       Statement stmt = extConn.createStatement();
       ResultSet rs = stmt.executeQuery(currentIncrementalQuery);
@@ -77,8 +77,8 @@ public class IncrementalScanTask implements Callable<List<List<Object>>> {
         totalRes.add(r);
       }
 
-      for (int j = 0; j < schemaManager.aggCalls.size(); j++) {
-        SqlAggFunction agg = schemaManager.aggCalls.get(j);
+      for (int j = 0; j < taskCoordinator.aggCalls.size(); j++) {
+        SqlAggFunction agg = taskCoordinator.aggCalls.get(j);
         header.add(agg.getName());
       }
       JdbcUtils.close(extConn, stmt, rs);

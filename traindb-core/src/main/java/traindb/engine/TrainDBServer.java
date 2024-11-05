@@ -24,6 +24,7 @@ import traindb.catalog.JDOCatalogStore;
 import traindb.common.TrainDBConfiguration;
 import traindb.common.TrainDBLogger;
 import traindb.schema.SchemaManager;
+import traindb.task.TaskCoordinator;
 
 
 public class TrainDBServer extends CompositeService {
@@ -46,6 +47,9 @@ public class TrainDBServer extends CompositeService {
 
     SchemaManager schemaManager = SchemaManager.getInstance(catalogStore);
     addService(schemaManager);
+
+    TaskCoordinator taskCoordinator = TaskCoordinator.getInstance();
+    addService(taskCoordinator);
 
     SessionFactory sessFactory = new SessionFactory(schemaManager);
     SessionManager sessManager = new SessionManager(sessFactory);
