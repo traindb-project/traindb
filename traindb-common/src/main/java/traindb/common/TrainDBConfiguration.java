@@ -48,6 +48,11 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     return Boolean.parseBoolean((String) props.getOrDefault("traindb.server.tasktrace", "false"));
   }
 
+  public boolean jdbcExecute() {
+    return Boolean.parseBoolean(
+        (String) props.getOrDefault("traindb.server.jdbc-execute", "false"));
+  }
+
   public static String getTrainDBPrefixPath() {
     String prefix = System.getProperty("TRAINDB_PREFIX");
     if (prefix == null) {

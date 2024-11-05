@@ -636,22 +636,25 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             null, ImmutableList.of(), -1, null,
             Meta.StatementType.OTHER_DDL);
       }
-      if (sqlNode.getKind() == SqlKind.SELECT) {
-        TrainDBSqlSelect select = (TrainDBSqlSelect) sqlNode;
-        SqlNodeList hints = select.getHints();
-        SqlHint hint = null;
-        if (hints.size() > 0)
-          hint = (SqlHint) hints.get(0);
-        
-        if ((hint == null || !hint.getName().equalsIgnoreCase("approximate")) 
+
+      if (conn.cfg.jdbcExecute()) {
+        if (sqlNode.getKind() == SqlKind.SELECT) {
+          TrainDBSqlSelect select = (TrainDBSqlSelect) sqlNode;
+          SqlNodeList hints = select.getHints();
+          SqlHint hint = null;
+          if (hints.size() > 0)
+            hint = (SqlHint) hints.get(0);
+
+          if ((hint == null || !hint.getName().equalsIgnoreCase("approximate"))
               && select.getFrom() instanceof SqlJoin) {
-          try {
-            TrainDBListResultSet result = executeJoin(context, catalogReader, sqlNode, sqlNode, 
-                              preparingStmt, prefer);
-            if ( result != null )
-              return convertResultToSignature(context, null, result);
-          } catch (SQLException e) {
-            throw new RuntimeException(e);
+            try {
+              TrainDBListResultSet result = executeJoin(context, catalogReader, sqlNode, sqlNode,
+                  preparingStmt, prefer);
+              if (result != null)
+                return convertResultToSignature(context, null, result);
+            } catch (SQLException e) {
+              throw new RuntimeException(e);
+            }
           }
         }
       }
