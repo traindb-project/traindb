@@ -65,7 +65,7 @@ public class ApproxAggregateSynopsisRule
     if (parent == null) {
       return false;
     }
-    if (parent == aggregate) {
+    if (parent == aggregate && !aggregate.getAggCallList().isEmpty()) {
       return true;
     }
     if (parent instanceof Filter
@@ -413,7 +413,7 @@ public class ApproxAggregateSynopsisRule
       relBuilder.push(newScan);
 
       final List<String> synopsisColumns = bestSynopsis.getColumnNames();
-      final Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
+      Mappings.TargetMapping mapping = createMapping(inputColumns, synopsisColumns);
 
       boolean projected = false;
       RelNode child;
@@ -430,14 +430,23 @@ public class ApproxAggregateSynopsisRule
           }
         } else if (node instanceof Join) {
           Join join = (Join) node;
+          RelNode left = join.getLeft();
+          RelNode right = join.getRight();
           RexNode newCondition;
           if (projected) {
             newCondition = join.getCondition();
           } else {
+            if (left instanceof RelSubset
+                && ((RelSubset) left).getBestOrOriginal() == child) {
+              mapping = Mappings.append(mapping,
+                  Mappings.createIdentity(right.getRowType().getFieldCount()));
+            } else if (right instanceof RelSubset
+                && ((RelSubset) right).getBestOrOriginal() == child) {
+              mapping = Mappings.append(Mappings.createIdentity(left.getRowType().getFieldCount()),
+                  mapping);
+            }
             newCondition = RexUtil.apply(mapping, join.getCondition());
           }
-          RelNode left = join.getLeft();
-          RelNode right = join.getRight();
           if (left instanceof RelSubset
               && ((RelSubset) left).getBestOrOriginal() == child) {
             final Join newJoin =
@@ -468,27 +477,34 @@ public class ApproxAggregateSynopsisRule
           }
           relBuilder.project(newProjects, project.getRowType().getFieldNames());
           projected = true;
+        } else if (node instanceof Aggregate) {
+          Aggregate agg = (Aggregate) node;
+          pushAggregateWithMapping(relBuilder, agg, projected ? null : mapping);
         } else {
           return; /* cannot apply this rule */
         }
       }
 
-      if (projected) {
-        relBuilder.aggregate(relBuilder.groupKey(aggregate.getGroupSet()),
-            aggregate.getAggCallList());
-      } else {
-        final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();
-        List<RexNode> newGroupSet = ApproxAggregateUtil.makeAggregateGroupSet(aggregate, mapping);
-        aggregate.getAggCallList()
-            .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(mapping)));
-        relBuilder.aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build());
-      }
-
+      pushAggregateWithMapping(relBuilder, aggregate, projected ? null : mapping);
       double scaleFactor = scan.getTable().getRowCount() / synopsisTable.getRowCount();
       List<RexNode> aggProjects = ApproxAggregateUtil.makeAggregateProjects(aggregate, scaleFactor);
       relBuilder.project(aggProjects, aggregate.getRowType().getFieldNames());
 
       call.transformTo(relBuilder.build());
+    }
+  }
+
+  private void pushAggregateWithMapping(RelBuilder relBuilder, Aggregate agg,
+                                        Mappings.TargetMapping mapping) {
+    if (mapping == null) {
+      relBuilder.aggregate(relBuilder.groupKey(agg.getGroupSet()), agg.getAggCallList());
+    } else {
+      final ImmutableList.Builder<AggregateCall> newAggCalls = ImmutableList.builder();
+      List<RexNode> newGroupSet = ApproxAggregateUtil.makeAggregateGroupSet(agg, mapping);
+      final Mappings.TargetMapping finalMapping = mapping;
+      agg.getAggCallList()
+          .forEach(aggregateCall -> newAggCalls.add(aggregateCall.transform(finalMapping)));
+      relBuilder.aggregate(relBuilder.groupKey(newGroupSet), newAggCalls.build());
     }
   }
 
