@@ -45,6 +45,7 @@ import java.util.Collection;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
+import java.util.regex.Pattern;
 import java.util.stream.Collectors;
 import org.apache.calcite.rel.type.RelDataType;
 import org.apache.calcite.rel.type.RelDataTypeField;
@@ -67,6 +68,7 @@ import traindb.catalog.pm.MQueryLog;
 import traindb.catalog.pm.MSchema;
 import traindb.catalog.pm.MSynopsis;
 import traindb.catalog.pm.MTable;
+import traindb.catalog.pm.MTableExt;
 import traindb.catalog.pm.MTask;
 import traindb.catalog.pm.MTrainingStatus;
 import traindb.common.TrainDBException;
@@ -787,6 +789,20 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         pstmt.executeBatch();
       }
       pstmt.close();
+
+      if (mTable.getTableType().equals("JOIN")) {
+        MTableExt mTableExt = catalogContext.getExternalTable(mTable.getTableName());
+        List<String> equiJoinConditions =
+            extractEquiJoinConditions(mTableExt.getExternalTableUri());
+
+        extConn = conn.getDataSourceConnection();
+        Statement stmt = extConn.createStatement();
+        String updateSql = "UPDATE " + schemaName + "." + synopsisName + " SET ";
+        for (String eqc : equiJoinConditions) {
+          stmt.execute(updateSql + eqc);
+        }
+        stmt.close();
+      }
       extConn.close();
     } catch (Exception e) {
       throw e;
@@ -799,6 +815,15 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
         }
       }
     }
+  }
+
+  private List<String> extractEquiJoinConditions(String tableCondition) {
+    Pattern identifierPattern = Pattern.compile("^\\w+\\s*=\\s*\\w+$");
+
+    return Arrays.stream(tableCondition.split("(?i)\\s+AND\\s+"))
+        .map(String::trim)
+        .filter(condition -> identifierPattern.matcher(condition).matches())
+        .collect(Collectors.toList());
   }
 
   private void renameSynopsisTable(String synopsisName, String newSynopsisName)
