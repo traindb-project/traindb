@@ -40,6 +40,11 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
     return (String) props.getOrDefault("traindb.server.modelrunner", "file");
   }
 
+  public boolean cleanupTrainingData() {
+    return Boolean.parseBoolean(
+        (String) props.getOrDefault("traindb.server.modelrunner.cleanup-data", "true"));
+  }
+
   public boolean queryLog() {
     return Boolean.parseBoolean((String) props.getOrDefault("traindb.server.querylog", "false"));
   }

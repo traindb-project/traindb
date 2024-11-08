@@ -16,6 +16,7 @@ package traindb.engine;
 
 import java.io.File;
 import java.io.FileWriter;
+import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.nio.file.Files;
 import java.nio.file.Path;
@@ -73,6 +74,14 @@ public class TrainDBFileModelRunner extends AbstractTrainDBModelRunner {
     pb.inheritIO();
     Process process = pb.start();
     process.waitFor();
+
+    try {
+      if (conn.cfg.cleanupTrainingData()) {
+        Files.delete(Paths.get(dataFilename));
+      }
+    } catch (IOException e) {
+      // ignore
+    }
 
     if (process.exitValue() != 0) {
       throw new TrainDBException("failed to train model");
