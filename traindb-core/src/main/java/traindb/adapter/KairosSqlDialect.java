@@ -34,7 +34,7 @@ public class KairosSqlDialect extends TrainDBSqlDialect {
 
   static {
     DEFAULT_CONTEXT = SqlDialect.EMPTY_CONTEXT
-        .withIdentifierQuoteString("\"")
+        .withIdentifierQuoteString("")
         .withUnquotedCasing(Casing.TO_LOWER)
         .withNullCollation(NullCollation.HIGH);
     DEFAULT = new KairosSqlDialect(DEFAULT_CONTEXT);
