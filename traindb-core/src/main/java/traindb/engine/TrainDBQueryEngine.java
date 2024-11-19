@@ -504,6 +504,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
     JSONObject tableMetadata = buildTableMetadata(
         schemaName, tableName, columnNames, trainOptions, rowType);
+    tableMetadata.put("trained_rows", exModel.getTrainedRows());
     List<String> schemaNames = Arrays.asList(schemaName);
     List<String> tableNames = Arrays.asList(tableName);
     String sql = buildSelectQueryWithCondition(
