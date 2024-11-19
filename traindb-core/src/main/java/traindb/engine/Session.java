@@ -322,6 +322,7 @@ public final class Session implements Runnable {
             case Types.DOUBLE:
               msgBld.putInt(getTypeSize(type)).putDouble(rs.getDouble(i));
               break;
+            case Types.CHAR:
             case Types.VARCHAR: {
               byte[] bytes = rs.getString(i).getBytes(StandardCharsets.UTF_8);
               msgBld.putInt(bytes.length).putBytes(bytes);
