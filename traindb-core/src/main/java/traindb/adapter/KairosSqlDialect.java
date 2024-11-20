@@ -81,4 +81,11 @@ public class KairosSqlDialect extends TrainDBSqlDialect {
     }
     return new SqlZeroXBinaryStringLiteral(bits, pos);
   }
+
+  @Override
+  public void quoteStringLiteral(StringBuilder buf, @Nullable String charsetName, String val) {
+    buf.append(literalQuoteString);
+    buf.append(val.replace(literalEndQuoteString, literalEscapedQuote));
+    buf.append(literalEndQuoteString);
+  }
 }
