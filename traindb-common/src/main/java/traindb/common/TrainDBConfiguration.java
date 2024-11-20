@@ -34,6 +34,8 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
   public TrainDBConfiguration(Properties p) {
     super(p);
     this.props = p;
+    System.setProperty("calcite.default.charset", getDefaultCharset());
+    System.setProperty("calcite.default.nationalcharset", getDefaultNationalCharset());
   }
 
   public String getModelRunner() {
@@ -51,6 +53,14 @@ public class TrainDBConfiguration extends CalciteConnectionConfigImpl {
 
   public boolean taskTrace() {
     return Boolean.parseBoolean((String) props.getOrDefault("traindb.server.tasktrace", "false"));
+  }
+
+  public String getDefaultCharset() {
+    return (String) props.getOrDefault("traindb.server.default.charset", "UTF-8");
+  }
+
+  public String getDefaultNationalCharset() {
+    return (String) props.getOrDefault("traindb.server.default.nationalcharset", "UTF-8");
   }
 
   public boolean jdbcExecute() {
