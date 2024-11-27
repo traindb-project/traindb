@@ -1302,8 +1302,12 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
   public static void executeIncrementalSum(TrainDBListResultSet res, int columnIdx, List<Object> r)
       throws TrainDBException {
-    int totalSum = 0;
-    int sum = 0;
+    int totalIntSum = 0;
+    int intSum = 0;
+
+    double totalDoubleSum = 0;
+    double doubleSum = 0;
+
     int type = res.getColumnType(columnIdx);
 
     res.rewind();
@@ -1312,20 +1316,36 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         case Types.TINYINT:
         case Types.SMALLINT:
         case Types.INTEGER:
-        case Types.FLOAT:
-        case Types.DOUBLE:
-          sum = (int) res.getValue(columnIdx);
-          totalSum = totalSum + sum;
+          intSum = (int) res.getValue(columnIdx);
+          totalIntSum = totalIntSum + intSum;
           break;
         case Types.BIGINT:
-          sum = ((Long) res.getValue(columnIdx)).intValue();
-          totalSum = totalSum + sum;
+          intSum = ((Long) res.getValue(columnIdx)).intValue();
+          totalIntSum = totalIntSum + intSum;
+          break;
+        case Types.FLOAT:
+        case Types.DOUBLE:
+          doubleSum = (double) res.getValue(columnIdx);
+          totalDoubleSum = totalDoubleSum + doubleSum;
           break;
         default:
           throw new TrainDBException("Not supported data type: " + type);
       }
     }
-    r.add(totalSum);
+    switch (type) {
+      case Types.TINYINT:
+      case Types.SMALLINT:
+      case Types.INTEGER:
+      case Types.BIGINT:
+        r.add(totalIntSum);
+        break;
+      case Types.FLOAT:
+      case Types.DOUBLE:
+        r.add(totalDoubleSum);
+        break;
+      default:
+        break;
+    }
   }
 
   public static void executeIncrementalAvg(TrainDBListResultSet res, int columnIdx, List<Object> r)
@@ -1377,7 +1397,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           doubleSum = (double) res.getValue(columnIdx);
           totalDoubleSum = totalDoubleSum + doubleSum;
 
-          doubleCnt = (double) res.getValue(columnIdx + 1);
+          doubleCnt = Double.parseDouble(res.getValue(columnIdx + 1).toString());
           totalDoubleCnt = totalDoubleCnt + doubleCnt;
           break;
         default:
