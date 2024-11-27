@@ -169,6 +169,7 @@ public abstract class TrainDBConnectionImpl
     this.cfg = new TrainDBConfiguration(info);
     this.cfg.loadConfiguration();
     this.schemaManager = schemaManager;
+    this.taskCoordinator = TaskCoordinator.getInstance();
     if (url == null) {  // traindb-only mode (no datasource)
       standalone = true;
       this.dataSource = null;
