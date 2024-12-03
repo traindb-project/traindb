@@ -254,7 +254,7 @@ public class TrainDBPlanner extends VolcanoPlanner {
           for (String str : hintExecTime) {
             double hintTime = Double.valueOf(str);
             for (MSynopsis syn : synopses) {
-              if (caqpExecutionTimePolicy.check(syn, hintTime)) {
+              if (!caqpExecutionTimePolicy.check(syn, hintTime)) {
                 filteredSynopses.add(syn);
               }
             }

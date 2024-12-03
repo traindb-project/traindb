@@ -348,7 +348,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
 
         RelDataTypeField field = relDataType.getField(colnames.get(j), true, false);
         if (field.getType().getSqlTypeName() == SqlTypeName.GEOMETRY) {
-          sb.append("ST_ASTEXT(").append(tableName).append(".").append(colnames.get(j))
+          sb.append("ST_ASTEXT(").append(colnames.get(j))
               .append(") AS ").append(colnames.get(j));
         } else {
           sb.append(tableName).append(".").append(colnames.get(j));

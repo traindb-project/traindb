@@ -52,6 +52,8 @@ public final class JDOCatalogContext implements CatalogContext {
   private static final TrainDBLogger LOG = TrainDBLogger.getLogger(JDOCatalogContext.class);
   private final PersistenceManager pm;
 
+  private static final String JOIN_TABLE_PREFIX = "__JOIN_";
+
   public JDOCatalogContext(PersistenceManager persistenceManager) {
     pm = persistenceManager;
   }
@@ -167,7 +169,7 @@ public final class JDOCatalogContext implements CatalogContext {
     }
 
     UUID joinTableId = UUID.randomUUID();
-    String joinTableName = "__JOIN_" + joinTableId;
+    String joinTableName = JOIN_TABLE_PREFIX + joinTableId;
     try {
       // use first table's schema as join table's schema
       MTable joinTable =  new MTable(joinTableName, "JOIN", getSchema(schemaNames.get(0)));
@@ -333,6 +335,10 @@ public final class JDOCatalogContext implements CatalogContext {
       pm.deletePersistent(mModel);
       tx.commit();
 
+      if (baseTable.startsWith(JOIN_TABLE_PREFIX)) {
+        dropJoinTable(baseSchema, baseTable);
+      }
+
       Collection<MModel> baseTableModels =
           getModels(ImmutableMap.of("schema_name", baseSchema, "table_name", baseTable));
       if (baseTableModels == null || baseTableModels.size() == 0) {
@@ -341,7 +347,6 @@ public final class JDOCatalogContext implements CatalogContext {
         pm.deletePersistent(mTable);
         tx.commit();
       }
-      dropJoinTable(baseSchema, baseTable);
 
       Collection<MModel> baseSchemaModels = getModels(ImmutableMap.of("schema_name", baseSchema));
       if (baseSchemaModels == null || baseSchemaModels.size() == 0) {
