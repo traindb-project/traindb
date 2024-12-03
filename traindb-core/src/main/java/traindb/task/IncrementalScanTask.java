@@ -15,7 +15,6 @@ import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.calcite.sql.type.SqlTypeName;
 import traindb.adapter.jdbc.JdbcUtils;
 import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.SchemaManager;
 import traindb.sql.TrainDBIncrementalQuery;
 import traindb.sql.TrainDBSqlCommand;
 

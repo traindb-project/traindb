@@ -648,8 +648,16 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           if ((hint == null || !hint.getName().equalsIgnoreCase("approximate"))
               && select.getFrom() instanceof SqlJoin) {
             try {
+              TaskCoordinator taskCoordinator = conn.getTaskCoordinator();
+              if (hint != null && hint.getName().equalsIgnoreCase("parallel")) {
+                taskCoordinator.setParallel(true);
+              } 
               TrainDBListResultSet result = executeJoin(context, catalogReader, sqlNode, sqlNode,
                   preparingStmt, prefer);
+
+              if (taskCoordinator.isParallel() && taskCoordinator.getTableScanFutures().size() > 0) {
+                taskCoordinator.getTableScanFutures().clear();
+              }
               if (result != null)
                 return convertResultToSignature(context, null, result);
             } catch (SQLException e) {
@@ -1026,8 +1034,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       taskCoordinator.saveQuery.add(changeQuery);
     }
 
-    if(taskCoordinator.getFutures() == null) {
-      taskCoordinator.setFutures(new ArrayList<>());
+    if(taskCoordinator.getIncrementalFutures() == null) {
+      taskCoordinator.setIncrementalFutures(new ArrayList<>());
     }
 
     List<List<Object>> totalRes = new ArrayList<>();
@@ -1097,7 +1105,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           ExecutorService executor = Executors.newFixedThreadPool(4);
           for (int idx = 1; idx < taskCoordinator.saveQuery.size(); idx++) {
             IncrementalScanTask task = new IncrementalScanTask(context, commands, ++taskCoordinator.saveQueryIdx);
-            taskCoordinator.getFutures().add(executor.submit(task));
+            taskCoordinator.getIncrementalFutures().add(executor.submit(task));
           }
         }
         
@@ -1221,7 +1229,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
     String sql = incrementalParallelQuery.getStatement();
 
     List<List<Object>> totalRes = new ArrayList<>();
-    List<Future<List<List<Object>>>> futures = taskCoordinator.getFutures();
+    List<Future<List<List<Object>>>> futures = taskCoordinator.getIncrementalFutures();
 
     if (futures.size() > 0) {
       try {

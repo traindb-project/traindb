@@ -57,6 +57,16 @@ public class TrainDBSqlSelect extends SqlSelect {
       hintList.add(new SqlHint(pos, new SqlIdentifier("approximate", pos),
           SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
       setHints(new SqlNodeList(hintList, pos));
+    } else if (isKeywordPresent(TrainDBSqlSelectKeyword.PARALLEL)) {
+      List<SqlNode> hintList;
+      if (hints == null) {
+        hintList = new ArrayList<>();
+      } else {
+        hintList = getHints().getList();
+      }
+      hintList.add(new SqlHint(pos, new SqlIdentifier("parallel", pos),
+          SqlNodeList.EMPTY, SqlHint.HintOptionFormat.EMPTY));
+      setHints(new SqlNodeList(hintList, pos));
     }
   }
 

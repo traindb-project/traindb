@@ -53,6 +53,7 @@ data: {
     # not a reserved keyword, add it to the 'nonReservedKeywords' section.
     keywords: [
       "APPROXIMATE"
+      "PARALLEL"
     ]
 
     # List of keywords from "keywords" section that are not reserved.
@@ -387,6 +388,7 @@ data: {
     nonReservedKeywordsToAdd: [
       "APPROXIMATE"
       "WITHIN"
+      "PARALLEL"
     ]
 
     # List of non-reserved keywords to remove;
