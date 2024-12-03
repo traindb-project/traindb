@@ -20,6 +20,7 @@ import java.util.concurrent.Future;
 import org.apache.calcite.sql.SqlAggFunction;
 import org.apache.hadoop.service.AbstractService;
 import traindb.common.TrainDBLogger;
+import traindb.engine.TrainDBListResultSet;
 
 
 public final class TaskCoordinator extends AbstractService {
@@ -35,7 +36,8 @@ public final class TaskCoordinator extends AbstractService {
 
   // for parallel incremental query
   private boolean isParallel;
-  private List<Future<List<List<Object>>>> futures;
+  private List<Future<List<List<Object>>>> incrementalFutures;
+  private List<Future<TrainDBListResultSet>> tableScanFutures;
 
   public void setParallel(boolean p) {
     isParallel = p;
@@ -45,12 +47,23 @@ public final class TaskCoordinator extends AbstractService {
     return isParallel;
   }
 
-  public List<Future<List<List<Object>>>> getFutures() {
-    return futures;
+  public List<Future<List<List<Object>>>> getIncrementalFutures() {
+    return incrementalFutures;
   }
 
-  public void setFutures(List<Future<List<List<Object>>>> futures) {
-    this.futures = futures;
+  public void setIncrementalFutures(List<Future<List<List<Object>>>> futures) {
+    this.incrementalFutures = futures;
+  }
+
+  public List<Future<TrainDBListResultSet>> getTableScanFutures() {
+    if (tableScanFutures == null) {
+      tableScanFutures = new ArrayList<>();
+    }
+    return tableScanFutures;
+  }
+
+  public void setTableScanFutures(List<Future<TrainDBListResultSet>> futures) {
+    this.tableScanFutures = futures;
   }
 
   private TaskCoordinator() {

@@ -302,6 +302,8 @@ public abstract class TrainDBConnectionImpl
   }
 
   public TaskCoordinator getTaskCoordinator() {
+    if ( taskCoordinator==null ) 
+      taskCoordinator = TaskCoordinator.getInstance();
     return taskCoordinator;
   }
 

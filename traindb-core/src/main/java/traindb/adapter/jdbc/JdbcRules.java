@@ -16,6 +16,18 @@
  */
 package traindb.adapter.jdbc;
 
+import static java.util.Objects.requireNonNull;
+
+import java.sql.Types;
+import java.util.ArrayList;
+import java.util.HashMap;
+import java.util.List;
+import java.util.Set;
+import java.util.concurrent.ExecutionException;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
+import java.util.concurrent.Future;
+import java.util.function.Consumer;
 import org.apache.calcite.linq4j.Queryable;
 import org.apache.calcite.linq4j.tree.Expression;
 import org.apache.calcite.plan.Contexts;
@@ -75,23 +87,14 @@ import org.apache.calcite.tools.RelBuilderFactory;
 import org.apache.calcite.util.ImmutableBitSet;
 import org.apache.calcite.util.Util;
 import org.apache.calcite.util.trace.CalciteTrace;
-
-import com.google.common.base.Preconditions;
-import com.google.common.collect.ImmutableList;
-
-import traindb.engine.TrainDBListResultSet;
-
 import org.checkerframework.checker.nullness.qual.Nullable;
 import org.slf4j.Logger;
-
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
-import java.util.Set;
-import java.util.function.Consumer;
-
-import static java.util.Objects.requireNonNull;
+import com.google.common.base.Preconditions;
+import com.google.common.collect.ImmutableList;
+import traindb.engine.TrainDBListResultSet;
+import traindb.jdbc.TrainDBConnectionImpl;
+import traindb.task.TableScanTask;
+import traindb.task.TaskCoordinator;
 
 /**
  * Rules and relational operators for
@@ -435,10 +438,47 @@ public class JdbcRules {
       TrainDBListResultSet leftResult = null;
       TrainDBListResultSet rightResult = null;
 
-      leftResult = ((JdbcRel) left).execute(context);
-      rightResult = ((JdbcRel) right).execute(context);
+      TrainDBConnectionImpl conn = (TrainDBConnectionImpl)context.getDataContext().getQueryProvider();
+      TaskCoordinator taskCoordinator = conn.getTaskCoordinator();
+      
+      if (taskCoordinator.isParallel()) {
+          ExecutorService executor = Executors.newFixedThreadPool(Runtime.getRuntime().availableProcessors());
+          TableScanTask leftTask = new TableScanTask(context, (JdbcRel)left);
+          TableScanTask rightTask = new TableScanTask(context, (JdbcRel)right);
 
-      return hashJoin(leftResult, rightResult, leftResult.getRowCount() < rightResult.getRowCount());
+          List<Future<TrainDBListResultSet>> results = taskCoordinator.getTableScanFutures();
+          int leftIdx = 0;
+          int rightIdx = 0;
+          synchronized(results) {
+            leftIdx = results.size();
+            results.add(executor.submit(leftTask));
+            rightIdx = results.size();
+            results.add(executor.submit(rightTask));
+          }
+
+          try {
+            leftResult = results.get(leftIdx).get();
+            rightResult = results.get(rightIdx).get();
+            
+            return hashJoin(leftResult, rightResult, leftResult.getRowCount() < rightResult.getRowCount());
+          } catch (InterruptedException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+          } catch (ExecutionException e) {
+            // TODO Auto-generated catch block
+            e.printStackTrace();
+            return null;
+          } finally {
+            executor.shutdown();
+          }
+          
+      } else {
+        leftResult = ((JdbcRel) left).execute(context);
+        rightResult = ((JdbcRel) right).execute(context);
+
+        return hashJoin(leftResult, rightResult, leftResult.getRowCount() < rightResult.getRowCount());
+      }
     }
 
     public TrainDBListResultSet nestedJoin(TrainDBListResultSet leftResult, TrainDBListResultSet rightResult) {

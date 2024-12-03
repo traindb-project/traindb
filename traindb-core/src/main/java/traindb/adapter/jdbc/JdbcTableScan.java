@@ -16,27 +16,9 @@
  */
 package traindb.adapter.jdbc;
 
+import static java.util.Objects.requireNonNull;
+import static org.apache.calcite.linq4j.Nullness.castNonNull;
 import static org.apache.calcite.sql.type.SqlTypeName.DECIMAL;
-
-import org.apache.calcite.adapter.java.JavaTypeFactory;
-import org.apache.calcite.plan.Convention;
-import org.apache.calcite.plan.RelOptCluster;
-import org.apache.calcite.plan.RelOptTable;
-import org.apache.calcite.plan.RelTraitSet;
-import org.apache.calcite.rel.RelNode;
-import org.apache.calcite.rel.core.TableScan;
-import org.apache.calcite.rel.hint.RelHint;
-import org.apache.calcite.sql.SqlAggFunction;
-import org.apache.calcite.sql.SqlDialect;
-import org.apache.calcite.sql.type.SqlTypeName;
-import org.apache.calcite.sql.util.SqlString;
-
-import com.google.common.collect.ImmutableList;
-
-import traindb.engine.TrainDBListResultSet;
-import traindb.jdbc.TrainDBConnectionImpl;
-import traindb.schema.SchemaManager;
-
 import java.sql.Connection;
 import java.sql.ResultSet;
 import java.sql.ResultSetMetaData;
@@ -45,10 +27,18 @@ import java.sql.Statement;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Objects;
-
-import static org.apache.calcite.linq4j.Nullness.castNonNull;
-
-import static java.util.Objects.requireNonNull;
+import org.apache.calcite.plan.Convention;
+import org.apache.calcite.plan.RelOptCluster;
+import org.apache.calcite.plan.RelOptTable;
+import org.apache.calcite.plan.RelTraitSet;
+import org.apache.calcite.rel.RelNode;
+import org.apache.calcite.rel.core.TableScan;
+import org.apache.calcite.rel.hint.RelHint;
+import org.apache.calcite.sql.type.SqlTypeName;
+import org.apache.calcite.sql.util.SqlString;
+import com.google.common.collect.ImmutableList;
+import traindb.engine.TrainDBListResultSet;
+import traindb.jdbc.TrainDBConnectionImpl;
 
 /**
  * Relational expression representing a scan of a table in a JDBC data source.
@@ -80,6 +70,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
 
   public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
     TrainDBListResultSet res = null;
+    Connection extConn = null;
     try {
       TrainDBConnectionImpl conn = (TrainDBConnectionImpl) context.getDataContext().getQueryProvider();
 
@@ -89,8 +80,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       SqlString query = jdbcTable.generateSql();
       String sql = query.getSql();
       
-      SchemaManager schemaManager = conn.getSchemaManager();
-      Connection extConn = conn.getDataSourceConnection();
+      extConn = conn.getDataSourceConnection();
       Statement stmt = extConn.createStatement();
       ResultSet rs = stmt.executeQuery(sql);
 
@@ -116,6 +106,7 @@ public class JdbcTableScan extends TableScan implements JdbcRel {
       }
 
       res = new TrainDBListResultSet(header, totalRes);
+      extConn.close();
 
     } catch (SQLException e) {
       e.printStackTrace();

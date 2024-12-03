@@ -20,5 +20,6 @@ import org.apache.calcite.sql.Symbolizable;
  * Defines the keywords which can occur immediately after the "SELECT" keyword for TrainDB.
  */
 public enum TrainDBSqlSelectKeyword implements Symbolizable {
-  APPROXIMATE
+  APPROXIMATE,
+  PARALLEL
 }

@@ -1309,6 +1309,10 @@ SqlSelect SqlSelect() :
         <APPROXIMATE> {
             traindbKeywords.add(TrainDBSqlSelectKeyword.APPROXIMATE.symbol(getPos()));
         }
+        |
+        <PARALLEL> {
+            traindbKeywords.add(TrainDBSqlSelectKeyword.PARALLEL.symbol(getPos()));
+        }
     )?
     SqlSelectKeywords(keywords)
     (
