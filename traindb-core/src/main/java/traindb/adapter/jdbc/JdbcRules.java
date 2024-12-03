@@ -952,7 +952,173 @@ public class JdbcRules {
     @Override
     public TrainDBListResultSet execute(org.apache.calcite.jdbc.CalcitePrepare.Context context) {
       // TODO Auto-generated method stub
-      return null;
+      TrainDBListResultSet result = ((JdbcRel) input).execute(context);
+      
+      List<String> header = new ArrayList<>();
+      for (int j = 0; j < result.getColumnCount() ; j++) {
+        header.add(result.getColumnName(j));
+      }
+
+      List<List<Object>> res = new ArrayList<>();
+      List<Object> row = new ArrayList<>();
+      for ( int i=0 ; i<aggCalls.size() ; i++ ) {   
+        AggregateCall aggCall = aggCalls.get(i);
+
+        Object rValue = null;
+        switch(aggCall.getAggregation().getKind()) {
+          case COUNT:
+            rValue = result.getRowCount();
+            break;
+          case SUM:
+            rValue = executeSum(result, aggCall);
+            break;
+          case MIN:
+            rValue = executeMin(result, aggCall);
+            break;
+          case MAX:
+            rValue = executeMin(result, aggCall);
+            break;
+          default:
+          break;
+        }
+
+        row.add(rValue);
+      }
+      res.add(row);
+
+      return new TrainDBListResultSet(header, res);
+    }
+
+    public int executeSum(TrainDBListResultSet result, AggregateCall aggCall) {
+      int total = 0;
+      while(result.hasNext()) {
+        result.next();
+        int argIdx = aggCall.getArgList().get(0);
+
+        Object value = result.getValue(argIdx);
+        int type = result.getColumnType(argIdx);
+
+        switch (type) {
+          case Types.TINYINT:
+          case Types.SMALLINT:
+          case Types.INTEGER:
+          case Types.FLOAT:
+          case Types.DOUBLE:
+            total += (int)value;
+            break;
+          case Types.BIGINT:
+            total += ((Long)value).intValue();
+            break;
+          default:
+            break;
+        }
+      }
+
+      return total;
+    }
+
+    public Object executeMin(TrainDBListResultSet result, AggregateCall aggCall) {
+      Object min = null;
+      Object curr = null;
+      while (result.hasNext()) {
+        result.next();
+        int argIdx = aggCall.getArgList().get(0);
+
+        Object value = result.getValue(argIdx);
+        int type = result.getColumnType(argIdx);
+
+        switch (type) {
+          case Types.TINYINT:
+          case Types.SMALLINT:
+          case Types.INTEGER:
+          case Types.BIGINT:
+          case Types.FLOAT:
+          case Types.DOUBLE:
+          curr = (int) value;
+            if (min == null) {
+              min = curr;
+            } else if ((int)min > (int)curr) {
+              min = curr;
+            }
+            break;
+          case Types.CHAR:
+          case Types.VARCHAR: {
+            curr = (String) value;
+            if (min == null) {
+              min = curr;
+            } else if (compareStrings((String)min, (String)curr) > 0) {
+              min = curr;
+            }
+            break;
+          }
+          default:
+          break;
+        }
+      }
+
+      return min;
+    }
+
+    public Object executeMax(TrainDBListResultSet result, AggregateCall aggCall) {
+      Object max = null;
+      Object curr = null;
+      while (result.hasNext()) {
+        result.next();
+        int argIdx = aggCall.getArgList().get(0);
+
+        Object value = result.getValue(argIdx);
+        int type = result.getColumnType(argIdx);
+
+        switch (type) {
+          case Types.TINYINT:
+          case Types.SMALLINT:
+          case Types.INTEGER:
+          case Types.BIGINT:
+          case Types.FLOAT:
+          case Types.DOUBLE:
+          curr = (int) value;
+            if (max == null) {
+              max = curr;
+            } else if ((int)max > (int)curr) {
+              max = curr;
+            }
+            break;
+          case Types.CHAR:
+          case Types.VARCHAR: {
+            curr = (String) value;
+            if (max == null) {
+              max = curr;
+            } else if (compareStrings((String)max, (String)curr) < 0) {
+              max = curr;
+            }
+            break;
+          }
+          default:
+          break;
+        }
+      }
+
+      return max;
+    }
+
+    public static int compareStrings(String s1, String s2) {
+      for (int i = 0; i < s1.length() && i < s2.length(); i++) {
+        if ((int) s1.charAt(i) == (int) s2.charAt(i)) {
+          continue;
+        } else {
+          return (int) s1.charAt(i) - (int) s2.charAt(i);
+        }
+      }
+  
+      if (s1.length() < s2.length()) {
+        return (s1.length() - s2.length());
+        //return 1;
+      } else if (s1.length() > s2.length()) {
+        return (s1.length() - s2.length());
+        //return -1;
+      } else {
+        return 0;
+      }
     }
   }
 
