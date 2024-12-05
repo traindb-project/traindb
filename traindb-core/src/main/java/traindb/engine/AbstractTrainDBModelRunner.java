@@ -69,6 +69,10 @@ public abstract class AbstractTrainDBModelRunner {
     return true;
   }
 
+  public String getTrainingStatus(String modelName) throws Exception {
+    return "FINISHED";
+  }
+
   public Path getModelPath() {
     return getModelPath(modelName);
   }

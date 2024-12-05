@@ -1207,14 +1207,16 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     DateTimeFormatter dtf = DateTimeFormatter.ofPattern("yyyy-MM-dd HH:mm:ss.SSSSSS");
     List<List<Object>> trainingInfo = new ArrayList<>();
     for (MTrainingStatus mTraining : catalogContext.getTrainingStatus(filterPatterns)) {
-      if (mTraining.getTrainingStatus().equals("TRAINING")) {
+      String oldStatus = mTraining.getTrainingStatus();
+      if (oldStatus.equals("TRAINING")) {
         AbstractTrainDBModelRunner runner =
             AbstractTrainDBModelRunner.createModelRunner(
             conn, catalogContext, conn.cfg, mTraining.getModel().getModeltype().getModeltypeName(),
             mTraining.getModelName(), mTraining.getModel().getModeltype().getLocation());
         try {
-          if (runner.checkAvailable(mTraining.getModelName())) {
-            catalogContext.updateTrainingStatus(mTraining.getModelName(), "FINISHED");
+          String newStatus = runner.getTrainingStatus(mTraining.getModelName());
+          if (!oldStatus.equals(newStatus)) {
+            catalogContext.updateTrainingStatus(mTraining.getModelName(), newStatus);
           }
         } catch (Exception e) {
           // ignore

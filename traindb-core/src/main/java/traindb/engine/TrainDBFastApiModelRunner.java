@@ -335,6 +335,15 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
 
   @Override
   public boolean checkAvailable(String modelName) throws Exception {
+    String res = getTrainingStatus(modelName);
+    if (res.equalsIgnoreCase("FINISHED")) {
+      return true;
+    }
+    return false;
+  }
+
+  @Override
+  public String getTrainingStatus(String modelName) throws Exception {
     MModeltype mModeltype = catalogContext.getModel(modelName).getModeltype();
     URL url = new URL(checkTrailingSlash(mModeltype.getUri()) + "model/" + modelName + "/status");
     HttpURLConnection httpConn = (HttpURLConnection) url.openConnection();
@@ -352,10 +361,7 @@ public class TrainDBFastApiModelRunner extends AbstractTrainDBModelRunner {
       response.append(line);
     }
     String res = unescapeString(response.toString());
-    if (res.equalsIgnoreCase("FINISHED")) {
-      return true;
-    }
-    return false;
+    return res;
   }
 
   @Override
