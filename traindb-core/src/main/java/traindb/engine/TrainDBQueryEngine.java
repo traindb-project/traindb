@@ -745,7 +745,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
             case INTEGER:
             case TINYINT:
             case SMALLINT:
-              pstmt.setInt(i, Integer.parseInt(row[i - 1]));
+              pstmt.setInt(i, (int) Double.parseDouble(row[i - 1]));
               break;
             case BIGINT:
             case DECIMAL:
