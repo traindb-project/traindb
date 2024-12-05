@@ -1208,7 +1208,7 @@ public class TrainDBQueryEngine implements TrainDBSqlRunner {
     List<List<Object>> trainingInfo = new ArrayList<>();
     for (MTrainingStatus mTraining : catalogContext.getTrainingStatus(filterPatterns)) {
       String oldStatus = mTraining.getTrainingStatus();
-      if (oldStatus.equals("TRAINING")) {
+      if (!oldStatus.equals("FINISHED") && !oldStatus.equals("FAILED") ) {
         AbstractTrainDBModelRunner runner =
             AbstractTrainDBModelRunner.createModelRunner(
             conn, catalogContext, conn.cfg, mTraining.getModel().getModeltype().getModeltypeName(),
