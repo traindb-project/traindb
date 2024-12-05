@@ -586,11 +586,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           // INSERT QUERY LOGS
           queryEngine.insertQueryLogs(currentTime, currentUser, query.sql);
 
-          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY 
-            ||commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_PARALLEL_QUERY) {
+          if (commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_QUERY
+              || commands.get(0).getType() == TrainDBSqlCommand.Type.INCREMENTAL_PARALLEL_QUERY) {
             return executeIncremental(context, commands.get(0));
           }
-
+    
           return convertResultToSignature(context, query.sql,
               TrainDBSql.run(commands.get(0), queryEngine));
         } catch (Exception e) {
@@ -878,14 +878,18 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       sql = ((TrainDBIncrementalQuery) commands).getStatement();
       taskCoordinator.setParallel(false);
     }
-    
-
     if (sql.equals("rows")) {
       if (taskCoordinator.isParallel())
         return executeIncrementalNextParallel(context, commands);
       else
         return executeIncrementalNext(context,commands);
     }
+
+    boolean isApproximate = false;
+    if (sql.toLowerCase().startsWith("select") && sql.toLowerCase().contains("approximate")) {
+      isApproximate = true;
+    }
+    taskCoordinator.setApproximate(isApproximate);
 
     SqlParser parser = createParser(sql,  parserConfig);
     SqlNode sqlNode;
@@ -1034,6 +1038,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       taskCoordinator.saveQuery.add(changeQuery);
     }
 
+    taskCoordinator.totalPartitionCnt = partitionList.size();
+    double approximate = 1;
+    if (taskCoordinator.isApproximate())
+      approximate = taskCoordinator.totalPartitionCnt / (taskCoordinator.saveQueryIdx + 1);
+
     if(taskCoordinator.getIncrementalFutures() == null) {
       taskCoordinator.setIncrementalFutures(new ArrayList<>());
     }
@@ -1072,6 +1081,7 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
 
         TrainDBListResultSet res
             = new TrainDBListResultSet(taskCoordinator.header, taskCoordinator.totalRes);
+        
         if (res.getRowCount() > 0) {
           List<Object> r = new ArrayList<>();
           int aggIdx = 0;
@@ -1079,13 +1089,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
             SqlAggFunction agg = taskCoordinator.aggCalls.get(aggIdx);
             switch (agg.getKind()) {
               case COUNT:
-                executeIncrementalCount(res, j, r);
+                executeIncrementalCount(res, j, r, approximate);
                 break;
               case SUM:
-                executeIncrementalSum(res, j, r);
+                executeIncrementalSum(res, j, r, approximate);
                 break;
               case AVG:
-                executeIncrementalAvg(res, j, r);
+                executeIncrementalAvg(res, j, r, approximate);
                 j++;
                 break;
               case MIN:
@@ -1170,6 +1180,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         taskCoordinator.totalRes.add(r);
       }
 
+      double approximate = 1;
+      if (taskCoordinator.isApproximate())
+        approximate = taskCoordinator.totalPartitionCnt / (taskCoordinator.saveQueryIdx + 1);
+
       for (int j = 0; j < taskCoordinator.aggCalls.size(); j++) {
         SqlAggFunction agg = taskCoordinator.aggCalls.get(j);
         header.add(agg.getName());
@@ -1184,13 +1198,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           SqlAggFunction agg = taskCoordinator.aggCalls.get(aggIdx);
           switch (agg.getKind()) {
             case COUNT:
-              executeIncrementalCount(res, j, r);
+              executeIncrementalCount(res, j, r, approximate);
               break;
             case SUM:
-              executeIncrementalSum(res, j, r);
+              executeIncrementalSum(res, j, r, approximate);
               break;
             case AVG:
-              executeIncrementalAvg(res, j, r);
+              executeIncrementalAvg(res, j, r, approximate);
               j++;
               break;
             case MIN:
@@ -1240,6 +1254,10 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         e.printStackTrace();
       }
 
+      double approximate = 1;
+      if (taskCoordinator.isApproximate())
+        approximate = (double)taskCoordinator.totalPartitionCnt / (double)(taskCoordinator.saveQueryIdx + 1);
+
       TrainDBListResultSet res =
           new TrainDBListResultSet(taskCoordinator.header, taskCoordinator.totalRes);
       if (res.getRowCount() > 0) {
@@ -1250,13 +1268,13 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           try {
             switch (agg.getKind()) {
               case COUNT:
-                executeIncrementalCount(res, j, r);
+                executeIncrementalCount(res, j, r, approximate);
                 break;
               case SUM:
-                executeIncrementalSum(res, j, r);
+                executeIncrementalSum(res, j, r, approximate);
                 break;
               case AVG:
-                executeIncrementalAvg(res, j, r);
+                executeIncrementalAvg(res, j, r, approximate);
                 j++;
                 break;
               case MIN:
@@ -1280,7 +1298,8 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
         new TrainDBListResultSet(taskCoordinator.header, totalRes));
   }
 
-  public static void executeIncrementalCount(TrainDBListResultSet res, int columnIdx, List<Object> r)
+  public static void executeIncrementalCount(TrainDBListResultSet res, int columnIdx, 
+                                            List<Object> r, double approximate)
       throws TrainDBException {
     int totalCnt = 0;
     int cnt = 0;
@@ -1305,10 +1324,11 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
           throw new TrainDBException("Not supported data type: " + type);
       }
     }
-    r.add(totalCnt);
+    r.add((int)(totalCnt*approximate));
   }
 
-  public static void executeIncrementalSum(TrainDBListResultSet res, int columnIdx, List<Object> r)
+  public static void executeIncrementalSum(TrainDBListResultSet res, int columnIdx, 
+                                          List<Object> r, double approximate)
       throws TrainDBException {
     int totalIntSum = 0;
     int intSum = 0;
@@ -1345,18 +1365,19 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       case Types.SMALLINT:
       case Types.INTEGER:
       case Types.BIGINT:
-        r.add(totalIntSum);
+        r.add((int)(totalIntSum * approximate));
         break;
       case Types.FLOAT:
       case Types.DOUBLE:
-        r.add(totalDoubleSum);
+        r.add(totalDoubleSum * approximate);
         break;
       default:
         break;
     }
   }
 
-  public static void executeIncrementalAvg(TrainDBListResultSet res, int columnIdx, List<Object> r)
+  public static void executeIncrementalAvg(TrainDBListResultSet res, int columnIdx, 
+                                          List<Object> r, double approximate)
       throws TrainDBException {
     int totalIntSum = 0;
     int totalIntCnt = 0;
@@ -1417,14 +1438,14 @@ public class TrainDBPrepareImpl extends CalcitePrepareImpl {
       case Types.SMALLINT:
       case Types.INTEGER:
       case Types.BIGINT:
-        double test = (double) totalIntSum / (double) totalIntCnt;
+        double test = (double) (totalIntSum*approximate) / (double) (totalIntCnt*approximate);
         double davg = Math.round(test);
         int intAvg = (int) davg;
         r.add(intAvg);
         break;
       case Types.FLOAT:
       case Types.DOUBLE:
-        double avg =  (double) totalDoubleSum / (double) totalDoubleCnt;
+        double avg =  (double) (totalDoubleSum*approximate) / (double) (totalDoubleCnt*approximate);
         r.add(avg);
         break;
       default:

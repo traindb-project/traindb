@@ -34,10 +34,22 @@ public final class TaskCoordinator extends AbstractService {
   public List<String> header;
   public List<SqlAggFunction> aggCalls;
 
+  // for incremental approximate query
+  private boolean isApproximate;
+  public int totalPartitionCnt;
+
   // for parallel incremental query
   private boolean isParallel;
   private List<Future<List<List<Object>>>> incrementalFutures;
   private List<Future<TrainDBListResultSet>> tableScanFutures;
+
+  public void setApproximate(boolean p) {
+    isApproximate = p;
+  }
+
+  public boolean isApproximate() {
+    return isApproximate;
+  }
 
   public void setParallel(boolean p) {
     isParallel = p;
