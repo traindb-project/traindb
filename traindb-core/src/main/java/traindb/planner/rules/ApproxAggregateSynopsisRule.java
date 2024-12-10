@@ -113,7 +113,7 @@ public class ApproxAggregateSynopsisRule
       for (AggregateCall aggCall : aggregate.getAggCallList()) {
         addRequiredColumnIndex(requiredColumnIndex, aggCall.getArgList(), start, end);
       }
-      for (int i = 0; i < aggregate.getGroupCount(); i++) {
+      for (int i = 0; i < aggregate.getGroupSets().size(); i++) {
         addRequiredColumnIndex(
             requiredColumnIndex, aggregate.getGroupSets().get(i).asList(), start, end);
       }
